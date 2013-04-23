@@ -97,12 +97,6 @@ clean:
 tags: $(PY_SOURCES)
 	ctags -R --exclude="build/*" --exclude="debian/*" --exclude="windows/*" --exclude="docs/*" --languages="Python"
 
-LICENSE.txt:
-	wget http://www.gnu.org/licenses/gpl-3.0.txt -O $@
-
-LICENSE.odt:
-	wget http://www.gnu.org/licenses/gpl-3.0.odt -O $@
-
 LICENSE.rtf: LICENSE.odt
 	unoconv -d document -f rtf --stdout $< > $@
 
