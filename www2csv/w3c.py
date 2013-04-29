@@ -46,7 +46,6 @@ Reference
 .. _Postel's Law: http://en.wikipedia.org/wiki/Robustness_principle
 """
 
-
 from __future__ import (
     unicode_literals,
     absolute_import,
@@ -56,9 +55,12 @@ from __future__ import (
 
 import re
 import warnings
-from datetime import datetime
+import logging
+import socket
+from datetime import date, time, datetime
 from collections import namedtuple
-
+from urlparse import ResultMixin, urlparse, urlunparse
+from urllib import unquote_plus
 
 
 def sanitize_name(name):
@@ -71,6 +73,161 @@ def sanitize_name(name):
     if name == '':
         raise ValueError('Cannot sanitize a blank string')
     return re.sub(r'[^A-Za-z_]', '_', name[:1]) + re.sub(r'[^A-Za-z0-9_]+', '_', name[1:])
+
+
+class ParseResult(namedtuple('ParseResult', 'scheme netloc path params query fragment'), ResultMixin):
+    """
+    Redefined version of the urlparse result which adds a :meth:`__str__`
+    method. See :func:`uri_parse` for more information.
+    """
+
+    __slots__ = ()
+
+    def geturl(self):
+        return urlunparse(self)
+
+    def __str__(self):
+        return self.geturl()
+
+
+def uri_parse(s):
+    """
+    Parse a URI string in a W3C extended log format file.
+
+    This is a variant on the urlparse.urlparse function. The result type has
+    been extended to include a :meth:`ParseResult.__str__` method which outputs
+    the reconstructed URI.
+
+    :param str s: The string containing the URI to parse
+    :returns: A ParseResult tuple representing the URI
+    """
+    return ParseResult(*urlparse(s)) if s != '-' else None
+
+
+def int_parse(s):
+    """
+    Parse an integer string in a W3C extended log format file.
+
+    This is a simple variant on int() that returns None in the case of a single
+    dash being passed to s.
+
+    :param str s: The string containing the integer number to parse
+    :returns: An int value
+    """
+    return int(s) if s != '-' else None
+
+
+def fixed_parse(s):
+    """
+    Parse an floating point string in a W3C extended log format file.
+
+    This is a simple variant on float() that returns None in the case of a
+    single dash being passed to s.
+
+    :param str s: The string containing the floating point number to parse
+    :returns: An float value
+    """
+    return float(s) if s != '-' else None
+
+
+def date_parse(s):
+    """
+    Parse a date string in a W3C extended log format file.
+
+    :param str s: The string containing the date to parse (YYYY-MM-DD format)
+    :returns: A datetime.date object representing the date
+    """
+    return datetime.strptime(s, '%Y-%m-%d').date() if s != '-' else None
+
+
+def time_parse(s):
+    """
+    Parse a time string in a W3C extended log format file.
+
+    :param str s: The string containing the time to parse (HH:MM:SS format)
+    :returns: A datetime.time object representing the time
+    """
+    return datetime.strptime(s, '%H:%M:%S').time() if s != '-' else None
+
+
+def string_parse(s):
+    """
+    Parse a string in a W3C extended log format file.
+
+    Quoted strings have the external quotes stripped off and internal quotes,
+    which are doubled for escaping purposes, halved. Unquoted strings are
+    assumed to be URI %-encoded and are decoded as such.
+
+    :param str s: The string to parse
+    :returns: The decoded string
+    """
+    if s == '-':
+        return None
+    if s[:1] == '"':
+        return s[1:-1].replace('""', '"')
+    return unquote_plus(s)
+
+
+_name_part_re = re.compile(r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$')
+def name_parse(s):
+    """
+    Verify a DNS name in a W3C extended log format file.
+
+    :param str s: The string containing the DNS name to verify
+    :returns: The verified string
+    """
+    if s == '-':
+        return None
+    if len(s) > 255:
+        raise ValueError('DNS name %s is longer than 255 chars' % s)
+    for part in s.split('.'):
+        # XXX What about IPv6 addresses? Check with address_parse?
+        if not _name_part_re.match(part):
+            raise ValueError('DNS label %s is invalid' % part)
+    return s
+
+
+def address_parse(s):
+    """
+    Verify an IPv4 or IPv6 address in a W3C extended log format file.
+
+    :param str s: The string containing the address to verify
+    :returns: The verified string
+    """
+    if s == '-':
+        return None
+    host, sep, port = s.rpartition(':')
+    if port.endswith(']'):           # [IPv6addr]
+        host, port = s[1:-1], None
+    elif host.endswith(']'):         # [IPv6addr]:port
+        host = host[1:-1]
+        port = int(port)
+    elif ':' in host:                # IPv6addr
+        host, port = s, None
+    elif not host:                   # IPv4addr
+        host, port = s, None
+    else:                            # IPv4addr:port
+        port = int(port)
+    if port is not None and not (0 <= port <= 65535):
+        raise ValueError('Port %d is invalid' % port)
+    try:
+        addr = socket.getaddrinfo(host, None, 0, 0, socket.AI_NUMERICHOST)
+        for family, socktype, proto, _, sockaddr in addr:
+            if family == socket.AF_INET:
+                host = sockaddr[0]
+                if port:
+                    return '%s:%d' % (host, port)
+                else:
+                    return host
+            elif family == socket.AF_INET6:
+                host = sockaddr[0]
+                if port:
+                    return '[%s]:%d' % (host, port)
+                else:
+                    return '[%s]' % host
+        raise ValueError('Unable to parse address %s' % s)
+    except socket.gaierror as exc:
+        raise ValueError('While parsing address %s: %s' % (s, exc.args[1]))
 
 
 class W3CError(Exception):
@@ -146,8 +303,11 @@ class W3CWrapper(object):
         self.remark = None
         self.start = None
         self.finish = None
+        self.date = None
         self.fields = []
-        self.field_type = None
+        self._row_pattern = None
+        self._row_funcs = None
+        self._row_type = None
 
     # The following regexes are used to identify directives within W3C log
     # files. Contrary to popular opinion these can occur anywhere within the
@@ -197,42 +357,57 @@ class W3CWrapper(object):
 
         :param str line: The directive line to process
         """
-        if self._match(VERSION_RE, line):
+        logging.debug('Parsing directive: %s', line)
+        match = self.VERSION_RE.match(line)
+        if match:
             if self.version is not None:
                 raise W3CVersionError('Found a second #Version directive')
-            self.version = self._result.group('text')
+            self.version = match.group('text')
             if self.version != '1.0':
                 raise W3CVersionError('Unknown W3C log version %s' % self.version)
-        elif self._match(SOFTWARE_RE, line):
-            self.software = self._result.group('text')
-        elif self._match(REMARK_RE, line):
-            self.remark = self._result.group('text')
-        elif self._match(FIELDS_RE, line):
-            self._process_fields(self._result.group('text'))
-        elif self._match(START_DATE_RE, line):
+            return
+        match = self.SOFTWARE_RE.match(line)
+        if match:
+            self.software = match.group('text')
+            return
+        match = self.REMARK_RE.match(line)
+        if match:
+            self.remark = match.group('text')
+            return
+        match = self.FIELDS_RE.match(line)
+        if match:
+            self._process_fields(match.group('text'))
+            return
+        match = self.START_DATE_RE.match(line)
+        if match:
             self.start = datetime.strptime(
-                DATETIME_FORMAT,
-                '%s %s' % (self._result.group('date'), self._result.group('time'))
+                '%s %s' % (match.group('date'), match.group('time')),
+                self.DATETIME_FORMAT
                 )
-        elif self.match(END_DATE_RE, line):
+            return
+        match = self.END_DATE_RE.match(line)
+        if match:
             self.finish = datetime.strptime(
-                DATETIME_FORMAT,
-                '%s %s' % (self._result.group('date'), self._result.group('time'))
+                '%s %s' % (match.group('date'), match.group('time')),
+                self.DATETIME_FORMAT
                 )
-        elif self.match(DATE_RE, line):
+            return
+        match = self.DATE_RE.match(line)
+        if match:
             self.date = datetime.strptime(
-                DATETIME_FORMAT,
-                '%s %s' % (self._result.group('date'), self._result.group('time'))
+                '%s %s' % (match.group('date'), match.group('time')),
+                self.DATETIME_FORMAT
                 )
+            return
 
-    # The following insanely complicated regex is intended to match a single
-    # header name within the #Fields specification of a W3C log file. Basically
-    # headers come in one of three varieties:
-    # 
+    # The FIELD_RE regex is intended to match a single header name within the
+    # #Fields specification of a W3C log file. Basically headers come in one of
+    # three varieties:
+    #
     #   * unprefixed, "identifier"
     #   * prefixed which take the form "prefix-ident"
     #   * HTTP header which take the form "prefix(header)"
-    # 
+    #
     # We limit the possible prefixes as the draft defines them, but we don't
     # place any limits on what characters can occur in the identifier as the
     # draft doesn't either (however, we do disallow space as otherwise there'd
@@ -244,21 +419,108 @@ class W3CWrapper(object):
         r'(?:-|(?P<header>\()))?'
         r'(?P<identifier>[^ ]+)(?(header)\))')
 
-    # The following attributes define regexes for each of the datatypes
-    # specified in the W3C draft. Each regex includes an alternative for an
-    # empty case (a single dash).
+    # FIELD_TYPES maps a field's identifier (sans prefix) to a data-type
+    # defined in the W3C draft. Any fields which are not mapped are assumed to
+    # be type <string> (like all header fields which the draft explicitly
+    # defines as having type <string>).
     #
-    # Note that the regex for the "string" type deviates from the draft's
-    # specifications; in practice IIS always URI encodes the content of
-    # prefix(header) fields but the draft demands a "quoted string" format
-    # instead. The draft also demands that the usual empty-field notation of a
-    # dash ("-") is not used for "string" type fields (presumably an empty pair
-    # of quotes should be used, although the draft doesn't explicitly state
-    # this), but, again, practice deviates from this.
+    # The "extended IIS definitions" come from the IIS log definition, and from
+    # MS KB909264 which details naming restrictions in Windows (the IIS log
+    # definition isn't explicit about the types for things like site name and
+    # computer name, aka NetBIOS name).
+
+    FIELD_TYPES = {
+        # Specified in the W3C draft standard
+        'bytes':         'integer',
+        'cached':        'integer',
+        'comment':       'text',
+        'count':         'integer',
+        'date':          'date',
+        'dns':           'name',
+        'interval':      'integer',
+        'ip':            'address',
+        'method':        'name',
+        'status':        'integer',
+        'time-from':     'time',
+        'time-taken':    'fixed',
+        'time':          'time',
+        'time-to':       'time',
+        'uri-query':     'uri',
+        'uri-stem':      'uri',
+        'uri':           'uri',
+        # Extended IIS definitions
+        'computername':  'string',
+        'host':          'name',
+        'port':          'integer',
+        'sitename':      'string',
+        'substatus':     'integer',
+        'username':      'string',
+        'version':       'string',
+        'win32-status':  'integer',
+        }
+
+    # TYPES_RE defines regexes for each of the datatypes specified in the W3C
+    # draft. Each regex includes an alternative for an empty case (a single
+    # dash).
 
     TYPES_RE = {
-        'date': re.compile(r'(-|\d{4}-\d{2}-\d{2})'),
-        'time': re.compile(r'(-|\d{2}:\d{2}:\d{2})'),
+        # In the following regexes, there must be a single group which
+        # covers the entire match. The group must be a named group with the
+        # name %(name)s, which will be substituted for the Python-ified field
+        # name in the regex constructed for row matching
+        'integer': r'(?P<%(name)s>-|\d+)',
+        'fixed':   r'(?P<%(name)s>-|\d+(\.\d*)?)',
+        'date':    r'(?P<%(name)s>-|\d{4}-\d{2}-\d{2})',
+        'time':    r'(?P<%(name)s>-|\d{2}:\d{2}:\d{2})',
+        # Note - we do NOT try and validate the URI with this regex (as to do
+        # so is incredibly complicated and much better left to a function),
+        # merely perform some rudimentary extraction. The complex stuff on the
+        # left side of the disjunction comes from RFC3986 appendix B. The
+        # reason for the empty "-" production appearing on the right is due to
+        # an issue with disjuncts in Perl-style regex implementations, see 
+        # <http://lingpipe-blog.com/2008/05/07/tokenization-vs-eager-regular-expressions/>
+        # for details
+        'uri':     r'(?P<%(name)s>(([^:/?#\s]+):)?(//([^/?#\s]*))?([^?#\s]*)(\?([^#\s]*))?(#(\S*))?|-)',
+        # This regex deviates from the draft's specifications; in practice IIS
+        # always URI encodes the content of prefix(header) fields but the draft
+        # demands a "quoted string" format instead. The draft also demands that
+        # the usual empty-field notation of a dash ("-") is not used for
+        # "string" type fields (presumably an empty pair of quotes should be
+        # used, although the draft doesn't explicitly state this), but, again,
+        # practice deviates from this
+        'string':  r'(?P<%(name)s>"([^"]|"")*"|[^"\s]\S*|-)',
+        # The draft dictates <alpha> for names, but firstly doesn't define what
+        # <alpha> actually means; furthermore if we assume if means alphabetic
+        # chars only (as seems reasonable) that's not even slightly sufficient
+        # for validating DNS names (which is what this type is for), and
+        # generally one expects that in the case of DNS resolution failure, an
+        # IP address might be recorded in such fields too. In fact, doing DNS
+        # (or IP) validation is extremely hard to do properly with regexes so
+        # here we use a trivial regex to pull out a string containing the right
+        # alphabet and do validation in a later function
+        'name':    r'(?P<%(name)s>-|[a-zA-Z0-9.-]+)',
+        # Again, the draft's BNF for an IP address is deficient (e.g. doesn't
+        # specify a limit on octets, and isn't compatible with IPv6 which will
+        # presumably start appearing in logs at some point), and again regex
+        # validation of IP addresses is extremely hard to do properly so we
+        # perform validation later in a function
+        'address': r'(?P<%(name)s>-|([0-9]+(\.[0-9]+){3}|\[[0-9a-fA-F:]+\])(:[0-9]{1,5})?)',
+        }
+
+    # TYPES_FUNC defines, for each data-type given in the W3C draft standard, a
+    # simple transformation function that converts the raw string extracted by
+    # regex into some sensible data format (e.g. int for integer values, a date
+    # object for date values, etc.)
+
+    TYPES_FUNC = {
+        'integer': int_parse,
+        'fixed':   fixed_parse,
+        'date':    date_parse,
+        'time':    time_parse,
+        'uri':     uri_parse,
+        'string':  string_parse,
+        'name':    name_parse,
+        'address': address_parse,
         }
 
     def _process_fields(self, line):
@@ -271,41 +533,45 @@ class W3CWrapper(object):
 
         :param str line: The content of the ``#Fields`` directive
         """
+        logging.debug('Parsing #Fields: %s', line)
         if self.fields:
             raise W3CFieldsError('Second #Fields directive found')
-        fields = FIELD_RE.findall(line)
-        row_regex = ''
+        fields = self.FIELD_RE.findall(line)
+        pattern = ''
         tuple_fields = []
+        tuple_funcs = []
         for prefix, header, identifier in fields:
+            # Figure out the original field name, a Python-ified version of
+            # this name, and what type the field has
             if header:
                 original_name = '%s(%s)' % (prefix, identifier)
                 python_name = sanitize_name('%s_%s' % (prefix, identifier))
+                # According to the draft, all header fields are type <string>
+                field_type = 'string'
             elif prefix:
                 original_name = '%s-%s' % (prefix, identifier)
                 python_name = sanitize_name('%s_%s' % (prefix, identifier))
+                # Default to <string> if we don't know the field identifier
+                field_type = self.FIELD_TYPES.get(identifier, 'string')
             else:
                 original_name = identifier
                 python_name = sanitize_name(identifier)
+                field_type = self.FIELD_TYPES.get(identifier, 'string')
+            if pattern:
+                pattern += r'\s+'
+            logging.debug('Field %s has type %s', original_name, field_type)
+            pattern += self.TYPES_RE[field_type] % {'name': python_name}
+            tuple_funcs.append(self.TYPES_FUNC[field_type])
             if original_name in self.fields:
                 raise W3CFieldsError('Duplicate field name %s' % original_name)
             self.fields.append(original_name)
             tuple_fields.append(python_name)
-
-    def _match(self, regex, line):
-        """
-        Match line against regex and cache the result in an instance variable.
-
-        This utility method simply exists to permit a simple coding style in
-        which a regex is tested against a line in an ``if`` statement and the
-        match result is used in the body of the ``if`` statement without having
-        to re-run the comparison.
-
-        :param obj regex: The compiled regular expression object
-        :param str line: The line to match against the regex object
-        :returns: The match object or None if a match is not found
-        """
-        self._result = regex.match(line)
-        return self._result
+        logging.debug('Constructing row regex: ^%s$', pattern)
+        self._row_pattern = re.compile('^' + pattern + '$')
+        logging.debug('Constructing row tuple with fields: %s', ','.join(tuple_fields))
+        self._row_type = namedtuple('row_type', tuple_fields)
+        logging.debug('Constructing row parser functions')
+        self._row_funcs = tuple_funcs
 
     def __iter__(self):
         """
@@ -318,21 +584,35 @@ class W3CWrapper(object):
         response to encountering the ``#Fields`` directive in
         :meth:`_process_directive` above.
         """
-        for num, line in enumerate(self.source):
-            try:
+        # The main iterator loop is split into two. The reason for this is
+        # simply performance. If everything is kept in one loop we wind up
+        # redundantly testing whether we've seen the #Version and #Fields
+        # header directives for *every single* data row. By splitting the loops
+        # in this way we only test for them when required
+        try:
+            for num, line in enumerate(self.source):
                 if line.startswith('#'):
-                    self._process_directive(line)
+                    self._process_directive(line.rstrip())
+                elif self.version is None:
+                    raise W3CVersionError(
+                        'Missing #Version directive before data')
+                elif not self.fields:
+                    raise W3CFieldsError(
+                        'Missing #Fields directive before data')
                 else:
-                    if self.version is None:
-                        raise W3CVersionError(
-                            'Missing #Version directive before data')
-                    if not self.fields:
-                        raise W3CFieldsError(
-                            'Missing #Fields directive before data')
-                    yield line.split(' ')
-            except W3CError as exc:
-                # Add line content and number to the exception and re-raise
-                if not exc.line_number:
-                    raise type(exc)(exc.args[0], line_number=num + 1, line=line)
-                else:
-                    raise
+                    match = self._row_pattern.match(line.rstrip())
+                    if match:
+                        values = match.group(*self._row_type._fields)
+                        try:
+                            values = (f(v) for (f, v) in zip(self._row_funcs, values))
+                        except ValueError as exc:
+                            warnings.warn('Line %d: %s' % (num + 1, str(exc), W3CWarning))
+                        yield self._row_type(*values)
+                    else:
+                        warnings.warn('Line %d is invalid' % (num + 1), W3CWarning)
+        except W3CError as exc:
+            # Add line content and number to the exception and re-raise
+            if not exc.line_number:
+                raise type(exc)(exc.args[0], line_number=num + 1, line=line)
+            else:
+                raise
