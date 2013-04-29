@@ -22,6 +22,33 @@
 
 from www2csv import w3c
 from nose.tools import assert_raises
+from datetime import datetime, date, time
+
+
+INTRANET_EXAMPLE = """\
+#Software: Microsoft Internet Information Services 6.0
+#Version: 1.0
+#Date: 2002-05-02 17:42:15
+#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status cs(User-Agent)
+2002-05-02 17:42:15 172.22.255.255 - 172.30.255.255 80 GET /images/picture.jpg - 200 Mozilla/4.0+(compatible;MSIE+5.5;+Windows+2000+Server)
+"""
+
+INTERNET_EXAMPLE = """\
+#Software: Microsoft Internet Information Services 6.0
+#Version: 1.0
+#Date: 2002-05-24 20:18:01
+#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
+2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
+"""
+
+FTP_EXAMPLE = """\
+#Software: Microsoft Internet Information Services 6.0
+#Version: 1.0
+#Date: 2002-06-04 16:40:23
+#Fields: time c-ip cs-method cs-uri-stem sc-status 
+16:40:23 10.152.10.200 [6994]USER anonymous 331
+16:40:25 10.152.10.200 [6994]PASS anonymous@example.net 530
+"""
 
 
 def test_directive_regexes():
@@ -65,4 +92,150 @@ def test_sanitize_name():
     assert w3c.sanitize_name('rs-date') == 'rs_date'
     assert w3c.sanitize_name('cs(User-Agent)') == 'cs_User_Agent_'
     assert_raises(ValueError, w3c.sanitize_name, '')
+
+def test_uri_parse():
+    assert w3c.uri_parse('-') is None
+    assert w3c.uri_parse('foo') == w3c.ParseResult('', '', 'foo', '', '', '')
+    assert w3c.uri_parse('//foo/bar') == w3c.ParseResult('', 'foo', '/bar', '', '', '')
+    assert w3c.uri_parse('http://foo/') == w3c.ParseResult('http', 'foo', '/', '', '', '')
+    assert w3c.uri_parse('http://foo/bar?baz=quux') == w3c.ParseResult('http', 'foo', '/bar', '', 'baz=quux', '')
+    assert w3c.uri_parse('https://foo/bar#baz') == w3c.ParseResult('https', 'foo', '/bar', '', '', 'baz')
+
+def test_int_parse():
+    assert w3c.int_parse('-') is None
+    assert w3c.int_parse('0') == 0
+    assert w3c.int_parse('-1') == -1
+    assert w3c.int_parse('101') == 101
+    assert_raises(ValueError, w3c.int_parse, 'abc')
+
+def test_fixed_parse():
+    assert w3c.fixed_parse('-') is None
+    assert w3c.fixed_parse('0') == 0.0
+    assert w3c.fixed_parse('0.') == 0.0
+    assert w3c.fixed_parse('0.0') == 0.0
+    assert w3c.fixed_parse('-101.5') == -101.5
+    assert_raises(ValueError, w3c.fixed_parse, 'abc')
+
+def test_date_parse():
+    assert w3c.date_parse('-') is None
+    assert w3c.date_parse('2000-01-01') == date(2000, 1, 1)
+    assert w3c.date_parse('1986-02-28') == date(1986, 2, 28)
+    assert_raises(ValueError, w3c.date_parse, '1 Jan 2001')
+    assert_raises(ValueError, w3c.date_parse, '2000-01-32')
+    assert_raises(ValueError, w3c.date_parse, 'abc')
+
+def test_time_parse():
+    assert w3c.time_parse('-') is None
+    assert w3c.time_parse('12:34:56') == time(12, 34, 56)
+    assert w3c.time_parse('00:00:00') == time(0, 0, 0)
+    assert_raises(ValueError, w3c.time_parse, '1:30:00 PM')
+    assert_raises(ValueError, w3c.time_parse, '25:00:30')
+    assert_raises(ValueError, w3c.time_parse, 'abc')
+
+def test_string_parse():
+    assert w3c.string_parse('-') is None
+    assert w3c.string_parse('foo') == 'foo'
+    assert w3c.string_parse('foo+bar') == 'foo bar'
+    assert w3c.string_parse('%28foo+bar%29') == '(foo bar)'
+    assert w3c.string_parse('(foo;+bar;+baz)') == '(foo; bar; baz)'
+    assert w3c.string_parse('"foo"') == 'foo'
+    assert w3c.string_parse('"foo bar"') == 'foo bar'
+    assert w3c.string_parse('"""foo"""') == '"foo"'
+    assert w3c.string_parse('""') == ''
+    assert w3c.string_parse('"""') == '"'
+    assert w3c.string_parse('""""') == '"'
+
+def test_name_parse():
+    assert w3c.name_parse('-') is None
+    assert w3c.name_parse('foo') == 'foo'
+    assert w3c.name_parse('foo.bar') == 'foo.bar'
+    assert w3c.name_parse('127.0.0.1') == '127.0.0.1'
+    assert w3c.name_parse('f'*63 + '.o') == 'f'*63 + '.o'
+    assert w3c.name_parse('f'*63 + '.oo') == 'f'*63 + '.oo'
+    assert_raises(ValueError, w3c.name_parse, 'foo.')
+    assert_raises(ValueError, w3c.name_parse, '.foo.')
+    assert_raises(ValueError, w3c.name_parse, '-foo.bar')
+    assert_raises(ValueError, w3c.name_parse, 'foo.bar-')
+    assert_raises(ValueError, w3c.name_parse, 'foo.bar-')
+    assert_raises(ValueError, w3c.name_parse, 'f'*64 + '.o')
+    assert_raises(ValueError, w3c.name_parse, 'foo.bar.'*32 + '.com')
+
+def test_address_parse():
+    assert w3c.address_parse('-') is None
+    # All possible representations of an IPv4 address (including silly ones)
+    assert str(w3c.address_parse('127.0.0.1')) == '127.0.0.1'
+    assert str(w3c.address_parse('0x7f.0x0.0x0.0x1')) == '127.0.0.1'
+    assert str(w3c.address_parse('0177.0000.0000.0001')) == '127.0.0.1'
+    assert str(w3c.address_parse('0x7f000001')) == '127.0.0.1'
+    assert str(w3c.address_parse('017700000001')) == '127.0.0.1'
+    assert str(w3c.address_parse('2130706433')) == '127.0.0.1'
+    assert str(w3c.address_parse('0x7f000001:80')) == '127.0.0.1:80'
+    assert str(w3c.address_parse('0x7f.0x0.0x0.0x1:80')) == '127.0.0.1:80'
+    assert str(w3c.address_parse('2130706433:80')) == '127.0.0.1:80'
+    assert str(w3c.address_parse('127.0.0.1:80')) == '127.0.0.1:80'
+    assert str(w3c.address_parse('::1')) == '[::1]'
+    assert str(w3c.address_parse('[::1]')) == '[::1]'
+    assert str(w3c.address_parse('[::1]:80')) == '[::1]:80'
+    assert str(w3c.address_parse('2001:0db8:85a3:0000:0000:8a2e:0370:7334')) == '[2001:db8:85a3::8a2e:370:7334]'
+    assert str(w3c.address_parse('[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:22')) == '[2001:db8:85a3::8a2e:370:7334]:22'
+    assert str(w3c.address_parse('[fe80::7334]:22')) == '[fe80::7334]:22'
+    # XXX Is there a way to make address_parse properly reject non-numeric
+    # hosts? Doesn't appear so at the moment...
+    #assert_raises(ValueError, w3c.address_parse, 'abc')
+    assert_raises(ValueError, w3c.address_parse, 'google.com')
+    assert_raises(ValueError, w3c.address_parse, '127.0.0.1:100000')
+
+def test_wrapper():
+    source = INTERNET_EXAMPLE.splitlines(True)
+    wrapper = w3c.W3CWrapper(source)
+    row = None
+    for count, row in enumerate(wrapper):
+        assert wrapper.version == '1.0'
+        assert wrapper.software == 'Microsoft Internet Information Services 6.0'
+        assert wrapper.date == datetime(2002, 5, 24, 20, 18, 1)
+        assert wrapper.fields == [
+            'date', 'time', 'c-ip', 'cs-username', 's-ip', 's-port',
+            'cs-method', 'cs-uri-stem', 'cs-uri-query', 'sc-status',
+            'sc-bytes', 'cs-bytes', 'time-taken', 'cs(User-Agent)',
+            'cs(Referrer)',
+            ]
+        assert row.date == date(2002, 5, 24)
+        assert row.time == time(20, 18, 1)
+        assert str(row.c_ip) == '172.224.24.114'
+        assert row.cs_username is None
+        assert str(row.s_ip) == '206.73.118.24'
+        assert row.s_port == 80
+        assert row.cs_method == 'GET'
+        assert str(row.cs_uri_stem) == '/Default.htm'
+        assert row.cs_uri_query is None
+        assert row.sc_status == 200
+        assert row.sc_bytes == 7930
+        assert row.cs_bytes == 248
+        assert row.time_taken == 31.0
+        assert row.cs_User_Agent == 'Mozilla/4.0 (compatible; MSIE 5.01; Windows 2000 Server)'
+        assert row.cs_Referrer == 'http://64.224.24.114/'
+    assert row
+    assert count == 0
+    source = INTRANET_EXAMPLE.splitlines(True)
+    wrapper = w3c.W3CWrapper(source)
+    row = None
+    for count, row in enumerate(wrapper):
+        assert wrapper.fields == [
+            'date', 'time', 'c-ip', 'cs-username', 's-ip', 's-port',
+            'cs-method', 'cs-uri-stem', 'cs-uri-query', 'sc-status',
+            'cs(User-Agent)',
+            ]
+        assert row.date == date(2002, 5, 2)
+        assert row.time == time(17, 42, 15)
+        assert str(row.c_ip) == '172.22.255.255'
+        assert row.cs_username is None
+        assert str(row.s_ip) == '172.30.255.255'
+        assert row.s_port == 80
+        assert row.cs_method == 'GET'
+        assert str(row.cs_uri_stem) == '/images/picture.jpg'
+        assert row.cs_uri_query is None
+        assert row.sc_status == 200
+        assert row.cs_User_Agent == 'Mozilla/4.0 (compatible;MSIE 5.5; Windows 2000 Server)'
+    assert row
+    assert count == 0
 
