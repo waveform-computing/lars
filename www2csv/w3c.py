@@ -56,11 +56,11 @@ from __future__ import (
 import re
 import warnings
 import logging
-import socket
-from datetime import date, time, datetime
+from datetime import datetime
 from collections import namedtuple
-from urlparse import ResultMixin, urlparse, urlunparse
 from urllib import unquote_plus
+
+from www2csv.datatypes import date, time, url, address
 
 
 def sanitize_name(name):
@@ -75,22 +75,7 @@ def sanitize_name(name):
     return re.sub(r'[^A-Za-z_]', '_', name[:1]) + re.sub(r'[^A-Za-z0-9_]+', '_', name[1:])
 
 
-class ParseResult(namedtuple('ParseResult', 'scheme netloc path params query fragment'), ResultMixin):
-    """
-    Redefined version of the urlparse result which adds a :meth:`__str__`
-    method. See :func:`uri_parse` for more information.
-    """
-
-    __slots__ = ()
-
-    def geturl(self):
-        return urlunparse(self)
-
-    def __str__(self):
-        return self.geturl()
-
-
-def uri_parse(s):
+def url_parse(s):
     """
     Parse a URI string in a W3C extended log format file.
 
@@ -101,7 +86,7 @@ def uri_parse(s):
     :param str s: The string containing the URI to parse
     :returns: A ParseResult tuple representing the URI
     """
-    return ParseResult(*urlparse(s)) if s != '-' else None
+    return url(s) if s != '-' else None
 
 
 def int_parse(s):
@@ -137,7 +122,7 @@ def date_parse(s):
     :param str s: The string containing the date to parse (YYYY-MM-DD format)
     :returns: A datetime.date object representing the date
     """
-    return datetime.strptime(s, '%Y-%m-%d').date() if s != '-' else None
+    return date(s) if s != '-' else None
 
 
 def time_parse(s):
@@ -147,7 +132,7 @@ def time_parse(s):
     :param str s: The string containing the time to parse (HH:MM:SS format)
     :returns: A datetime.time object representing the time
     """
-    return datetime.strptime(s, '%H:%M:%S').time() if s != '-' else None
+    return time(s) if s != '-' else None
 
 
 def string_parse(s):
@@ -194,40 +179,7 @@ def address_parse(s):
     :param str s: The string containing the address to verify
     :returns: The verified string
     """
-    if s == '-':
-        return None
-    host, sep, port = s.rpartition(':')
-    if port.endswith(']'):           # [IPv6addr]
-        host, port = s[1:-1], None
-    elif host.endswith(']'):         # [IPv6addr]:port
-        host = host[1:-1]
-        port = int(port)
-    elif ':' in host:                # IPv6addr
-        host, port = s, None
-    elif not host:                   # IPv4addr
-        host, port = s, None
-    else:                            # IPv4addr:port
-        port = int(port)
-    if port is not None and not (0 <= port <= 65535):
-        raise ValueError('Port %d is invalid' % port)
-    try:
-        addr = socket.getaddrinfo(host, None, 0, 0, socket.AI_NUMERICHOST)
-        for family, socktype, proto, _, sockaddr in addr:
-            if family == socket.AF_INET:
-                host = sockaddr[0]
-                if port:
-                    return '%s:%d' % (host, port)
-                else:
-                    return host
-            elif family == socket.AF_INET6:
-                host = sockaddr[0]
-                if port:
-                    return '[%s]:%d' % (host, port)
-                else:
-                    return '[%s]' % host
-        raise ValueError('Unable to parse address %s' % s)
-    except socket.gaierror as exc:
-        raise ValueError('While parsing address %s: %s' % (s, exc.args[1]))
+    return address(s) if s != '-' else None
 
 
 class W3CError(Exception):
@@ -517,7 +469,7 @@ class W3CWrapper(object):
         'fixed':   fixed_parse,
         'date':    date_parse,
         'time':    time_parse,
-        'uri':     uri_parse,
+        'uri':     url_parse,
         'string':  string_parse,
         'name':    name_parse,
         'address': address_parse,

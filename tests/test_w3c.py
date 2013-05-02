@@ -20,9 +20,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from www2csv import w3c
-from nose.tools import assert_raises
+from __future__ import (
+    unicode_literals,
+    absolute_import,
+    print_function,
+    division,
+    )
+
 from datetime import datetime, date, time
+from ipaddress import ip_address, IPv4Address, IPv6Address
+
+from nose.tools import assert_raises
+
+from www2csv import w3c, datatypes
 
 
 INTRANET_EXAMPLE = """\
@@ -93,13 +103,13 @@ def test_sanitize_name():
     assert w3c.sanitize_name('cs(User-Agent)') == 'cs_User_Agent_'
     assert_raises(ValueError, w3c.sanitize_name, '')
 
-def test_uri_parse():
-    assert w3c.uri_parse('-') is None
-    assert w3c.uri_parse('foo') == w3c.ParseResult('', '', 'foo', '', '', '')
-    assert w3c.uri_parse('//foo/bar') == w3c.ParseResult('', 'foo', '/bar', '', '', '')
-    assert w3c.uri_parse('http://foo/') == w3c.ParseResult('http', 'foo', '/', '', '', '')
-    assert w3c.uri_parse('http://foo/bar?baz=quux') == w3c.ParseResult('http', 'foo', '/bar', '', 'baz=quux', '')
-    assert w3c.uri_parse('https://foo/bar#baz') == w3c.ParseResult('https', 'foo', '/bar', '', '', 'baz')
+def test_url_parse():
+    assert w3c.url_parse('-') is None
+    assert w3c.url_parse('foo') == datatypes.Url('', '', 'foo', '', '', '')
+    assert w3c.url_parse('//foo/bar') == datatypes.Url('', 'foo', '/bar', '', '', '')
+    assert w3c.url_parse('http://foo/') == datatypes.Url('http', 'foo', '/', '', '', '')
+    assert w3c.url_parse('http://foo/bar?baz=quux') == datatypes.Url('http', 'foo', '/bar', '', 'baz=quux', '')
+    assert w3c.url_parse('https://foo/bar#baz') == datatypes.Url('https', 'foo', '/bar', '', '', 'baz')
 
 def test_int_parse():
     assert w3c.int_parse('-') is None
@@ -164,24 +174,14 @@ def test_address_parse():
     assert w3c.address_parse('-') is None
     # All possible representations of an IPv4 address (including silly ones)
     assert str(w3c.address_parse('127.0.0.1')) == '127.0.0.1'
-    assert str(w3c.address_parse('0x7f.0x0.0x0.0x1')) == '127.0.0.1'
-    assert str(w3c.address_parse('0177.0000.0000.0001')) == '127.0.0.1'
-    assert str(w3c.address_parse('0x7f000001')) == '127.0.0.1'
-    assert str(w3c.address_parse('017700000001')) == '127.0.0.1'
-    assert str(w3c.address_parse('2130706433')) == '127.0.0.1'
-    assert str(w3c.address_parse('0x7f000001:80')) == '127.0.0.1:80'
-    assert str(w3c.address_parse('0x7f.0x0.0x0.0x1:80')) == '127.0.0.1:80'
-    assert str(w3c.address_parse('2130706433:80')) == '127.0.0.1:80'
     assert str(w3c.address_parse('127.0.0.1:80')) == '127.0.0.1:80'
-    assert str(w3c.address_parse('::1')) == '[::1]'
-    assert str(w3c.address_parse('[::1]')) == '[::1]'
+    assert str(w3c.address_parse('::1')) == '::1'
+    assert str(w3c.address_parse('[::1]')) == '::1'
     assert str(w3c.address_parse('[::1]:80')) == '[::1]:80'
-    assert str(w3c.address_parse('2001:0db8:85a3:0000:0000:8a2e:0370:7334')) == '[2001:db8:85a3::8a2e:370:7334]'
+    assert str(w3c.address_parse('2001:0db8:85a3:0000:0000:8a2e:0370:7334')) == '2001:db8:85a3::8a2e:370:7334'
     assert str(w3c.address_parse('[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:22')) == '[2001:db8:85a3::8a2e:370:7334]:22'
     assert str(w3c.address_parse('[fe80::7334]:22')) == '[fe80::7334]:22'
-    # XXX Is there a way to make address_parse properly reject non-numeric
-    # hosts? Doesn't appear so at the moment...
-    #assert_raises(ValueError, w3c.address_parse, 'abc')
+    assert_raises(ValueError, w3c.address_parse, 'abc')
     assert_raises(ValueError, w3c.address_parse, 'google.com')
     assert_raises(ValueError, w3c.address_parse, '127.0.0.1:100000')
 

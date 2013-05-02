@@ -44,25 +44,51 @@ from __future__ import (
     )
 
 import os
-from collections import namedtuple
+import re
 import datetime as dt
 import urlparse
+from collections import namedtuple
+from ipaddress import ip_address, IPv4Address, IPv6Address
 
 
 
-class Url(namedtuple('ParseResult', 'scheme netloc path params query fragment'), urlparse.ResultMixin):
+def date(s, format='%Y-%m-%d'):
     """
-    Redefined version of the urlparse result which adds a :meth:`__str__`
-    method. See :func:`uri_parse` for more information.
+    Parse a date.
+
+    Parses a string containing a date, in ISO8601 format by default
+    (YYYY-MM-DD), returning a datetime.date type.
+
+    :param str s: The string containing the date to parse
+    :returns: A datetime.date object representing the date
     """
+    return dt.datetime.strptime(s, format).date()
 
-    __slots__ = ()
 
-    def geturl(self):
-        return urlparse.urlunparse(self)
+def time(s, format='%H:%M:%S'):
+    """
+    Parse a time.
 
-    def __str__(self):
-        return self.geturl()
+    Parses a string containing a time, in ISO8601 format by default (HH:MM:SS),
+    returning a datetime.time type.
+
+    :param str s: The string containing the time to parse
+    :returns: A datetime.time object representing the time
+    """
+    return dt.datetime.strptime(s, format).time()
+
+
+def filename(s):
+    """
+    Parse a filename.
+
+    Parses a filename, returning a Filename object which provides various
+    os.path based attributes for further manipulation.
+
+    :param str s: The string containing the filename to parse
+    :returns: A Filename object representing the filename
+    """
+    return Filename(s)
 
 
 def url(s):
@@ -79,30 +105,27 @@ def url(s):
     return Url(*urlparse.urlparse(s))
 
 
-def date(s, format='%Y-%m-%d'):
+def address(s):
     """
-    Parse a date.
+    Parse an IP address and optional port.
 
-    Parses a string containing a date, in ISO8601 format by default
-    (YYYY-MM-DD), returning a datetime.date type.
+    This is a variant on the ipaddress module's ip_address function which
+    uses the derived classes IPv4Port and IPv6Port in order to permit an
+    optional port specification to be included in the parsed string.
 
-    :param str s: The string containing the date to parse
-    :returns: A datetime.date object representing the date
+    :param str s: The string containing the IP address to parse
+    :returns: An IPv4Port or IPv6Port instance representing the address
     """
-    return datetime.datetime.strptime(s, format).date()
-
-
-def time(s, format='%H:%M:%S'):
-    """
-    Parse a time.
-
-    Parses a string containing a time, in ISO8601 format by default (HH:MM:SS),
-    returning a datetime.time type.
-
-    :param str s: The string containing the time to parse
-    :returns: A datetime.time object representing the time
-    """
-    return datetime.datetime.strptime(s, format).time()
+    try:
+        return IPv4Port(s)
+    except ValueError:
+        pass
+    try:
+        return IPv6Port(s)
+    except ValueError:
+        pass
+    raise ValueError(
+        '%s does not appear to be a valid IPv4 or IPv6 address' % s)
 
 
 # Py3k: The base class of type('') is simply a short-hand way of saying unicode
@@ -220,5 +243,70 @@ class Filename(type('')):
         return Filename(os.path.relpath(self, start))
 
 
-def filename(s):
-    return Filename(s)
+class Url(namedtuple('ParseResult', 'scheme netloc path params query fragment'), urlparse.ResultMixin):
+    """
+    Redefined version of the urlparse result which adds a :meth:`__str__`
+    method. See :func:`uri_parse` for more information.
+    """
+
+    __slots__ = ()
+
+    def geturl(self):
+        return urlparse.urlunparse(self)
+
+    def __str__(self):
+        return self.geturl()
+
+
+class IPv4Port(IPv4Address):
+    """
+    Derivative of IPv4Address that includes an optional port specification.
+
+    :param str address: The address (and optional port) to parse
+    """
+
+    def __init__(self, address):
+        port = None
+        if ':' in address:
+            address, port = address.rsplit(':', 1)
+            port = int(port)
+            if not 0 <= port <= 65535:
+                raise ValueError('Invalid port %d' % port)
+        super(IPv4Port, self).__init__(address)
+        self.port = port
+
+    def __str__(self):
+        result = super(IPv4Port, self).__str__()
+        if self.port is not None:
+            return '%s:%d' % (result, self.port)
+        return result
+
+
+class IPv6Port(IPv6Address):
+    """
+    Derivative of IPv6Address that includes an optional port specification.
+
+    :param str address: The address (and optional port) to parse
+    """
+
+    def __init__(self, address):
+        address, sep, port = address.rpartition(':')
+        if port.endswith(']'): # [IPv6addr]
+            address = '%s:%s' % (address[1:], port[:-1])
+            port = None
+        elif address.endswith(']'): # [IPv6addr]:port
+            address = address[1:-1]
+            port = int(port)
+            if not 0 <= port <= 65535:
+                raise ValueError('Invalid port %d' % port)
+        else: # IPv6addr
+            address = '%s:%s' % (address, port)
+            port = None
+        super(IPv6Port, self).__init__(address)
+        self.port = port
+
+    def __str__(self):
+        result = super(IPv6Port, self).__str__()
+        if self.port is not None:
+            return '[%s]:%d' % (result, self.port)
+        return result
