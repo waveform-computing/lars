@@ -83,7 +83,7 @@ develop: tags
 	$(PYTHON) $(PYFLAGS) setup.py develop
 
 test:
-	nosetests --with-coverage
+	nosetests --with-coverage --cover-package $(NAME)
 
 clean:
 	$(PYTHON) $(PYFLAGS) setup.py clean
