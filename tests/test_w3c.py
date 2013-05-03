@@ -184,6 +184,7 @@ def test_address_parse():
     assert_raises(ValueError, w3c.address_parse, 'abc')
     assert_raises(ValueError, w3c.address_parse, 'google.com')
     assert_raises(ValueError, w3c.address_parse, '127.0.0.1:100000')
+    assert_raises(ValueError, w3c.address_parse, '[::1]:100000')
 
 def test_wrapper():
     source = INTERNET_EXAMPLE.splitlines(True)
