@@ -50,6 +50,8 @@ import urlparse
 from collections import namedtuple
 from ipaddress import ip_address, IPv4Address, IPv6Address
 
+from www2csv import geoip
+
 
 
 def date(s, format='%Y-%m-%d'):
@@ -281,6 +283,22 @@ class IPv4Port(IPv4Address):
             return '%s:%d' % (result, self.port)
         return result
 
+    @property
+    def country(self):
+        return geoip.country_code_by_addr(super(IPv4Port, self).__str__())
+
+    @property
+    def region(self):
+        return geoip.region_by_addr(super(IPv4Port, self).__str__())
+
+    @property
+    def city(self):
+        return geoip.city_by_addr(super(IPv4Port, self).__str__())
+
+    @property
+    def coords(self):
+        return geoip.coords_by_addr(super(IPv4Port, self).__str__())
+
 
 class IPv6Port(IPv6Address):
     """
@@ -310,3 +328,19 @@ class IPv6Port(IPv6Address):
         if self.port is not None:
             return '[%s]:%d' % (result, self.port)
         return result
+
+    @property
+    def country(self):
+        return geoip.country_code_by_addr_v6(super(IPv6Port, self).__str__())
+
+    @property
+    def region(self):
+        return geoip.region_by_addr_v6(super(IPv6Port, self).__str__())
+
+    @property
+    def city(self):
+        return geoip.city_by_addr_v6(super(IPv6Port, self).__str__())
+
+    @property
+    def coords(self):
+        return geoip.coords_by_addr_v6(super(IPv6Port, self).__str__())
