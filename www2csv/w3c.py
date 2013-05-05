@@ -60,7 +60,7 @@ from datetime import datetime
 from collections import namedtuple
 from urllib import unquote_plus
 
-from www2csv.datatypes import date, time, url, address
+from www2csv.datatypes import date, time, url, address, hostname
 
 
 def sanitize_name(name):
@@ -153,7 +153,6 @@ def string_parse(s):
     return unquote_plus(s)
 
 
-_name_part_re = re.compile(r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$')
 def name_parse(s):
     """
     Verify a DNS name in a W3C extended log format file.
@@ -161,15 +160,7 @@ def name_parse(s):
     :param str s: The string containing the DNS name to verify
     :returns: The verified string
     """
-    if s == '-':
-        return None
-    if len(s) > 255:
-        raise ValueError('DNS name %s is longer than 255 chars' % s)
-    for part in s.split('.'):
-        # XXX What about IPv6 addresses? Check with address_parse?
-        if not _name_part_re.match(part):
-            raise ValueError('DNS label %s is invalid' % part)
-    return s
+    return hostname(s) if s != '-' else None
 
 
 def address_parse(s):
@@ -424,12 +415,12 @@ class W3CWrapper(object):
         'fixed':   r'(?P<%(name)s>-|\d+(\.\d*)?)',
         'date':    r'(?P<%(name)s>-|\d{4}-\d{2}-\d{2})',
         'time':    r'(?P<%(name)s>-|\d{2}:\d{2}:\d{2})',
-        # Note - we do NOT try and validate the URI with this regex (as to do
-        # so is incredibly complicated and much better left to a function),
-        # merely perform some rudimentary extraction. The complex stuff on the
-        # left side of the disjunction comes from RFC3986 appendix B. The
-        # reason for the empty "-" production appearing on the right is due to
-        # an issue with disjuncts in Perl-style regex implementations, see 
+        # Note - we do NOT try and validate URIs with this regex (as to do so
+        # is incredibly complicated and much better left to a function), merely
+        # perform some rudimentary extraction. The complex stuff on the left
+        # side of the disjunction comes from RFC3986 appendix B. The reason for
+        # the empty "-" production appearing on the right is due to an issue
+        # with disjuncts in Perl-style regex implementations, see
         # <http://lingpipe-blog.com/2008/05/07/tokenization-vs-eager-regular-expressions/>
         # for details
         'uri':     r'(?P<%(name)s>(([^:/?#\s]+):)?(//([^/?#\s]*))?([^?#\s]*)(\?([^#\s]*))?(#(\S*))?|-)',
@@ -450,7 +441,7 @@ class W3CWrapper(object):
         # (or IP) validation is extremely hard to do properly with regexes so
         # here we use a trivial regex to pull out a string containing the right
         # alphabet and do validation in a later function
-        'name':    r'(?P<%(name)s>-|[a-zA-Z0-9.-]+)',
+        'name':    r'(?P<%(name)s>-|[a-zA-Z0-9:.-]+)',
         # Again, the draft's BNF for an IP address is deficient (e.g. doesn't
         # specify a limit on octets, and isn't compatible with IPv6 which will
         # presumably start appearing in logs at some point), and again regex

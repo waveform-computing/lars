@@ -43,14 +43,16 @@ from __future__ import (
     division,
     )
 
+import sys
 import os
 import re
 import datetime as dt
 import urlparse
+import ipaddress
 from collections import namedtuple
-from ipaddress import ip_address, IPv4Address, IPv6Address
+from functools import total_ordering
 
-from www2csv import geoip
+from www2csv import geoip, dns
 
 
 
@@ -107,6 +109,20 @@ def url(s):
     return Url(*urlparse.urlparse(s))
 
 
+def hostname(s):
+    """
+    Parse a hostname.
+
+    The result is a Hostname object which can be used to resolve the parsed
+    hostname into an IPv4Address or IPv6Address object which can then be used
+    to retrieve further details about the host via the GeoIP attributes.
+
+    :param str s: The string containing the hostname to parse
+    :returns: A Hostname instance
+    """
+    return Hostname(s)
+
+
 def address(s):
     """
     Parse an IP address and optional port.
@@ -116,8 +132,18 @@ def address(s):
     optional port specification to be included in the parsed string.
 
     :param str s: The string containing the IP address to parse
-    :returns: An IPv4Port or IPv6Port instance representing the address
+    :returns: An IPv4Address, IPv4Port, IPv6Address, or IPv6Port instance
     """
+    if isinstance(s, bytes):
+        s = type('')(s)
+    try:
+        return IPv4Address(s)
+    except ValueError:
+        pass
+    try:
+        return IPv6Address(s)
+    except ValueError:
+        pass
     try:
         return IPv4Port(s)
     except ValueError:
@@ -132,7 +158,6 @@ def address(s):
 
 # Py3k: The base class of type('') is simply a short-hand way of saying unicode
 # on py2 (because of the future import at the top of the module) and str on py3
-_filepart_re = re.compile(r'[^\x00-\x1f\x7f\\/?:*"><|]', flags=re.UNICODE)
 class Filename(type('')):
     """
     Represents a filename.
@@ -149,16 +174,26 @@ class Filename(type('')):
     :param str s: The string containing the filename
     """
 
+    file_part_re = re.compile(r'[\x00-\x1f\x7f\\/?:*"><|]', flags=re.UNICODE)
+
     def __init__(self, s):
-        # Implicitly expand ~ if it occurs at the start of the string
-        s = os.path.expanduser(s)
+        # Split the path into drive and path parts
+        parts = []
+        if sys.platform.startswith('win'):
+            drive, path = os.path.splitdrive(s)
+            if drive:
+                parts.append(drive)
+        else:
+            path = s
+        parts.extend(s.split(os.path.sep))
         # For the sake of sanity, raise a ValueError in the case of certain
         # characters which just shouldn't be present in filenames
-        for part in s.split(os.path.sep):
-            if part and _filepart_re.search(part):
+        for part in parts:
+            if part and self.file_part_re.search(part):
                 raise ValueError(
                     '%s cannot contain control characters or any of '
                     'the following: \\ / ? : * " > < |' % s)
+        super(Filename, self).__init__(s)
 
     @property
     def abspath(self):
@@ -182,15 +217,15 @@ class Filename(type('')):
 
     @property
     def atime(self):
-        return datetime.utcfromtimestamp(os.path.getatime(self))
+        return dt.datetime.utcfromtimestamp(os.path.getatime(self))
 
     @property
     def mtime(self):
-        return datetime.utcfromtimestamp(os.path.getmtime(self))
+        return dt.datetime.utcfromtimestamp(os.path.getmtime(self))
 
     @property
     def ctime(self):
-        return datetime.utcfromtimestamp(os.path.getctime(self))
+        return dt.datetime.utcfromtimestamp(os.path.getctime(self))
 
     @property
     def size(self):
@@ -228,19 +263,6 @@ class Filename(type('')):
     def realpath(self):
         return Filename(os.path.realpath(self))
 
-    @property
-    def split(self):
-        head, tail = os.path.split(self)
-        return (Filename(head), Filename(tail))
-
-    @property
-    def splitdrive(self):
-        drive, tail = os.path.splitdrive(self)
-        return (Filename(drive), Filename(tail))
-
-    def join(self, *parts):
-        return Filename(os.path.join(self, *parts))
-
     def relative(self, start=os.curdir):
         return Filename(os.path.relpath(self, start))
 
@@ -248,7 +270,7 @@ class Filename(type('')):
 class Url(namedtuple('ParseResult', 'scheme netloc path params query fragment'), urlparse.ResultMixin):
     """
     Redefined version of the urlparse result which adds a :meth:`__str__`
-    method. See :func:`uri_parse` for more information.
+    method. See :func:`url` for more information.
     """
 
     __slots__ = ()
@@ -260,11 +282,97 @@ class Url(namedtuple('ParseResult', 'scheme netloc path params query fragment'),
         return self.geturl()
 
 
+@total_ordering
+class Hostname(type('')):
+    """
+    Represents an Internet hostname, and provides methods for DNS resolution.
+
+    :param str hostname: The hostname to parse
+    """
+
+    name_part_re = re.compile(r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$', flags=re.UNICODE)
+
+    def __init__(self, s):
+        if len(s) > 255:
+            raise ValueError('DNS name %s is longer than 255 chars' % hostname)
+        for part in s.split('.'):
+            # XXX What about IPv6 addresses? Check with address_parse?
+            if not self.name_part_re.match(part):
+                raise ValueError('DNS label %s is invalid' % part)
+        super(Hostname, self).__init__(s)
+
+    @property
+    def address(self):
+        ipaddr = dns.to_address(self)
+        if ipaddr is not None:
+            return address(ipaddr)
+
+
+class IPv4Address(ipaddress.IPv4Address):
+    """
+    Derivative of IPv4Address that provides GeoIP attributes.
+    """
+
+    @property
+    def country(self):
+        return geoip.country_code_by_addr(self.compressed)
+
+    @property
+    def region(self):
+        return geoip.region_by_addr(self.compressed)
+
+    @property
+    def city(self):
+        return geoip.city_by_addr(self.compressed)
+
+    @property
+    def coords(self):
+        return geoip.coords_by_addr(self.compressed)
+
+    @property
+    def hostname(self):
+        s = self.compressed
+        result = dns.from_address(s)
+        if result == s:
+            return None
+        return Hostname(result)
+
+
+class IPv6Address(ipaddress.IPv6Address):
+    """
+    Derivative of IPv6Address that provides GeoIP attributes.
+    """
+
+    @property
+    def country(self):
+        return geoip.country_code_by_addr_v6(self.__str__())
+
+    @property
+    def region(self):
+        return geoip.region_by_addr_v6(self.__str__())
+
+    @property
+    def city(self):
+        return geoip.city_by_addr_v6(self.__str__())
+
+    @property
+    def coords(self):
+        return geoip.coords_by_addr_v6(self.__str__())
+
+    @property
+    def hostname(self):
+        s = self.compressed
+        result = dns.from_address(s)
+        if result == s:
+            return None
+        return Hostname(result)
+
+
 class IPv4Port(IPv4Address):
     """
-    Derivative of IPv4Address that includes an optional port specification.
+    Derivative of IPv4Address that adds a port specification.
 
-    :param str address: The address (and optional port) to parse
+    :param str address: The address and port to parse.
     """
 
     def __init__(self, address):
@@ -283,26 +391,10 @@ class IPv4Port(IPv4Address):
             return '%s:%d' % (result, self.port)
         return result
 
-    @property
-    def country(self):
-        return geoip.country_code_by_addr(super(IPv4Port, self).__str__())
-
-    @property
-    def region(self):
-        return geoip.region_by_addr(super(IPv4Port, self).__str__())
-
-    @property
-    def city(self):
-        return geoip.city_by_addr(super(IPv4Port, self).__str__())
-
-    @property
-    def coords(self):
-        return geoip.coords_by_addr(super(IPv4Port, self).__str__())
-
 
 class IPv6Port(IPv6Address):
     """
-    Derivative of IPv6Address that includes an optional port specification.
+    Derivative of IPv6Address that adds a port specification.
 
     :param str address: The address (and optional port) to parse
     """
@@ -329,18 +421,3 @@ class IPv6Port(IPv6Address):
             return '[%s]:%d' % (result, self.port)
         return result
 
-    @property
-    def country(self):
-        return geoip.country_code_by_addr_v6(super(IPv6Port, self).__str__())
-
-    @property
-    def region(self):
-        return geoip.region_by_addr_v6(super(IPv6Port, self).__str__())
-
-    @property
-    def city(self):
-        return geoip.city_by_addr_v6(super(IPv6Port, self).__str__())
-
-    @property
-    def coords(self):
-        return geoip.coords_by_addr_v6(super(IPv6Port, self).__str__())

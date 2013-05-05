@@ -298,3 +298,7 @@ else:
     country_by_addr_v6 = init_database
     region_by_addr = init_database
     region_by_addr_v6 = init_database
+    city_by_addr = init_database
+    city_by_addr_v6 = init_database
+    coord_by_addr = init_database
+    coord_by_addr_v6 = init_database
