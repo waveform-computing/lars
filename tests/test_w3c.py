@@ -28,7 +28,6 @@ from __future__ import (
     )
 
 from datetime import datetime, date, time
-from ipaddress import ip_address, IPv4Address, IPv6Address
 
 from nose.tools import assert_raises
 
