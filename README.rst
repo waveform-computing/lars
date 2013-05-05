@@ -9,7 +9,7 @@ common servers like `Apache`_, `nginx`_, and IIS) into a format more conducive
 for loading into databases, the default being CSV.
 
 The project is written in `Python`_ and is open-sourced under the MIT license.
-The `source code`_ can be obtained from GitHub.
+The `source code`_ can be obtained from Bitbucket.
 
 
 License
@@ -39,6 +39,6 @@ SOFTWARE.
 .. _Apache: http://httpd.apache.org/
 .. _nginx: http://wiki.nginx.org/
 .. _Python: http://python.org/
-.. _source code: https://github.com/waveform80/www2csv.git
+.. _source code: https://bitbucket.org/waveform/www2csv
 .. _Dave Hughes: mailto:dave@waveform.org.uk
 
