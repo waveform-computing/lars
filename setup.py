@@ -57,6 +57,7 @@ URL          = 'https://github.com/waveform80/www2csv'
 
 REQUIRES = [
     'ipaddress', # Google's IPv4/IPv6 parsing library (part of stdlib in py3k)
+    'pygeoip',   # Pure Python GeoIP library (official GeoIP bindings also accepted)
     ]
 
 EXTRA_REQUIRES = {
