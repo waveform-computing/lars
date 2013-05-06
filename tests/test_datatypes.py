@@ -70,6 +70,13 @@ def test_url():
     assert datatypes.url('http://foo/bar?baz=quux') == datatypes.Url('http', 'foo', '/bar', '', 'baz=quux', '')
     assert datatypes.url('https://foo/bar#baz') == datatypes.Url('https', 'foo', '/bar', '', '', 'baz')
 
+def test_datetime():
+    assert datatypes.datetime('2000-01-01 12:34:56') == datetime(2000, 1, 1, 12, 34, 56)
+    assert datatypes.datetime('1986-02-28 00:00:00') == datetime(1986, 2, 28)
+    assert_raises(ValueError, datatypes.datetime, '2000-01-32 12:34:56')
+    assert_raises(ValueError, datatypes.datetime, '2000-01-30 12:34:56 PM')
+    assert_raises(ValueError, datatypes.datetime, 'foo')
+
 def test_date():
     assert datatypes.date('2000-01-01') == date(2000, 1, 1)
     assert datatypes.date('1986-02-28') == date(1986, 2, 28)

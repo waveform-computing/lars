@@ -55,6 +55,23 @@ from functools import total_ordering
 from www2csv import geoip, dns
 
 
+# XXX Make Py2 str same as Py3
+str = type('')
+
+
+def datetime(s, format='%Y-%m-%d %H:%M:%S'):
+    """
+    Parse a timestamp.
+
+    Parses a string containing a timestamp in an ISO8601-like format (but by
+    default, without the 'T' literal separating the date and time components),
+    returning a datetime.datetime type.
+
+    :param str s: The string containing the timestamp to parse
+    :returns: A datetime.datetime object representing the timestamp
+    """
+    return dt.datetime.strptime(s, format)
+
 
 def date(s, format='%Y-%m-%d'):
     """
@@ -135,7 +152,7 @@ def address(s):
     :returns: An IPv4Address, IPv4Port, IPv6Address, or IPv6Port instance
     """
     if isinstance(s, bytes):
-        s = type('')(s)
+        s = str(s)
     try:
         return IPv4Address(s)
     except ValueError:
@@ -283,7 +300,7 @@ class Url(namedtuple('ParseResult', 'scheme netloc path params query fragment'),
 
 
 @total_ordering
-class Hostname(type('')):
+class Hostname(str):
     """
     Represents an Internet hostname, and provides methods for DNS resolution.
 
