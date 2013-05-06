@@ -34,6 +34,10 @@ from nose.tools import assert_raises
 from www2csv import w3c, datatypes
 
 
+# XXX Make Py2 str same as Py3
+str = type('')
+
+
 INTRANET_EXAMPLE = """\
 #Software: Microsoft Internet Information Services 6.0
 #Version: 1.0
@@ -61,38 +65,38 @@ FTP_EXAMPLE = """\
 
 
 def test_directive_regexes():
-    assert w3c.W3CWrapper.VERSION_RE.match('#Version: 1.0')
-    assert w3c.W3CWrapper.VERSION_RE.match('# VERSION : 1.0')
-    assert w3c.W3CWrapper.VERSION_RE.match('# version:100.99')
-    assert not w3c.W3CWrapper.VERSION_RE.match('#Version: foo')
-    assert w3c.W3CWrapper.START_DATE_RE.match('#Start-Date: 2000-01-01 00:00:00')
-    assert w3c.W3CWrapper.START_DATE_RE.match('# START-DATE : 2012-04-28 23:59:59')
-    assert w3c.W3CWrapper.START_DATE_RE.match('# start-date:1976-01-01 09:00:00')
-    assert not w3c.W3CWrapper.START_DATE_RE.match('#Start-Date: 2012-06-01')
-    assert w3c.W3CWrapper.END_DATE_RE.match('#End-Date: 2000-01-01 00:00:00')
-    assert w3c.W3CWrapper.END_DATE_RE.match('# END-DATE : 2012-04-28 23:59:59')
-    assert w3c.W3CWrapper.END_DATE_RE.match('# end-date:1976-01-01 09:00:00')
-    assert not w3c.W3CWrapper.END_DATE_RE.match('#End-Date: 2012-06-01')
-    assert w3c.W3CWrapper.DATE_RE.match('#Date: 2000-01-01 00:00:00')
-    assert w3c.W3CWrapper.DATE_RE.match('# DATE : 2012-04-28 23:59:59')
-    assert w3c.W3CWrapper.DATE_RE.match('# date:1976-01-01 09:00:00')
-    assert not w3c.W3CWrapper.DATE_RE.match('#Date: 2012-06-01')
-    assert w3c.W3CWrapper.SOFTWARE_RE.match('#Software: foo')
-    assert w3c.W3CWrapper.SOFTWARE_RE.match('# software : bar')
-    assert w3c.W3CWrapper.REMARK_RE.match('#Remark: bar')
-    assert w3c.W3CWrapper.REMARK_RE.match('# remark : bar')
-    assert w3c.W3CWrapper.FIELDS_RE.match('#Fields: foo cs-foo rs(foo)')
-    assert w3c.W3CWrapper.FIELDS_RE.match('# fields : x(bar) date time s-bar')
-    assert w3c.W3CWrapper.FIELD_RE.match('foo')
-    assert w3c.W3CWrapper.FIELD_RE.match('cs-foo')
-    assert w3c.W3CWrapper.FIELD_RE.match('rs(foo)')
-    assert w3c.W3CWrapper.FIELD_RE.match('x(bar)')
+    assert w3c.W3CSource.VERSION_RE.match('#Version: 1.0')
+    assert w3c.W3CSource.VERSION_RE.match('# VERSION : 1.0')
+    assert w3c.W3CSource.VERSION_RE.match('# version:100.99')
+    assert not w3c.W3CSource.VERSION_RE.match('#Version: foo')
+    assert w3c.W3CSource.START_DATE_RE.match('#Start-Date: 2000-01-01 00:00:00')
+    assert w3c.W3CSource.START_DATE_RE.match('# START-DATE : 2012-04-28 23:59:59')
+    assert w3c.W3CSource.START_DATE_RE.match('# start-date:1976-01-01 09:00:00')
+    assert not w3c.W3CSource.START_DATE_RE.match('#Start-Date: 2012-06-01')
+    assert w3c.W3CSource.END_DATE_RE.match('#End-Date: 2000-01-01 00:00:00')
+    assert w3c.W3CSource.END_DATE_RE.match('# END-DATE : 2012-04-28 23:59:59')
+    assert w3c.W3CSource.END_DATE_RE.match('# end-date:1976-01-01 09:00:00')
+    assert not w3c.W3CSource.END_DATE_RE.match('#End-Date: 2012-06-01')
+    assert w3c.W3CSource.DATE_RE.match('#Date: 2000-01-01 00:00:00')
+    assert w3c.W3CSource.DATE_RE.match('# DATE : 2012-04-28 23:59:59')
+    assert w3c.W3CSource.DATE_RE.match('# date:1976-01-01 09:00:00')
+    assert not w3c.W3CSource.DATE_RE.match('#Date: 2012-06-01')
+    assert w3c.W3CSource.SOFTWARE_RE.match('#Software: foo')
+    assert w3c.W3CSource.SOFTWARE_RE.match('# software : bar')
+    assert w3c.W3CSource.REMARK_RE.match('#Remark: bar')
+    assert w3c.W3CSource.REMARK_RE.match('# remark : bar')
+    assert w3c.W3CSource.FIELDS_RE.match('#Fields: foo cs-foo rs(foo)')
+    assert w3c.W3CSource.FIELDS_RE.match('# fields : x(bar) date time s-bar')
+    assert w3c.W3CSource.FIELD_RE.match('foo')
+    assert w3c.W3CSource.FIELD_RE.match('cs-foo')
+    assert w3c.W3CSource.FIELD_RE.match('rs(foo)')
+    assert w3c.W3CSource.FIELD_RE.match('x(bar)')
     # We can't deny invalid prefixes as the standard doesn't limit what
     # characters may appear in an identifier (and MS has already used the "-"
     # delimiter in several of their non-listed fields), so the best we can do
     # is match and make sure the prefix stays None
-    assert w3c.W3CWrapper.FIELD_RE.match('foo(bar)').group('prefix') is None
-    assert w3c.W3CWrapper.FIELD_RE.match('foo(bar)').group('identifier') == 'foo(bar)'
+    assert w3c.W3CSource.FIELD_RE.match('foo(bar)').group('prefix') is None
+    assert w3c.W3CSource.FIELD_RE.match('foo(bar)').group('identifier') == 'foo(bar)'
 
 def test_sanitize_name():
     assert w3c.sanitize_name('foo') == 'foo'
@@ -187,7 +191,7 @@ def test_address_parse():
 
 def test_wrapper():
     source = INTERNET_EXAMPLE.splitlines(True)
-    wrapper = w3c.W3CWrapper(source)
+    wrapper = w3c.W3CSource(source)
     row = None
     for count, row in enumerate(wrapper):
         assert wrapper.version == '1.0'
@@ -217,7 +221,7 @@ def test_wrapper():
     assert row
     assert count == 0
     source = INTRANET_EXAMPLE.splitlines(True)
-    wrapper = w3c.W3CWrapper(source)
+    wrapper = w3c.W3CSource(source)
     row = None
     for count, row in enumerate(wrapper):
         assert wrapper.fields == [

@@ -34,7 +34,7 @@ draft (for information on what *could* be included in W3C log files) as well as
 the examples (for information on what typically *is* included in W3C log files,
 even when it outright violates the draft), and bear in mind `Postel's Law`_.
 
-The :class:`W3CWrapper` class is the major element that this module provides;
+The :class:`W3CSource` class is the major element that this module provides;
 this is the class which wraps a file-like object containing a W3C formatted log
 file and yields rows from it as tuples.
 
@@ -61,6 +61,16 @@ from collections import namedtuple
 from urllib import unquote_plus
 
 from www2csv.datatypes import date, time, url, address, hostname
+
+
+# XXX Make Py2 str same as Py3
+str = type('')
+
+
+__all__ = [
+    'W3CError', 'W3CDirectiveError', 'W3CFieldsError', 'W3CVersionError',
+    'W3CWarning', 'W3CSource'
+    ]
 
 
 def sanitize_name(name):
@@ -173,9 +183,9 @@ def address_parse(s):
     return address(s) if s != '-' else None
 
 
-class W3CError(Exception):
+class W3CError(StandardError):
     """
-    Base class for W3CWrapper errors.
+    Base class for W3CSource errors.
 
     Exceptions of this class take the optional arguments line_number and line
     for specifying the index and content of the line that caused the error
@@ -222,7 +232,7 @@ class W3CWarning(Warning):
     """
 
 
-class W3CWrapper(object):
+class W3CSource(object):
     """
     Wraps a steam containing a W3C formatted log file.
 
