@@ -194,6 +194,7 @@ class Filename(type('')):
     file_part_re = re.compile(r'[\x00-\x1f\x7f\\/?:*"><|]', flags=re.UNICODE)
 
     def __init__(self, s):
+        s = str(s)
         # Split the path into drive and path parts
         parts = []
         if sys.platform.startswith('win'):
