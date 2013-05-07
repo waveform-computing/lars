@@ -28,11 +28,9 @@ from __future__ import (
     )
 
 import pytest
+import mock
 
 from www2csv import dns
-
-
-slow = pytest.mark.slow
 
 
 def test_from_address():
@@ -40,10 +38,14 @@ def test_from_address():
     # XXX Not sure this is going to be true on all platforms...
     assert dns.from_address('::1') == 'ip6-localhost'
 
-@slow
 def test_from_address_slow():
-    assert dns.from_address('9.0.0.0') == '9.0.0.0'
-    assert dns.from_address('0.0.0.0') == '0.0.0.0'
+    with mock.patch('tests.test_dns.dns.socket.getnameinfo') as getnameinfo:
+        getnameinfo.return_value = ('9.0.0.0', 0)
+        dns.from_address('9.0.0.0')
+        assert getnameinfo.called_with(('9.0.0.0', 0), 0)
+        getnameinfo.return_value = ('0.0.0.0', 0)
+        dns.from_address('0.0.0.0')
+        assert getnameinfo.called_with(('0.0.0.0', 0), 0)
 
 def test_to_address():
     assert dns.to_address('localhost') == '127.0.0.1'

@@ -34,17 +34,10 @@ from datetime import datetime, date, time
 from ipaddress import ip_address, IPv4Address, IPv6Address
 
 import pytest
+import mock
 
 from www2csv import datatypes, geoip
-from tests.test_geoip import (
-    geolite_country_ipv4_file,
-    geolite_country_ipv6_file,
-    geolite_city_ipv4_file,
-    geolite_city_ipv6_file,
-    )
 
-
-slow = pytest.mark.slow
 
 INTRANET_EXAMPLE = """\
 #Software: Microsoft Internet Information Services 6.0
@@ -151,8 +144,6 @@ def test_hostname():
     assert datatypes.hostname('localhost') == datatypes.Hostname('localhost')
     assert datatypes.hostname('f'*63 + '.o') == datatypes.Hostname('f'*63 + '.o')
     assert datatypes.hostname('f'*63 + '.oo') == datatypes.Hostname('f'*63 + '.oo')
-    assert datatypes.hostname('localhost').address == datatypes.address('127.0.0.1')
-    assert datatypes.hostname('test.invalid').address is None
     with pytest.raises(ValueError):
         datatypes.hostname('foo.')
     with pytest.raises(ValueError):
@@ -168,52 +159,60 @@ def test_hostname():
     with pytest.raises(ValueError):
         datatypes.hostname('foo.bar.'*32 + '.com')
 
-def test_address():
+def test_address_ipv4():
     assert datatypes.address('127.0.0.1') == datatypes.IPv4Address('127.0.0.1')
     assert datatypes.address('127.0.0.1:80') == datatypes.IPv4Port('127.0.0.1:80')
-    assert datatypes.address('::1') == datatypes.IPv6Address('::1')
-    assert datatypes.address('[::1]') == datatypes.IPv6Port('::1')
-    assert datatypes.address('[::1]:80') == datatypes.IPv6Port('[::1]:80')
-    assert datatypes.address('2001:0db8:85a3:0000:0000:8a2e:0370:7334') == datatypes.IPv6Address('2001:db8:85a3::8a2e:370:7334')
-    assert datatypes.address('[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:22') == datatypes.IPv6Port('[2001:db8:85a3::8a2e:370:7334]:22')
-    assert datatypes.address('[fe80::7334]:22') == datatypes.IPv6Port('[fe80::7334]:22')
-    assert datatypes.address('127.0.0.1').hostname == datatypes.hostname('localhost')
-    assert datatypes.address('::1').hostname == datatypes.hostname('ip6-localhost')
     with pytest.raises(ValueError):
         datatypes.address('abc')
     with pytest.raises(ValueError):
         datatypes.address('google.com')
     with pytest.raises(ValueError):
         datatypes.address('127.0.0.1:100000')
+
+def test_address_ipv6():
+    assert datatypes.address('::1') == datatypes.IPv6Address('::1')
+    assert datatypes.address('[::1]') == datatypes.IPv6Port('::1')
+    assert datatypes.address('[::1]:80') == datatypes.IPv6Port('[::1]:80')
+    assert datatypes.address('2001:0db8:85a3:0000:0000:8a2e:0370:7334') == datatypes.IPv6Address('2001:db8:85a3::8a2e:370:7334')
+    assert datatypes.address('[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:22') == datatypes.IPv6Port('[2001:db8:85a3::8a2e:370:7334]:22')
+    assert datatypes.address('[fe80::7334]:22') == datatypes.IPv6Port('[fe80::7334]:22')
     with pytest.raises(ValueError):
         datatypes.address('[::1]:100000')
 
-@slow
-def test_address_slow():
-    assert datatypes.address('0.0.0.0').hostname is None
-    assert datatypes.address('::').hostname is None
+def test_address_port_manipulation():
+    addr = datatypes.address('127.0.0.1:80')
+    assert str(addr) == '127.0.0.1:80'
+    addr.port = None
+    assert str(addr) == '127.0.0.1'
 
-def test_address_geoip_countries(
-        geolite_country_ipv4_file, geolite_country_ipv6_file):
-    geoip.init_database(geolite_country_ipv4_file, geolite_country_ipv6_file)
-    assert datatypes.address('127.0.0.1').country is None
-    assert datatypes.address('::1').country is None
-    assert datatypes.address('80.0.0.0').country == 'GB'
-    assert datatypes.address('9.0.0.0').country == 'US'
+def test_address_geoip_countries():
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV4_DATABASE') as mock_db:
+        mock_db.country_code_by_addr.return_value = 'AA'
+        assert datatypes.address('127.0.0.1').country == 'AA'
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV6_DATABASE') as mock_db:
+        mock_db.country_code_by_addr.return_value = 'BB'
+        assert datatypes.address('::1').country == 'BB'
 
-def test_address_geoip_cities(
-        geolite_city_ipv4_file, geolite_city_ipv6_file):
-    geoip.init_database(geolite_city_ipv4_file, geolite_city_ipv6_file)
-    assert datatypes.address('127.0.0.1').region is None
-    assert datatypes.address('80.0.0.0').region == 'D9'
-    assert datatypes.address('9.0.0.0').region == 'NC'
-    assert datatypes.address('127.0.0.1').city is None
-    assert datatypes.address('80.0.0.0').city == 'Greenford'
-    assert datatypes.address('9.0.0.0').city == 'Durham'
-    assert datatypes.address('127.0.0.1').coords is None
-    assert datatypes.address('80.0.0.0').coords == geoip.GeoCoord(-0.33330000000000837, 51.516699999999986)
-    assert datatypes.address('9.0.0.0').coords == geoip.GeoCoord(-78.8986, 35.994)
+def test_address_geoip_cities():
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV4_DATABASE') as mock_db:
+        mock_db.region_by_addr.return_value = {'region_name': 'AA'}
+        assert datatypes.address('127.0.0.1').region == 'AA'
+        mock_db.record_by_addr.return_value = {'city': 'Timbuktu'}
+        assert datatypes.address('127.0.0.1').city == 'Timbuktu'
+        mock_db.record_by_addr.return_value = {'longitude': 1, 'latitude': 2}
+        assert datatypes.address('127.0.0.1').coords == geoip.GeoCoord(1, 2)
 
 def test_resolving():
     assert datatypes.hostname('localhost').address == datatypes.IPv4Address('127.0.0.1')
     assert datatypes.hostname('localhost') == datatypes.hostname('localhost').address.hostname
+    assert datatypes.hostname('test.invalid').address is None
+    assert datatypes.address('127.0.0.1').hostname == datatypes.hostname('localhost')
+    assert datatypes.address('::1').hostname == datatypes.hostname('ip6-localhost')
+
+def test_address():
+    with mock.patch('tests.test_datatypes.datatypes.dns.from_address') as from_address:
+        from_address.return_value = '0.0.0.0'
+        assert datatypes.address('0.0.0.0').hostname is None
+        from_address.return_value = '::'
+        assert datatypes.address('::').hostname is None
+

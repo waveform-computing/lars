@@ -35,104 +35,32 @@ import socket
 
 import pygeoip
 import pytest
+import mock
 
 from www2csv import geoip
 
 
-slow = pytest.mark.slow
+def test_init_db():
+    with mock.patch('tests.test_geoip.geoip.pygeoip.GeoIP') as mock_class:
+        geoip.init_database('mock.dat')
+        assert mock_class.GeoIP.called_with('mock.dat', pygeoip.MEMORY_CACHE)
 
-GEOLITE_COUNTRY_IPV4_URL = 'http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz'
-GEOLITE_COUNTRY_IPV6_URL = 'http://geolite.maxmind.com/download/geoip/database/GeoIPv6.dat.gz'
-GEOLITE_CITY_IPV4_URL = 'http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz'
-GEOLITE_CITY_IPV6_URL = 'http://geolite.maxmind.com/download/geoip/database/GeoLiteCityv6-beta/GeoLiteCityv6.dat.gz'
-GEOLITE_COUNTRY_IPV4_FILE = 'country_v4.dat'
-GEOLITE_COUNTRY_IPV6_FILE = 'country_v6.dat'
-GEOLITE_CITY_IPV4_FILE = 'city_v4.dat'
-GEOLITE_CITY_IPV6_FILE = 'city_v6.dat'
+def test_countries_v4():
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV4_DATABASE') as mock_db:
+        geoip.country_code_by_addr('127.0.0.1')
+        assert mock_db.country_code_by_addr.called_with('127.0.0.1')
 
+def test_countries_v6():
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV6_DATABASE') as mock_db:
+        geoip.country_code_by_addr_v6('::1')
+        assert mock_db.country_code_by_addr_v6.called_with('::1')
 
-def copy(source, target):
-    while True:
-        data = source.read(65536)
-        if not data:
-            break
-        target.write(data)
+def test_cities_v4():
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV4_DATABASE') as mock_db:
+        geoip.region_by_addr('127.0.0.1')
+        assert mock_db.region_by_addr.called_with('127.0.0.1')
+        geoip.city_by_addr('127.0.0.1')
+        assert mock_db.city_by_addr.called_with('127.0.0.1')
+        geoip.coords_by_addr('127.0.0.1')
+        assert mock_db.rec_by_addr.called_with('127.0.0.1')
 
-def download_gz(url, filename):
-    if not os.path.exists(filename):
-        if not os.path.exists(filename + '.gz'):
-            with open(filename + '.gz', 'wb') as target:
-                source = urllib2.urlopen(url)
-                copy(source, target)
-        with open(filename, 'wb') as target:
-            with gzip.open(filename + '.gz') as source:
-                copy(source, target)
-        os.unlink(filename + '.gz')
-
-@pytest.fixture
-def geolite_country_ipv4_file():
-    result = os.path.join(os.environ.get('TEMP', '/tmp'), GEOLITE_COUNTRY_IPV4_FILE)
-    download_gz(GEOLITE_COUNTRY_IPV4_URL, result)
-    return result
-
-@pytest.fixture
-def geolite_country_ipv6_file():
-    result = os.path.join(os.environ.get('TEMP', '/tmp'), GEOLITE_COUNTRY_IPV6_FILE)
-    download_gz(GEOLITE_COUNTRY_IPV6_URL, result)
-    return result
-
-@pytest.fixture
-def geolite_city_ipv4_file():
-    result = os.path.join(os.environ.get('TEMP', '/tmp'), GEOLITE_CITY_IPV4_FILE)
-    download_gz(GEOLITE_CITY_IPV4_URL, result)
-    return result
-
-@pytest.fixture
-def geolite_city_ipv6_file():
-    result = os.path.join(os.environ.get('TEMP', '/tmp'), GEOLITE_CITY_IPV6_FILE)
-    download_gz(GEOLITE_CITY_IPV6_URL, result)
-    return result
-
-def test_countries_v4(geolite_country_ipv4_file):
-    geoip.init_database(geolite_country_ipv4_file)
-    assert geoip.country_code_by_addr('127.0.0.1') is None
-    assert geoip.country_code_by_addr_v6('::1') is None
-    assert geoip.country_code_by_addr_v6('::1') is None
-    # These are reasonably safe assumptions: the whole 8x block is assigned to
-    # the Europe RIR (with 80 being used by UK ISPs only), and 9 is IBM
-    assert geoip.country_code_by_addr('80.0.0.0') == 'GB'
-    assert geoip.country_code_by_addr('9.0.0.0') == 'US'
-    with pytest.raises(pygeoip.GeoIPError):
-        geoip.region_by_addr('80.0.0.0')
-    with pytest.raises(pygeoip.GeoIPError):
-        geoip.city_by_addr('80.0.0.0')
-    # XXX Hopefully python.org won't move from NL for a while...
-    python_addr = socket.getaddrinfo('python.org', 0, socket.AF_INET, socket.SOCK_STREAM)[0][-1][0]
-    assert geoip.country_code_by_addr(python_addr) == 'NL'
-
-def test_countries_v6(geolite_country_ipv4_file, geolite_country_ipv6_file):
-    geoip.init_database(geolite_country_ipv4_file, geolite_country_ipv6_file)
-    # XXX Is there a better way of testing this with IPv6?
-    python_addr = socket.getaddrinfo('python.org', 0, socket.AF_INET6, socket.SOCK_STREAM)[0][-1][0]
-    assert geoip.country_code_by_addr_v6(python_addr) == 'NL'
-
-def test_cities_v4(geolite_city_ipv4_file):
-    geoip.init_database(geolite_city_ipv4_file)
-    assert geoip.region_by_addr('127.0.0.1') is None
-    assert geoip.region_by_addr('80.0.0.0') == 'D9'
-    assert geoip.region_by_addr('9.0.0.0') == 'NC'
-    assert geoip.city_by_addr('127.0.0.1') is None
-    assert geoip.city_by_addr('80.0.0.0') == 'Greenford'
-    assert geoip.city_by_addr('9.0.0.0' ) == 'Durham'
-    assert geoip.coords_by_addr('80.0.0.0') == geoip.GeoCoord(-0.33330000000000837, 51.516699999999986)
-    assert geoip.coords_by_addr('9.0.0.0') == geoip.GeoCoord(-78.8986, 35.994)
-    python_addr = socket.getaddrinfo('python.org', 0, socket.AF_INET, socket.SOCK_STREAM)[0][-1][0]
-    assert geoip.region_by_addr(python_addr) is None
-
-@pytest.mark.xfail(reason='invalid database type 30')
-def test_cities_v6(geolite_city_ipv4_file, geolite_city_ipv6_file):
-    # XXX Can't test any of region, city or coord for v6 as the pygeoip
-    # currently doesn't recognize the city-level IPv6 database as valid...
-    geoip.init_database(geolite_city_ipv4_file, geolite_city_ipv6_file)
-    python_addr = socket.getaddrinfo('python.org', 0, socket.AF_INET6, socket.SOCK_STREAM)[0][-1][0]
-    assert geoip.region_by_addr_v6(python_v6_addr) is None

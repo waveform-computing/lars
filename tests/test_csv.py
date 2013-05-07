@@ -41,8 +41,6 @@ from www2csv import csv, datatypes
 # XXX Make Py2 str same as Py3
 str = type('')
 
-slow = pytest.mark.slow
-
 
 def test_target():
     # Construct some test rows with appropriate namedtuples

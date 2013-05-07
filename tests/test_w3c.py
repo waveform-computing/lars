@@ -37,7 +37,6 @@ from www2csv import w3c, datatypes
 # XXX Make Py2 str same as Py3
 str = type('')
 
-slow = pytest.mark.slow
 
 INTRANET_EXAMPLE = """\
 #Software: Microsoft Internet Information Services 6.0

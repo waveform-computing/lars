@@ -133,7 +133,7 @@ def main():
         extras_require       = EXTRA_REQUIRES,
         zip_safe             = True,
         entry_points         = ENTRY_POINTS,
-        tests_require        = ['pytest', 'pytest-cov'],
+        tests_require        = ['pytest', 'pytest-cov', 'mock'],
         cmdclass             = {'test': PyTest},
         )
 

@@ -32,9 +32,6 @@ import pytest
 from www2csv import cache
 
 
-slow = pytest.mark.slow
-
-
 @cache.lru_cache(maxsize=5)
 def double_lru(x):
     return 2 * x
