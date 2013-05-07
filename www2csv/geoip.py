@@ -170,7 +170,7 @@ def city_by_addr_v6(address):
         if rec:
             return rec.get('city')
 
-def coord_by_addr(address):
+def coords_by_addr(address):
     """
     Returns the coordinates (long, lat) associated with the address.
 
@@ -187,7 +187,7 @@ def coord_by_addr(address):
     if rec:
         return GeoCoord(rec['longitude'], rec['latitude'])
 
-def coord_by_addr_v6(address):
+def coords_by_addr_v6(address):
     """
     Returns the coordinates (long, lat) associated with the address.
 
