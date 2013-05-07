@@ -27,9 +27,13 @@ from __future__ import (
     division,
     )
 
-from nose.tools import assert_raises
+import pytest
 
 from www2csv import cache
+
+
+slow = pytest.mark.slow
+
 
 @cache.lru_cache(maxsize=5)
 def double_lru(x):

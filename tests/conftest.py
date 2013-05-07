@@ -29,25 +29,13 @@ from __future__ import (
 
 import pytest
 
-from www2csv import dns
 
+def pytest_addoption(parser):
+    group = parser.getgroup('additional test selection options')
+    group.addoption('--slow', action='store_true', dest='slow',
+        help='include slow tests', default=False)
 
-slow = pytest.mark.slow
+def pytest_runtest_setup(item):
+    if 'slow' in item.keywords and not item.config.getoption('--slow'):
+        pytest.skip('need --slow option to run')
 
-
-def test_from_address():
-    assert dns.from_address('127.0.0.1') == 'localhost'
-    # XXX Not sure this is going to be true on all platforms...
-    assert dns.from_address('::1') == 'ip6-localhost'
-
-@slow
-def test_from_address_slow():
-    assert dns.from_address('9.0.0.0') == '9.0.0.0'
-    assert dns.from_address('0.0.0.0') == '0.0.0.0'
-
-def test_to_address():
-    assert dns.to_address('localhost') == '127.0.0.1'
-    assert dns.to_address('ip6-localhost') == '::1'
-    assert dns.to_address('foo.bar') is None
-    assert dns.to_address('0.0.0.0') == '0.0.0.0'
-    assert dns.to_address('9.0.0.0') == '9.0.0.0'

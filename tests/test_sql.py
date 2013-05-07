@@ -30,13 +30,15 @@ from __future__ import (
 import sqlite3
 from collections import namedtuple
 
-from nose.tools import assert_raises
+import pytest
 
 from www2csv import sql, datatypes
 
 
 # XXX Make Py2 str same as Py3
 str = type('')
+
+slow = pytest.mark.slow
 
 
 class FakeDbModule(object):
@@ -47,14 +49,17 @@ class FakeDbModule(object):
 
 def test_target():
     # Test passing in deficient database modules
-    db_module = FakeDbModule()
-    del db_module.paramstyle
-    assert_raises(NameError, sql.SQLTarget, db_module, None, 'foo')
-    db_module = FakeDbModule()
-    del db_module.Error
-    assert_raises(NameError, sql.SQLTarget, db_module, None, 'foo')
-    db_module = FakeDbModule()
-    assert_raises(ValueError, sql.SQLTarget, db_module, None, 'foo', commit=0)
+    with pytest.raises(NameError):
+        db_module = FakeDbModule()
+        del db_module.paramstyle
+        sql.SQLTarget(db_module, None, 'foo')
+    with pytest.raises(NameError):
+        db_module = FakeDbModule()
+        del db_module.Error
+        sql.SQLTarget(db_module, None, 'foo')
+    with pytest.raises(ValueError):
+        db_module = FakeDbModule()
+        sql.SQLTarget(db_module, None, 'foo', commit=0)
     # Construct an in-memory database for testing
     db = sqlite3.connect(':memory:', detect_types=sqlite3.PARSE_DECLTYPES)
     # Construct some test rows with appropriate namedtuples
@@ -80,13 +85,15 @@ def test_target():
         302,
         16328,
         )
-    # Attempt a real load with DROP and CREATE TABLE. Drop should fail but be
+    # Attempt a run with DROP and CREATE TABLE. Drop should fail but be
     # ignored, as ignore_drop_errors is True
     with sql.SQLTarget(
             sqlite3, db, table='foo', create_table=True, drop_table=True,
             ignore_drop_errors=True) as target:
         target.write(row1)
         target.write(row2)
+        with pytest.raises(TypeError):
+            target.write(('foo',))
     cursor = db.cursor()
     # Ensure the table got created and contains 2 rows
     cursor.execute('SELECT COUNT(*) FROM foo')

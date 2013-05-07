@@ -29,7 +29,7 @@ from __future__ import (
 
 from datetime import datetime, date, time
 
-from nose.tools import assert_raises
+import pytest
 
 from www2csv import w3c, datatypes
 
@@ -37,6 +37,7 @@ from www2csv import w3c, datatypes
 # XXX Make Py2 str same as Py3
 str = type('')
 
+slow = pytest.mark.slow
 
 INTRANET_EXAMPLE = """\
 #Software: Microsoft Internet Information Services 6.0
@@ -104,7 +105,8 @@ def test_sanitize_name():
     assert w3c.sanitize_name(' foo ') == '_foo_'
     assert w3c.sanitize_name('rs-date') == 'rs_date'
     assert w3c.sanitize_name('cs(User-Agent)') == 'cs_User_Agent_'
-    assert_raises(ValueError, w3c.sanitize_name, '')
+    with pytest.raises(ValueError):
+        w3c.sanitize_name('')
 
 def test_url_parse():
     assert w3c.url_parse('-') is None
@@ -119,7 +121,8 @@ def test_int_parse():
     assert w3c.int_parse('0') == 0
     assert w3c.int_parse('-1') == -1
     assert w3c.int_parse('101') == 101
-    assert_raises(ValueError, w3c.int_parse, 'abc')
+    with pytest.raises(ValueError):
+        w3c.int_parse('abc')
 
 def test_fixed_parse():
     assert w3c.fixed_parse('-') is None
@@ -127,23 +130,30 @@ def test_fixed_parse():
     assert w3c.fixed_parse('0.') == 0.0
     assert w3c.fixed_parse('0.0') == 0.0
     assert w3c.fixed_parse('-101.5') == -101.5
-    assert_raises(ValueError, w3c.fixed_parse, 'abc')
+    with pytest.raises(ValueError):
+        w3c.fixed_parse('abc')
 
 def test_date_parse():
     assert w3c.date_parse('-') is None
     assert w3c.date_parse('2000-01-01') == date(2000, 1, 1)
     assert w3c.date_parse('1986-02-28') == date(1986, 2, 28)
-    assert_raises(ValueError, w3c.date_parse, '1 Jan 2001')
-    assert_raises(ValueError, w3c.date_parse, '2000-01-32')
-    assert_raises(ValueError, w3c.date_parse, 'abc')
+    with pytest.raises(ValueError):
+        w3c.date_parse('1 Jan 2001')
+    with pytest.raises(ValueError):
+        w3c.date_parse('2000-01-32')
+    with pytest.raises(ValueError):
+        w3c.date_parse('abc')
 
 def test_time_parse():
     assert w3c.time_parse('-') is None
     assert w3c.time_parse('12:34:56') == time(12, 34, 56)
     assert w3c.time_parse('00:00:00') == time(0, 0, 0)
-    assert_raises(ValueError, w3c.time_parse, '1:30:00 PM')
-    assert_raises(ValueError, w3c.time_parse, '25:00:30')
-    assert_raises(ValueError, w3c.time_parse, 'abc')
+    with pytest.raises(ValueError):
+        w3c.time_parse('1:30:00 PM')
+    with pytest.raises(ValueError):
+        w3c.time_parse('25:00:30')
+    with pytest.raises(ValueError):
+        w3c.time_parse('abc')
 
 def test_string_parse():
     assert w3c.string_parse('-') is None
@@ -165,13 +175,18 @@ def test_name_parse():
     assert w3c.name_parse('127.0.0.1') == '127.0.0.1'
     assert w3c.name_parse('f'*63 + '.o') == 'f'*63 + '.o'
     assert w3c.name_parse('f'*63 + '.oo') == 'f'*63 + '.oo'
-    assert_raises(ValueError, w3c.name_parse, 'foo.')
-    assert_raises(ValueError, w3c.name_parse, '.foo.')
-    assert_raises(ValueError, w3c.name_parse, '-foo.bar')
-    assert_raises(ValueError, w3c.name_parse, 'foo.bar-')
-    assert_raises(ValueError, w3c.name_parse, 'foo.bar-')
-    assert_raises(ValueError, w3c.name_parse, 'f'*64 + '.o')
-    assert_raises(ValueError, w3c.name_parse, 'foo.bar.'*32 + '.com')
+    with pytest.raises(ValueError):
+        w3c.name_parse('foo.')
+    with pytest.raises(ValueError):
+        w3c.name_parse('.foo.')
+    with pytest.raises(ValueError):
+        w3c.name_parse('-foo.bar')
+    with pytest.raises(ValueError):
+        w3c.name_parse('foo.bar-')
+    with pytest.raises(ValueError):
+        w3c.name_parse('f'*64 + '.o')
+    with pytest.raises(ValueError):
+        w3c.name_parse('foo.bar.'*32 + '.com')
 
 def test_address_parse():
     assert w3c.address_parse('-') is None
@@ -184,10 +199,14 @@ def test_address_parse():
     assert str(w3c.address_parse('2001:0db8:85a3:0000:0000:8a2e:0370:7334')) == '2001:db8:85a3::8a2e:370:7334'
     assert str(w3c.address_parse('[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:22')) == '[2001:db8:85a3::8a2e:370:7334]:22'
     assert str(w3c.address_parse('[fe80::7334]:22')) == '[fe80::7334]:22'
-    assert_raises(ValueError, w3c.address_parse, 'abc')
-    assert_raises(ValueError, w3c.address_parse, 'google.com')
-    assert_raises(ValueError, w3c.address_parse, '127.0.0.1:100000')
-    assert_raises(ValueError, w3c.address_parse, '[::1]:100000')
+    with pytest.raises(ValueError):
+        w3c.address_parse('abc')
+    with pytest.raises(ValueError):
+        w3c.address_parse('google.com')
+    with pytest.raises(ValueError):
+        w3c.address_parse('127.0.0.1:100000')
+    with pytest.raises(ValueError):
+        w3c.address_parse('[::1]:100000')
 
 def test_wrapper():
     source = INTERNET_EXAMPLE.splitlines(True)

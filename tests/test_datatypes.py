@@ -29,13 +29,22 @@ from __future__ import (
 
 import sys
 import os
+import shutil
 from datetime import datetime, date, time
 from ipaddress import ip_address, IPv4Address, IPv6Address
 
-from nose.tools import assert_raises
+import pytest
 
-from www2csv import datatypes
+from www2csv import datatypes, geoip
+from tests.test_geoip import (
+    geolite_country_ipv4_file,
+    geolite_country_ipv6_file,
+    geolite_city_ipv4_file,
+    geolite_city_ipv6_file,
+    )
 
+
+slow = pytest.mark.slow
 
 INTRANET_EXAMPLE = """\
 #Software: Microsoft Internet Information Services 6.0
@@ -73,47 +82,68 @@ def test_url():
 def test_datetime():
     assert datatypes.datetime('2000-01-01 12:34:56') == datetime(2000, 1, 1, 12, 34, 56)
     assert datatypes.datetime('1986-02-28 00:00:00') == datetime(1986, 2, 28)
-    assert_raises(ValueError, datatypes.datetime, '2000-01-32 12:34:56')
-    assert_raises(ValueError, datatypes.datetime, '2000-01-30 12:34:56 PM')
-    assert_raises(ValueError, datatypes.datetime, 'foo')
+    with pytest.raises(ValueError):
+        datatypes.datetime('2000-01-32 12:34:56')
+    with pytest.raises(ValueError):
+        datatypes.datetime('2000-01-30 12:34:56 PM')
+    with pytest.raises(ValueError):
+        datatypes.datetime('foo')
 
 def test_date():
     assert datatypes.date('2000-01-01') == date(2000, 1, 1)
     assert datatypes.date('1986-02-28') == date(1986, 2, 28)
-    assert_raises(ValueError, datatypes.date, '1 Jan 2001')
-    assert_raises(ValueError, datatypes.date, '2000-01-32')
-    assert_raises(ValueError, datatypes.date, 'abc')
+    with pytest.raises(ValueError):
+        datatypes.date('1 Jan 2001')
+    with pytest.raises(ValueError):
+        datatypes.date('2000-01-32')
+    with pytest.raises(ValueError):
+        datatypes.date('abc')
 
 def test_time():
     assert datatypes.time('12:34:56') == time(12, 34, 56)
     assert datatypes.time('00:00:00') == time(0, 0, 0)
-    assert_raises(ValueError, datatypes.time, '1:30:00 PM')
-    assert_raises(ValueError, datatypes.time, '25:00:30')
-    assert_raises(ValueError, datatypes.time, 'abc')
+    with pytest.raises(ValueError):
+        datatypes.time('1:30:00 PM')
+    with pytest.raises(ValueError):
+        datatypes.time('25:00:30')
+    with pytest.raises(ValueError):
+        datatypes.time('abc')
 
-def test_filename():
+def test_filename(tmpdir):
     assert datatypes.filename('/') == '/'
     assert datatypes.filename('/bin') == '/bin'
     assert datatypes.filename('bin') == 'bin'
     assert datatypes.filename('bin').abspath == os.path.join(os.getcwd(), 'bin')
     assert datatypes.filename('/foo/bar').basename == 'bar'
     assert datatypes.filename('/foo/bar').dirname == '/foo'
-    assert datatypes.filename('.').exists
-    assert datatypes.filename('.').atime == datetime.utcfromtimestamp(os.stat('.').st_atime)
-    assert datatypes.filename('.').mtime == datetime.utcfromtimestamp(os.stat('.').st_mtime)
-    assert datatypes.filename('.').ctime == datetime.utcfromtimestamp(os.stat('.').st_ctime)
-    assert datatypes.filename('.').size == os.stat('.').st_size
+    assert datatypes.filename(tmpdir).exists
+    assert datatypes.filename(tmpdir).atime == datetime.utcfromtimestamp(tmpdir.stat().atime)
+    assert datatypes.filename(tmpdir).mtime == datetime.utcfromtimestamp(tmpdir.stat().mtime)
+    assert datatypes.filename(tmpdir).ctime == datetime.utcfromtimestamp(tmpdir.stat().ctime)
+    assert datatypes.filename(tmpdir).size == tmpdir.stat().size
     assert datatypes.filename('/foo/bar').isabs
     assert not datatypes.filename('foo/bar').isabs
-    assert not datatypes.filename('.').isfile
-    assert not datatypes.filename('.').islink
-    assert datatypes.filename('.').isdir
+    assert not datatypes.filename(tmpdir).isfile
+    assert not datatypes.filename(tmpdir).islink
+    assert datatypes.filename(tmpdir).isdir
+    assert datatypes.filename(tmpdir).realpath == tmpdir.realpath()
+    assert datatypes.filename('foo/bar').abspath.relative(os.getcwd()) == 'foo/bar'
+    # As we're in a temp directory, it can't be a mount
+    assert not datatypes.filename('.').ismount
+    with pytest.raises(ValueError):
+        datatypes.filename('<foo>')
+    with pytest.raises(ValueError):
+        datatypes.filename('foo*')
     if sys.platform.startswith('win'):
         assert datatypes.filename('/FOO/BAR').normcase == '/foo/bar'
-    assert datatypes.filename('.').realpath == os.path.realpath('.')
-    assert datatypes.filename('foo/bar').abspath.relative(os.getcwd()) == 'foo/bar'
-    assert_raises(ValueError, datatypes.filename, '<foo>')
-    assert_raises(ValueError, datatypes.filename, 'foo*')
+    else:
+        assert datatypes.filename('/FOO/BAR').normcase == '/FOO/BAR'
+        assert datatypes.filename('/FOO//.//BAR').normpath == '/FOO/BAR'
+        tmpdir.join('foo').mksymlinkto(tmpdir)
+        tmpdir.join('bar').mksymlinkto(tmpdir.join('foo'))
+        tmpdir.join('foo').remove()
+        assert not datatypes.filename(tmpdir.join('bar')).exists
+        assert datatypes.filename(tmpdir.join('bar')).lexists
 
 def test_hostname():
     assert datatypes.hostname('foo') == datatypes.Hostname('foo')
@@ -121,13 +151,22 @@ def test_hostname():
     assert datatypes.hostname('localhost') == datatypes.Hostname('localhost')
     assert datatypes.hostname('f'*63 + '.o') == datatypes.Hostname('f'*63 + '.o')
     assert datatypes.hostname('f'*63 + '.oo') == datatypes.Hostname('f'*63 + '.oo')
-    assert_raises(ValueError, datatypes.hostname, 'foo.')
-    assert_raises(ValueError, datatypes.hostname, '.foo.')
-    assert_raises(ValueError, datatypes.hostname, '-foo.bar')
-    assert_raises(ValueError, datatypes.hostname, 'foo.bar-')
-    assert_raises(ValueError, datatypes.hostname, 'foo.bar-')
-    assert_raises(ValueError, datatypes.hostname, 'f'*64 + '.o')
-    assert_raises(ValueError, datatypes.hostname, 'foo.bar.'*32 + '.com')
+    assert datatypes.hostname('localhost').address == datatypes.address('127.0.0.1')
+    assert datatypes.hostname('test.invalid').address is None
+    with pytest.raises(ValueError):
+        datatypes.hostname('foo.')
+    with pytest.raises(ValueError):
+        datatypes.hostname('.foo.')
+    with pytest.raises(ValueError):
+        datatypes.hostname('-foo.bar')
+    with pytest.raises(ValueError):
+        datatypes.hostname('foo.bar-')
+    with pytest.raises(ValueError):
+        datatypes.hostname('foo.bar-')
+    with pytest.raises(ValueError):
+        datatypes.hostname('f'*64 + '.o')
+    with pytest.raises(ValueError):
+        datatypes.hostname('foo.bar.'*32 + '.com')
 
 def test_address():
     assert datatypes.address('127.0.0.1') == datatypes.IPv4Address('127.0.0.1')
@@ -138,10 +177,42 @@ def test_address():
     assert datatypes.address('2001:0db8:85a3:0000:0000:8a2e:0370:7334') == datatypes.IPv6Address('2001:db8:85a3::8a2e:370:7334')
     assert datatypes.address('[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:22') == datatypes.IPv6Port('[2001:db8:85a3::8a2e:370:7334]:22')
     assert datatypes.address('[fe80::7334]:22') == datatypes.IPv6Port('[fe80::7334]:22')
-    assert_raises(ValueError, datatypes.address, 'abc')
-    assert_raises(ValueError, datatypes.address, 'google.com')
-    assert_raises(ValueError, datatypes.address, '127.0.0.1:100000')
-    assert_raises(ValueError, datatypes.address, '[::1]:100000')
+    assert datatypes.address('127.0.0.1').hostname == datatypes.hostname('localhost')
+    assert datatypes.address('::1').hostname == datatypes.hostname('ip6-localhost')
+    with pytest.raises(ValueError):
+        datatypes.address('abc')
+    with pytest.raises(ValueError):
+        datatypes.address('google.com')
+    with pytest.raises(ValueError):
+        datatypes.address('127.0.0.1:100000')
+    with pytest.raises(ValueError):
+        datatypes.address('[::1]:100000')
+
+@slow
+def test_address_slow():
+    assert datatypes.address('0.0.0.0').hostname is None
+    assert datatypes.address('::').hostname is None
+
+def test_address_geoip_countries(
+        geolite_country_ipv4_file, geolite_country_ipv6_file):
+    geoip.init_database(geolite_country_ipv4_file, geolite_country_ipv6_file)
+    assert datatypes.address('127.0.0.1').country is None
+    assert datatypes.address('::1').country is None
+    assert datatypes.address('80.0.0.0').country == 'GB'
+    assert datatypes.address('9.0.0.0').country == 'US'
+
+def test_address_geoip_cities(
+        geolite_city_ipv4_file, geolite_city_ipv6_file):
+    geoip.init_database(geolite_city_ipv4_file, geolite_city_ipv6_file)
+    assert datatypes.address('127.0.0.1').region is None
+    assert datatypes.address('80.0.0.0').region == 'D9'
+    assert datatypes.address('9.0.0.0').region == 'NC'
+    assert datatypes.address('127.0.0.1').city is None
+    assert datatypes.address('80.0.0.0').city == 'Greenford'
+    assert datatypes.address('9.0.0.0').city == 'Durham'
+    assert datatypes.address('127.0.0.1').coords is None
+    assert datatypes.address('80.0.0.0').coords == geoip.GeoCoord(-0.33330000000000837, 51.516699999999986)
+    assert datatypes.address('9.0.0.0').coords == geoip.GeoCoord(-78.8986, 35.994)
 
 def test_resolving():
     assert datatypes.hostname('localhost').address == datatypes.IPv4Address('127.0.0.1')

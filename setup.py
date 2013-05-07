@@ -28,11 +28,19 @@ from __future__ import (
     division,
     )
 
+import sys
 import os
 from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
 from utils import description, get_version, require_python
 
 HERE = os.path.abspath(os.path.dirname(__file__))
+
+# Workaround <http://www.eby-sarna.com/pipermail/peak/2010-May/003357.html>
+try:
+    import multiprocessing
+except ImportError:
+    pass
 
 # Workaround <http://bugs.python.org/issue10945>
 import codecs
@@ -43,17 +51,17 @@ except LookupError:
     func = lambda name, enc=ascii: {True: enc}.get(name=='mbcs')
     codecs.register(func)
 
-require_python(0x020600f0)
+require_python(0x020700f0)
 
 # All meta-data is defined as global variables so that other modules can query
 # it easily without having to wade through distutils nonsense
 NAME         = 'www2csv'
-DESCRIPTION  = 'Tools for converting web-logs into database-friendly files'
+DESCRIPTION  = 'A framework for converting web-logs into various formats'
 KEYWORDS     = ['web', 'www', 'logs', 'database']
 AUTHOR       = 'Dave Hughes'
 AUTHOR_EMAIL = 'dave@waveform.org.uk'
 MANUFACTURER = 'waveform'
-URL          = 'https://github.com/waveform80/www2csv'
+URL          = 'http://bitbucket.org/waveform/www2csv'
 
 REQUIRES = [
     'ipaddress', # Google's IPv4/IPv6 parsing library (part of stdlib in py3k)
@@ -66,15 +74,15 @@ EXTRA_REQUIRES = {
 CLASSIFIERS = [
     'Development Status :: 4 - Beta',
     'Environment :: Console',
-    'Intended Audience :: Science/Research',
-    'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+    'Intended Audience :: System Administrators',
+    'License :: OSI Approved :: MIT License',
     'Operating System :: Microsoft :: Windows',
     'Operating System :: POSIX',
     'Operating System :: Unix',
-    'Programming Language :: Python :: 2.6',
     'Programming Language :: Python :: 2.7',
-    'Topic :: Multimedia :: Graphics',
-    'Topic :: Scientific/Engineering',
+    'Programming Language :: Python :: 3.3',
+    'Topic :: Internet :: WWW/HTTP :: Site Management',
+    'Topic :: Text Processing',
     ]
 
 ENTRY_POINTS = {
@@ -86,6 +94,25 @@ PACKAGES = [
 
 PACKAGE_DATA = {
     }
+
+
+# Add a py.test based "test" command
+class PyTest(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = [
+            '--cov', NAME,
+            '--cov-report', 'term',
+            '--cov-report', 'html',
+            '--cov-config', 'coverage.cfg',
+            'tests',
+            ]
+        self.test_suite = True
+
+    def run_tests(self):
+        import pytest
+        errno = pytest.main(self.test_args)
+        sys.exit(errno)
 
 
 def main():
@@ -105,8 +132,9 @@ def main():
         install_requires     = REQUIRES,
         extras_require       = EXTRA_REQUIRES,
         zip_safe             = True,
-        test_suite           = NAME,
         entry_points         = ENTRY_POINTS,
+        tests_require        = ['pytest', 'pytest-cov'],
+        cmdclass             = {'test': PyTest},
         )
 
 if __name__ == '__main__':
