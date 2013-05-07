@@ -102,7 +102,7 @@ class PyTest(TestCommand):
         TestCommand.finalize_options(self)
         self.test_args = [
             '--cov', NAME,
-            '--cov-report', 'term',
+            '--cov-report', 'term-missing',
             '--cov-report', 'html',
             '--cov-config', 'coverage.cfg',
             'tests',
