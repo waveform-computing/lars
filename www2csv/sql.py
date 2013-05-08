@@ -229,7 +229,7 @@ class SQLTarget(object):
                     self._drop_table()
                 except self.db_module.Error as exc:
                     if not self.ignore_drop_errors:
-                        raise
+                        raise SQLError(str(exc))
                     logging.debug('While dropping table %s occurred', str(exc))
             if self.create_table:
                 self._create_table(row)

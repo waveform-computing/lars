@@ -40,8 +40,8 @@ import codecs
 import csv
 try:
     import cStringIO as StringIO
-except ImportError:
-    import StringIO
+except ImportError: # pragma: no cover
+    import StringIO # pragma: no cover
 
 
 # XXX Make Py2 str same as Py3

@@ -191,19 +191,19 @@ class Filename(type('')):
     :param str s: The string containing the filename
     """
 
+    drive_part_re = re.compile(r'^[a-zA-Z]:$', flags=re.UNICODE)
     file_part_re = re.compile(r'[\x00-\x1f\x7f\\/?:*"><|]', flags=re.UNICODE)
 
     def __init__(self, s):
         s = str(s)
         # Split the path into drive and path parts
-        parts = []
         if sys.platform.startswith('win'):
             drive, path = os.path.splitdrive(s)
-            if drive:
-                parts.append(drive)
+            if drive and not self.drive_part_re.match(drive):
+                raise ValueError('%s has an invalid drive portion' % s)
         else:
             path = s
-        parts.extend(s.split(os.path.sep))
+        parts = path.split(os.path.sep)
         # For the sake of sanity, raise a ValueError in the case of certain
         # characters which just shouldn't be present in filenames
         for part in parts:

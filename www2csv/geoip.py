@@ -200,7 +200,7 @@ def coords_by_addr_v6(address):
     :param str address: The address to locate
     :returns str: The coordinates associated with the address, or None
     """
-    if _GEOIP_V6_DATABASE:
+    if _GEOIP_IPV6_DATABASE:
         rec = _GEOIP_IPV6_DATABASE.record_by_addr(address)
         if rec:
             return GeoCoord(rec['longitude'], rec['latitude'])
