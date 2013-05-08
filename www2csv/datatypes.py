@@ -181,7 +181,7 @@ class Filename(type('')):
 
     Derivative of unicode (on Python 2) or str (on Python 3) which is intended
     to represent a filename. Provides methods and attributes derived from the
-    functions available in the :module:`os.path` module.
+    functions available in the :mod:`os.path` module.
     
     For the sake of sanity, the class initializer will raise ValueError in the
     case of characters which are invalid in Windows filenames (POSIX permits
@@ -285,7 +285,7 @@ class Filename(type('')):
         return Filename(os.path.relpath(self, start))
 
 
-class Url(namedtuple('ParseResult', 'scheme netloc path params query fragment'), urlparse.ResultMixin):
+class Url(namedtuple('Url', 'scheme netloc path params query fragment'), urlparse.ResultMixin):
     """
     Redefined version of the urlparse result which adds a :meth:`__str__`
     method. See :func:`url` for more information.
