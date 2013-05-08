@@ -199,12 +199,12 @@ class W3CError(StandardError):
     def __init__(self, message, line_number=None, line=None):
         self.line_number = line_number
         self.line = line
-        super(W3CError, self).__init__(message, line_number, line)
+        super(W3CError, self).__init__(message)
 
     def __str__(self):
         result = super(W3CError, self).__str__()
         if self.line_number:
-            result = '%s on line %d' % (result, self.line_number)
+            result = 'Line %d: %s' % (self.line_number, result)
         return result
 
 
@@ -352,6 +352,7 @@ class W3CSource(object):
                 self.DATETIME_FORMAT
                 )
             return
+        raise W3CDirectiveError('Unrecognized directive %s' % line.rstrip())
 
     # The FIELD_RE regex is intended to match a single header name within the
     # #Fields specification of a W3C log file. Basically headers come in one of
@@ -526,6 +527,13 @@ class W3CSource(object):
         logging.debug('Constructing row parser functions')
         self._row_funcs = tuple_funcs
 
+    def __enter__(self):
+        logging.debug('Entering W3C context')
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        logging.debug('Exiting W3C context')
+
     def __iter__(self):
         """
         Yields a row tuple for each line in the file-like source object.
@@ -557,15 +565,18 @@ class W3CSource(object):
                     if match:
                         values = match.group(*self._row_type._fields)
                         try:
-                            values = (f(v) for (f, v) in zip(self._row_funcs, values))
+                            values = [f(v) for (f, v) in zip(self._row_funcs, values)]
                         except ValueError as exc:
-                            warnings.warn('Line %d: %s' % (num + 1, str(exc), W3CWarning))
+                            raise W3CWarning(str(exc))
                         yield self._row_type(*values)
                     else:
-                        warnings.warn('Line %d is invalid' % (num + 1), W3CWarning)
+                        raise W3CWarning('Line contains invalid data')
+        except W3CWarning as exc:
+            # Add line number to the warning and report with warn()
+            warnings.warn('Line %d: %s' % (num + 1, str(exc)), W3CWarning)
         except W3CError as exc:
             # Add line content and number to the exception and re-raise
             if not exc.line_number:
                 raise type(exc)(exc.args[0], line_number=num + 1, line=line)
-            else:
-                raise
+            raise # pragma: no cover
+

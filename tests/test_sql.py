@@ -175,3 +175,8 @@ def test_target_04(db, rows):
     cursor.execute('SELECT COUNT(*) FROM foo')
     assert cursor.fetchall()[0][0] == 2
 
+def test_target_05(recwarn, db, rows):
+    # Generate an error while inserting a row and check we get a warning
+    with sql.SQLTarget(sqlite3, db, 'foo', create_table=False) as target:
+        target.write(rows[0])
+    assert recwarn.pop(sql.SQLWarning)
