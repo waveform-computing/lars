@@ -299,6 +299,10 @@ class Url(namedtuple('ParseResult', 'scheme netloc path params query fragment'),
     def __str__(self):
         return self.geturl()
 
+    @property
+    def hostname(self):
+        return hostname(super(Url, self).hostname)
+
 
 @total_ordering
 class Hostname(str):

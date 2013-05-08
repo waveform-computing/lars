@@ -71,6 +71,16 @@ def test_url():
     assert datatypes.url('http://foo/') == datatypes.Url('http', 'foo', '/', '', '', '')
     assert datatypes.url('http://foo/bar?baz=quux') == datatypes.Url('http', 'foo', '/bar', '', 'baz=quux', '')
     assert datatypes.url('https://foo/bar#baz') == datatypes.Url('https', 'foo', '/bar', '', '', 'baz')
+    u = datatypes.url('http://localhost/foo/bar#baz')
+    assert u.scheme == 'http'
+    assert u.netloc == 'localhost'
+    assert u.path == '/foo/bar'
+    assert u.fragment == 'baz'
+    assert u.username is None
+    assert u.password is None
+    assert u.port is None
+    assert u.hostname == datatypes.hostname('localhost')
+    assert u.hostname.address == datatypes.address('127.0.0.1')
 
 def test_datetime():
     assert datatypes.datetime('2000-01-01 12:34:56') == datetime(2000, 1, 1, 12, 34, 56)
