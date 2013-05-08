@@ -102,6 +102,19 @@ def test_time():
     with pytest.raises(ValueError):
         datatypes.time('abc')
 
+def test_filename_win():
+    with mock.patch('tests.test_datatypes.datatypes.sys') as mock_sys:
+        with mock.patch('tests.test_datatypes.datatypes.os') as mock_os:
+            mock_sys.platform = 'win32'
+            mock_os.path.splitdrive.return_value = ('C:', r'\foo')
+            mock_os.path.sep = '\\'
+            datatypes.filename(r'C:\foo')
+            assert mock_os.path.splitdrive.called_with(r'C:\foo')
+            mock_os.path.splitdrive.return_value = ('2:', r'\foo')
+            with pytest.raises(ValueError):
+                datatypes.filename(r'2:\foo')
+            assert mock_os.path.splitdrive.called_with(r'2:\foo')
+
 def test_filename(tmpdir):
     assert datatypes.filename('/') == '/'
     assert datatypes.filename('/bin') == '/bin'
@@ -127,16 +140,13 @@ def test_filename(tmpdir):
         datatypes.filename('<foo>')
     with pytest.raises(ValueError):
         datatypes.filename('foo*')
-    if sys.platform.startswith('win'):
-        assert datatypes.filename('/FOO/BAR').normcase == '/foo/bar'
-    else:
-        assert datatypes.filename('/FOO/BAR').normcase == '/FOO/BAR'
-        assert datatypes.filename('/FOO//.//BAR').normpath == '/FOO/BAR'
-        tmpdir.join('foo').mksymlinkto(tmpdir)
-        tmpdir.join('bar').mksymlinkto(tmpdir.join('foo'))
-        tmpdir.join('foo').remove()
-        assert not datatypes.filename(tmpdir.join('bar')).exists
-        assert datatypes.filename(tmpdir.join('bar')).lexists
+    assert datatypes.filename('/FOO/BAR').normcase == '/FOO/BAR'
+    assert datatypes.filename('/FOO//.//BAR').normpath == '/FOO/BAR'
+    tmpdir.join('foo').mksymlinkto(tmpdir)
+    tmpdir.join('bar').mksymlinkto(tmpdir.join('foo'))
+    tmpdir.join('foo').remove()
+    assert not datatypes.filename(tmpdir.join('bar')).exists
+    assert datatypes.filename(tmpdir.join('bar')).lexists
 
 def test_hostname():
     assert datatypes.hostname('foo') == datatypes.Hostname('foo')
@@ -201,6 +211,19 @@ def test_address_geoip_cities():
         assert datatypes.address('127.0.0.1').city == 'Timbuktu'
         mock_db.record_by_addr.return_value = {'longitude': 1, 'latitude': 2}
         assert datatypes.address('127.0.0.1').coords == geoip.GeoCoord(1, 2)
+        mock_db.record_by_addr.return_value = None
+        assert datatypes.address('127.0.0.1').city is None
+        assert datatypes.address('127.0.0.1').coords is None
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV6_DATABASE') as mock_db:
+        mock_db.region_by_addr.return_value = {'region_name': 'BB'}
+        assert datatypes.address('::1').region == 'BB'
+        mock_db.record_by_addr.return_value = {'city': 'Transylvania'}
+        assert datatypes.address('::1').city == 'Transylvania'
+        mock_db.record_by_addr.return_value = {'longitude': 3, 'latitude': 4}
+        assert datatypes.address('::1').coords == geoip.GeoCoord(3, 4)
+        mock_db.record_by_addr.return_value = None
+        assert datatypes.address('::1').city is None
+        assert datatypes.address('::1').coords is None
 
 def test_resolving():
     assert datatypes.hostname('localhost').address == datatypes.IPv4Address('127.0.0.1')

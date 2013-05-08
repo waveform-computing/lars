@@ -174,3 +174,4 @@ def test_target_04(db, rows):
     cursor = db.cursor()
     cursor.execute('SELECT COUNT(*) FROM foo')
     assert cursor.fetchall()[0][0] == 2
+

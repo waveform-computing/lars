@@ -43,7 +43,21 @@ from www2csv import geoip
 def test_init_db():
     with mock.patch('tests.test_geoip.geoip.pygeoip.GeoIP') as mock_class:
         geoip.init_database('mock.dat')
-        assert mock_class.GeoIP.called_with('mock.dat', pygeoip.MEMORY_CACHE)
+        assert mock_class.called_with('mock.dat', pygeoip.MEMORY_CACHE)
+        # Ensure when the IPv6 database isn't initialized we still get back
+        # None, not errors (as the IPv6 database is optional)
+        assert geoip._GEOIP_IPV6_DATABASE is None
+        assert geoip.country_code_by_addr_v6('::1') is None
+        assert geoip.region_by_addr_v6('::1') is None
+        assert geoip.city_by_addr_v6('::1') is None
+        assert geoip.coords_by_addr_v6('::1') is None
+        mock_class.reset_mock()
+        geoip.init_database('mock_v4.dat', 'mock_v6.dat', memcache=False)
+        assert mock_class.call_count == 2
+        assert mock_class.mock_calls == [
+            mock.call('mock_v4.dat', 0),
+            mock.call('mock_v6.dat', 0),
+            ]
 
 def test_countries_v4():
     with mock.patch('tests.test_geoip.geoip._GEOIP_IPV4_DATABASE') as mock_db:
@@ -63,4 +77,13 @@ def test_cities_v4():
         assert mock_db.city_by_addr.called_with('127.0.0.1')
         geoip.coords_by_addr('127.0.0.1')
         assert mock_db.rec_by_addr.called_with('127.0.0.1')
+
+def test_cities_v6():
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV6_DATABASE') as mock_db:
+        geoip.region_by_addr('::1')
+        assert mock_db.region_by_addr.called_with('::1')
+        geoip.city_by_addr('::1')
+        assert mock_db.city_by_addr.called_with('::1')
+        geoip.coords_by_addr('::1')
+        assert mock_db.rec_by_addr.called_with('::1')
 

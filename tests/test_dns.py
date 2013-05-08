@@ -27,6 +27,8 @@ from __future__ import (
     division,
     )
 
+import socket
+
 import pytest
 import mock
 
@@ -34,11 +36,6 @@ from www2csv import dns
 
 
 def test_from_address():
-    assert dns.from_address('127.0.0.1') == 'localhost'
-    # XXX Not sure this is going to be true on all platforms...
-    assert dns.from_address('::1') == 'ip6-localhost'
-
-def test_from_address_slow():
     with mock.patch('tests.test_dns.dns.socket.getnameinfo') as getnameinfo:
         getnameinfo.return_value = ('9.0.0.0', 0)
         dns.from_address('9.0.0.0')
@@ -48,8 +45,16 @@ def test_from_address_slow():
         assert getnameinfo.called_with(('0.0.0.0', 0), 0)
 
 def test_to_address():
-    assert dns.to_address('localhost') == '127.0.0.1'
-    assert dns.to_address('ip6-localhost') == '::1'
-    assert dns.to_address('foo.bar') is None
-    assert dns.to_address('0.0.0.0') == '0.0.0.0'
-    assert dns.to_address('9.0.0.0') == '9.0.0.0'
+    with mock.patch('tests.test_dns.dns.socket.getaddrinfo') as getaddrinfo:
+        getaddrinfo.return_value = [(socket.AF_INET, 0, 0, 0, ('127.0.0.1', 0))]
+        assert dns.to_address('localhost') == '127.0.0.1'
+        getaddrinfo.return_value = [(socket.AF_INET6, 0, 0, 0, ('::1', 0, 0, 0))]
+        assert dns.to_address('ip6-localhost') == '::1'
+        # Ensure IPv4 is always preferred over IPv6, if available
+        getaddrinfo.return_value = [
+            (socket.AF_INET6, 0, 0, 0, ('::1', 0, 0, 0)),
+            (socket.AF_INET6, 0, 0, 0, ('::2', 0, 0, 0)),
+            (socket.AF_INET, 0, 0, 0, ('127.0.0.1', 0)),
+            ]
+        assert dns.to_address('dualstack-localhost') == '127.0.0.1'
+
