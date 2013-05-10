@@ -35,13 +35,10 @@ from __future__ import (
     division,
     )
 
+import io
 import logging
 import codecs
 import csv
-try:
-    import cStringIO as StringIO
-except ImportError: # pragma: no cover
-    import StringIO # pragma: no cover
 
 
 # XXX Make Py2 str same as Py3
@@ -68,7 +65,7 @@ class UnicodeWriter(object):
     """
 
     def __init__(self, f, dialect=csv.excel, encoding='utf-8', **kwds):
-        self.queue = StringIO.StringIO()
+        self.queue = io.StringIO()
         self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
         self.stream = f
         self.encoder = codecs.getincrementalencoder(encoding)()
