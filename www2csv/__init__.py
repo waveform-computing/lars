@@ -55,9 +55,9 @@ Going through this section by section we can see the following:
    and the :meth:`~www2csv.csv.CSVTarget.write` method to write them to the
    target.
 
-This is the basic structure of just about all www2csv scripts. Most extra lines
-for filtering and manipulating rows appear within the loop at the end of the
-file, although sometimes module configuration lines are required at the top.
+This is the basic structure of most www2csv scripts. Most extra lines for
+filtering and manipulating rows appear within the loop at the end of the file,
+although sometimes extra module configuration lines are required at the top.
 
 
 Filtering rows
@@ -100,22 +100,50 @@ of the extracted data.
 For example, to filter on the year of the date::
 
     if row.date.year == 2002:
+        target.write(row)
 
 Alternatively, you could filter on whether or not the client IP belongs in a
 particular network::
 
     if row.c_ip in datatypes.network('172.0.0.0/8'):
+        target.write(row)
 
 Or use Python's string methods to filter on any string::
 
     if row.cs_User_Agent.startswith('Mozilla/'):
+        target.write(row)
+
+Or any combination of the above::
+
+    if row.date.year == 2002 and 'MSIE' in row.cs_User_Agent:
+        target.write(row)
 
 
 Manipulating row content
 ========================
 
+If you wish to modify the output structure,the simplest method is to declare
+the row structure you want at the top of the file (using the
+:func:`~www2csv.datatypes.Row` function) and then construct rows with the new
+structure in the loop (using the result of the function)::
+
+    import io
+    from www2csv import datatypes, w3c, csv
+
+    NewRow = datatypes.Row('date', 'time', 'client', 'url')
+
+    with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'w') as outfile:
+        with w3c.W3CSource(infile) as source, csv.CSVTarget(outfile) as target:
+            for row in source:
+                new_row = NewRow(row.date, row.time, row.c_ip, r.cs_uri_stem)
+                target.write(new_row)
+
+There is no need to convert column data to strings for output; all datatypes
+produced by www2csv source adapters have built-in string conversions which all
+target adapters know to use.
+
 .. _io: http://docs.python.org/2/library/io.html
-.. _datetime.date:
+.. _datetime.date: http://docs.python.org/2/library/datetime.html#date
 """
 
 __version__ = '0.1'

@@ -6,4 +6,3 @@ www2csv.datatypes
 
 
 .. automodule:: www2csv.datatypes
-   :members:
