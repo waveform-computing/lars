@@ -21,11 +21,16 @@
 # SOFTWARE.
 
 """
-Provides a common interface to the GeoIP database.
+This module provides a common interface to the GeoIP database. Most users will
+only need to be aware of the :func:`init_database` function in this module,
+which is used to initialize the GeoIP database(s). All other functions should
+be ignored; instead, users should use the
+:attr:`~www2csv.datatypes.IPv4Address.country`,
+:attr:`~www2csv.datatypes.IPv4Address.region`,
+:attr:`~www2csv.datatypes.IPv4Address.city`, and
+:attr:`~www2csv.datatypes.IPv4Address.coords` attributes of the
+:class:`~www2csv.datatypes.IPv4Address` class.
 
-This module wraps the pygeoip API to provide a common set of calls for the
-datatypes module (specifically the IPv6Port and IPv4Port classes' calculated
-properties).
 
 Reference
 =========

@@ -21,10 +21,13 @@
 # THE SOFTWARE.
 
 """
-Provides a backport of the Python 3.3 LRU caching decorator.
+This module provides a backport of the Python 3.3 LRU caching decorator. Users
+should never need to access this module directly; its contents are solely
+present to ensure DNS lookups can be cached under a Python 2.7 environment.
 
 Source adapted from `Raymond Hettinger's recipe`_ licensed under the `MIT
 license`_.
+
 
 Reference
 =========

@@ -41,13 +41,17 @@ import codecs
 import csv
 
 
-# XXX Make Py2 str same as Py3
+# Make Py2 str same as Py3
 str = type('')
 
 
 __all__ = [
-    'CSVSource', 'CSVTarget', 'QUOTE_ALL', 'QUOTE_NONE', 'QUOTE_MINIMAL',
+    'QUOTE_ALL',
+    'QUOTE_NONE',
+    'QUOTE_MINIMAL',
     'QUOTE_NONNUMERIC',
+    'CSVSource',
+    'CSVTarget',
     ]
 
 

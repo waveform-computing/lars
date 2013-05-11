@@ -26,7 +26,15 @@ the Microsoft IIS web-server.
 
 The :class:`W3CSource` class is the major element that this module provides;
 this is the class which wraps a file-like object containing a W3C formatted log
-file and yields rows from it as tuples.
+file and yields rows from it as tuples. A typical usage is as follows::
+
+    import io
+    from www2csv import w3c
+
+    with io.open('source.txt', 'r') as infile:
+        with w3c.W3CSource(infile) as source:
+            for row in source:
+                # Do something with row
 
 
 Note for maintainers
@@ -69,13 +77,17 @@ from urllib import unquote_plus
 from www2csv.datatypes import date, time, url, address, hostname
 
 
-# XXX Make Py2 str same as Py3
+# Make Py2 str same as Py3
 str = type('')
 
 
 __all__ = [
-    'W3CError', 'W3CDirectiveError', 'W3CFieldsError', 'W3CVersionError',
-    'W3CWarning', 'W3CSource'
+    'W3CSource',
+    'W3CError',
+    'W3CDirectiveError',
+    'W3CFieldsError',
+    'W3CVersionError',
+    'W3CWarning',
     ]
 
 

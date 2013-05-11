@@ -26,12 +26,12 @@ records from/to a SQL-based database. The :class:`SQLSource` class treats an
 SQL query as the source of its log records, and provides an iterable which
 yields rows in namedtuples. The :class:`SQLTarget` class accepts namedtuple
 objects in its write method and automatically generates the required SQL
-``INSERT`` or ``MERGE`` statements to append or merge records (respectively)
-into the specified target table.
+``INSERT`` statements to append records to the specified target table.
 
 The implementation has been tested with SQLite3 (built into Python), and
 PostgreSQL, but should work with any `PEP-249`_ (Python DB API 2.0) compatible
 database cursor.
+
 
 Reference
 =========
@@ -53,11 +53,16 @@ from datetime import date, time, datetime
 from www2csv import datatypes
 
 
-# XXX Make Py2 str same as Py3
+# Make Py2 str same as Py3
 str = type('')
 
 
-__all__ = ['SQLWarning', 'SQLSource', 'SQLTarget']
+__all__ = [
+# XXX    'SQLSource',
+    'SQLTarget',
+    'SQLError',
+    'SQLWarning',
+    ]
 
 
 class SQLError(StandardError):

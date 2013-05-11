@@ -186,7 +186,7 @@ from functools import total_ordering
 from www2csv import geoip, dns
 
 
-# XXX Make Py2 str same as Py3
+# Make Py2 str same as Py3
 str = type('')
 
 

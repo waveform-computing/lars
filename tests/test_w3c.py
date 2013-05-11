@@ -34,7 +34,7 @@ import pytest
 from www2csv import w3c, datatypes
 
 
-# XXX Make Py2 str same as Py3
+# Make Py2 str same as Py3
 str = type('')
 
 
