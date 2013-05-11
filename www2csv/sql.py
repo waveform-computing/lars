@@ -21,8 +21,6 @@
 # SOFTWARE.
 
 """
-Provides source and target wrappers for SQL-based databases.
-
 This module provides wrappers which permit easy reading or writing of www-log
 records from/to a SQL-based database. The :class:`SQLSource` class treats an
 SQL query as the source of its log records, and provides an iterable which
@@ -32,11 +30,13 @@ objects in its write method and automatically generates the required SQL
 into the specified target table.
 
 The implementation has been tested with SQLite3 (built into Python), and
-PostgreSQL, but should work with any PEP-249 (Python DB API 2.0) compatible
+PostgreSQL, but should work with any `PEP-249`_ (Python DB API 2.0) compatible
 database cursor.
 
 Reference
 =========
+
+.. _PEP-249: http://www.python.org/dev/peps/pep-0249/
 """
 
 from __future__ import (

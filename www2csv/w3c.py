@@ -21,12 +21,21 @@
 # SOFTWARE.
 
 """
-Provides a wrapper for W3C extended log files.
+This module provides a wrapper for W3C extended log files, typically used by
+the Microsoft IIS web-server.
+
+The :class:`W3CSource` class is the major element that this module provides;
+this is the class which wraps a file-like object containing a W3C formatted log
+file and yields rows from it as tuples.
+
+
+Note for maintainers
+====================
 
 The draft standard for the `W3C Extended Log File Format`_ is not well written
 (see the various notes and comments in the code); actual practice deviates from
-the draft in certain areas, and the draft is deficient in describing what is
-potentially permitted in various other areas.
+the draft in several areas, and the draft is deficient in describing what is
+potentially permitted in other areas.
 
 Examples of the format as produced by IIS (the major user of the draft) can be
 found on `MSDN`_. When maintaining the code below, please refer to both the
@@ -34,9 +43,6 @@ draft (for information on what *could* be included in W3C log files) as well as
 the examples (for information on what typically *is* included in W3C log files,
 even when it outright violates the draft), and bear in mind `Postel's Law`_.
 
-The :class:`W3CSource` class is the major element that this module provides;
-this is the class which wraps a file-like object containing a W3C formatted log
-file and yields rows from it as tuples.
 
 Reference
 =========

@@ -21,8 +21,6 @@
 # SOFTWARE.
 
 """
-This is the root module for the www2csv package.
-
 A typical www2csv script opens some log source, typically a file, and uses the
 source and target wrappers provided by www2csv to convert the log entries into
 some other format (potentially filtering and/or modifying the entries along the
@@ -77,24 +75,36 @@ then terminate the loop::
                 print(row)
                 break
 
-Given the following input file::
+Given the following input file (long lines indented for readability)::
 
     #Software: Microsoft Internet Information Services 6.0
     #Version: 1.0
     #Date: 2002-05-24 20:18:01
-    #Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
-    2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
+    #Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem
+        cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent)
+        cs(Referrer)
+    2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm -
+        200 7930 248 31
+        Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server)
+        http://64.224.24.114/
 
 This will produce this output on the command line::
 
-    row_type(date=datetime.date(2002, 5, 24), time=datetime.time(20, 18, 1), c_ip=IPv4Address(u'172.224.24.114'), cs_username=None, s_ip=IPv4Address(u'206.73.118.24'), s_port=80, cs_method=u'GET', cs_uri_stem=Url(scheme='', netloc='', path='/Default.htm', params='', query='', fragment=''), cs_uri_query=None, sc_status=200, sc_bytes=7930, cs_bytes=248, time_taken=31.0, cs_User_Agent='Mozilla/4.0 (compatible; MSIE 5.01; Windows 2000 Server)', cs_Referrer='http://64.224.24.114/')
+    row_type(date=datetime.date(2002, 5, 24), time=datetime.time(20, 18, 1),
+        c_ip=IPv4Address(u'172.224.24.114'), cs_username=None,
+        s_ip=IPv4Address(u'206.73.118.24'), s_port=80, cs_method=u'GET',
+        cs_uri_stem=Url(scheme='', netloc='', path='/Default.htm', params='',
+        query='', fragment=''), cs_uri_query=None, sc_status=200,
+        sc_bytes=7930, cs_bytes=248, time_taken=31.0,
+        cs_User_Agent='Mozilla/4.0 (compatible; MSIE 5.01; Windows 2000
+        Server)', cs_Referrer='http://64.224.24.114/')
 
-From this you can see that field names like ``c-ip`` have been converted into
-``c_ip`` (as ``-`` is an illegal character in Python identifiers). You can
-also see that instead of simple strings being extracted, the data has been
+From this one can see that field names like ``c-ip`` have been converted into
+``c_ip`` (``-`` is an illegal character in Python identifiers). Furthermore it
+is apparent that instead of simple strings being extracted, the data has been
 converted into a variety of appropriate datatypes (`datetime.date`_ for the
 ``date`` field, :class:`~www2csv.datatypes.Url` for the ``cs-uri-stem`` field,
-and so on). This makes it trivial to filter based upon just about any element
+and so on). This significantly aids in filtering rows based upon sub-attributes
 of the extracted data.
 
 For example, to filter on the year of the date::
