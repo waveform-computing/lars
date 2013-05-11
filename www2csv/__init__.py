@@ -102,10 +102,11 @@ This will produce this output on the command line::
 From this one can see that field names like ``c-ip`` have been converted into
 ``c_ip`` (``-`` is an illegal character in Python identifiers). Furthermore it
 is apparent that instead of simple strings being extracted, the data has been
-converted into a variety of appropriate datatypes (`datetime.date`_ for the
-``date`` field, :class:`~www2csv.datatypes.Url` for the ``cs-uri-stem`` field,
-and so on). This significantly aids in filtering rows based upon sub-attributes
-of the extracted data.
+converted into a variety of appropriate datatypes
+(:class:`~www2csv.datatypes.Date` for the ``date`` field,
+:class:`~www2csv.datatypes.Url` for the ``cs-uri-stem`` field, and so on). This
+significantly aids in filtering rows based upon sub-attributes of the extracted
+data.
 
 For example, to filter on the year of the date::
 
@@ -118,7 +119,7 @@ particular network::
     if row.c_ip in datatypes.network('172.0.0.0/8'):
         target.write(row)
 
-Or use Python's string methods to filter on any string::
+Or use Python's `string methods`_ to filter on any string::
 
     if row.cs_User_Agent.startswith('Mozilla/'):
         target.write(row)
@@ -153,7 +154,7 @@ produced by www2csv source adapters have built-in string conversions which all
 target adapters know to use.
 
 .. _io: http://docs.python.org/2/library/io.html
-.. _datetime.date: http://docs.python.org/2/library/datetime.html#date
+.. _string methods: http://docs.python.org/2/library/stdtypes.html#string-methods
 """
 
 __version__ = '0.1'

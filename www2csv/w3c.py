@@ -26,15 +26,29 @@ the Microsoft IIS web-server.
 
 The :class:`W3CSource` class is the major element that this module provides;
 this is the class which wraps a file-like object containing a W3C formatted log
-file and yields rows from it as tuples. A typical usage is as follows::
+file and yields rows from it as tuples.
 
-    import io
-    from www2csv import w3c
 
-    with io.open('source.txt', 'r') as infile:
-        with w3c.W3CSource(infile) as source:
-            for row in source:
-                # Do something with row
+Exceptions
+==========
+
+.. autoclass:: W3CError
+   :members:
+
+.. autoclass:: W3CDirectiveError
+
+.. autoclass:: W3CFieldsError
+
+.. autoclass:: W3CVersionError
+
+.. autoclass:: W3CWarning
+
+
+Classes
+=======
+
+.. autoclass:: W3CSource
+   :members:
 
 
 Note for maintainers
@@ -51,9 +65,6 @@ draft (for information on what *could* be included in W3C log files) as well as
 the examples (for information on what typically *is* included in W3C log files,
 even when it outright violates the draft), and bear in mind `Postel's Law`_.
 
-
-Reference
-=========
 
 .. _W3C Extended Log File Format: http://www.w3.org/TR/WD-logfile.html
 .. _MSDN: http://www.microsoft.com/technet/prodtechnol/WindowsServer2003/Library/IIS/ffdd7079-47be-4277-921f-7a3a6e610dcb.mspx
@@ -263,6 +274,17 @@ class W3CSource(object):
     wrapper itself (useful in the case that relative timestamps, e.g. with the
     ``#Date`` directive, are being used) in which case the attribute will be
     the lower-cased version of the directive name without the ``#`` prefix.
+
+    A typical usage of this class is as follows::
+
+        import io
+        from www2csv import w3c
+
+        with io.open('source.txt', 'r') as infile:
+            with w3c.W3CSource(infile) as source:
+                for row in source:
+                    # Do something with row
+                    pass
 
     :param source: A file-like object containing the source stream
     """
