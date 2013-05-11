@@ -6,4 +6,3 @@ www2csv.sql - Direct Database Output
 
 
 .. automodule:: www2csv.sql
-   :members:

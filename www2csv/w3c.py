@@ -42,13 +42,13 @@ Exceptions
 .. autoclass:: W3CError
    :members:
 
-.. autoclass:: W3CDirectiveError
+.. autoexception:: W3CDirectiveError
 
-.. autoclass:: W3CFieldsError
+.. autoexception:: W3CFieldsError
 
-.. autoclass:: W3CVersionError
+.. autoexception:: W3CVersionError
 
-.. autoclass:: W3CWarning
+.. autoexception:: W3CWarning
 
 
 Examples

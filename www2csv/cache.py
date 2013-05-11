@@ -29,7 +29,7 @@ Source adapted from `Raymond Hettinger's recipe`_ licensed under the `MIT
 license`_.
 
 
-Reference
+Functions
 =========
 
 .. _Raymond Hettinger's recipe: http://code.activestate.com/recipes/578078-py26-and-py30-backport-of-python-33s-lru-cache/

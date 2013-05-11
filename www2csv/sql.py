@@ -21,22 +21,55 @@
 # SOFTWARE.
 
 """
-This module provides wrappers which permit easy reading or writing of www-log
-records from/to a SQL-based database. The :class:`SQLSource` class treats an
-SQL query as the source of its log records, and provides an iterable which
-yields rows in namedtuples. The :class:`SQLTarget` class accepts namedtuple
-objects in its write method and automatically generates the required SQL
+This module provides a target wrapper for SQL-based databases, which can
+provide a powerful means of analyzing log data.
+
+The :class:`SQLTarget` class accepts row objects in its
+:meth:`~SQLTarget.write` method and automatically generates the required SQL
 ``INSERT`` statements to append records to the specified target table.
 
 The implementation has been tested with SQLite3 (built into Python), and
 PostgreSQL, but should work with any `PEP-249`_ (Python DB API 2.0) compatible
-database cursor.
+database cursor. A list of available Python database drives is maintained on
+the Python wiki `DatabaseInterfaces`_ page.
 
 
-Reference
-=========
+Classes
+=======
+
+.. autoclass:: SQLTarget
+   :members:
+
+
+Exceptions
+==========
+
+.. autoexception:: SQLError
+   :members:
+
+.. autoexception:: SQLWarning
+
+
+Examples
+========
+
+A typical example of working with the class is shown below::
+
+    import io
+    import sqlite3
+    from www2csv import apache, sql
+
+    connection = sqlite3.connect('apache.db', detect_types=sqlite3.PARSE_DECLTYPES)
+
+    with io.open('/var/log/apache2/access.log', 'rb') as infile:
+        with io.open('apache.csv', 'wb') as outfile:
+            with apache.ApacheSource(infile) as source:
+                with sql.SQLTarget(sqlite3, connection, 'log_entries', create_table=True) as target:
+                    for row in source:
+                        target.write(row)
 
 .. _PEP-249: http://www.python.org/dev/peps/pep-0249/
+.. _DatabaseInterfaces: http://wiki.python.org/moin/DatabaseInterfaces
 """
 
 from __future__ import (
@@ -78,11 +111,94 @@ class SQLWarning(Warning):
 
 
 class SQLSource(object):
-    # TODO Code SQLSource
+    # XXX Code SQLSource
     pass
 
 
 class SQLTarget(object):
+    """
+    Wraps a database connection to insert row tuples into an SQL database
+    table.
+
+    This wrapper provides a simple :meth:`write` method which can be used to
+    insert row tuples into a specified table, which can optionally by created
+    automatically by the wrapper before insertion of the first row. The wrapper
+    must be passed a database connection object that confirms to the Python
+    DB-API (version 2.0) as defined by `PEP-249`_.
+
+    The *db_module* parameter must be passed the module that defines the
+    database interface (this odd requirement is simply so that the wrapper
+    can look up the parameter style that the interface uses).
+
+    The *connection* parameter must be given an active database connection
+    object (presumably belonging to the module passed to *db_module*).
+
+    The *table* parameter is the final mandatory parameter which names the
+    table that values are to be inserted into. If the table name requires
+    quoting in the target SQL dialect, you should include such quoting in the
+    *table* value (this class does not try and discern what database engine
+    you are connecting to and thus has no idea about non-standard quoting
+    styles like ```MySQL``` or ``[MS-SQL]``).
+
+    The *commit* parameter controls how often a ``COMMIT`` statement is
+    executed when inserting rows. By default, this is 1000 which is usually
+    sufficient to provide decent performance but may (in certain database
+    engines with fixed size transaction logs) cause errors, in which case you
+    may wish to specify a lower value.
+
+    If the *create_table* parameter is set to True (it defaults to False), when
+    the :meth:`write` method is first called, the class will determine column
+    names and types from the row passed in and will attempt to generate and
+    execute a ``CREATE TABLE`` statement to set up the target table
+    automatically. The database types that are used in the ``CREATE TABLE``
+    statement are controlled by other optional parameters and are documented in
+    the table below:
+
+    +-----------------+-------------------------------------------------------+
+    | Parameter       | Default Value (SQL)                                   |
+    +=================+=======================================================+
+    | *str_type*      | ``VARCHAR(1000)`` - typically used for URL fields.    |
+    +-----------------+-------------------------------------------------------+
+    | *int_type*      | ``INTEGER`` - used for fields like status and size.   |
+    |                 | If your server is serving large binaries you may wish |
+    |                 | to use a 64-bit type like ``BIGINT`` here instead.    |
+    +-----------------+-------------------------------------------------------+
+    | *fixed_type*    | ``DOUBLE`` - used for fields like time_taken. Some    |
+    |                 | users may wish to change this an appropriate          |
+    |                 | ``NUMERIC`` or ``DECIMAL`` specification for          |
+    |                 | precision.                                            |
+    +-----------------+-------------------------------------------------------+
+    | *date_type*     | ``DATE``                                              |
+    +-----------------+-------------------------------------------------------+
+    | *time_type*     | ``TIME``                                              |
+    +-----------------+-------------------------------------------------------+
+    | *datetime_type* | ``TIMESTAMP`` - MS-SQL users will likely wish to      |
+    |                 | change this to ``DATETIME`` or ``SMALLDATETIME``.     |
+    |                 | MySQL users may wish to change this to ``DATETIME``,  |
+    |                 | although ``TIMESTAMP`` is technically also supported  |
+    |                 | (albeit with functional differences).                 |
+    +-----------------+-------------------------------------------------------+
+    | *ip_type*       | ``VARCHAR(53)`` - this is sufficient for storing all  |
+    |                 | possible IP address and port combinations up and      |
+    |                 | including an IPv6 v4-mapped address. If you are       |
+    |                 | certain you will only need IPv4 support you may wish  |
+    |                 | to use a length of 21 (with port) or 15 (no port).    |
+    |                 | PostgreSQL users may wish to use the special ``inet`` |
+    |                 | type instead as this is much more efficient but       |
+    |                 | cannot store port information.                        |
+    +-----------------+-------------------------------------------------------+
+    | *hostname_type* | ``VARCHAR(255)``                                      |
+    +-----------------+-------------------------------------------------------+
+    | *filename_type* | ``VARCHAR(260)``                                      |
+    +-----------------+-------------------------------------------------------+
+
+    If the *drop_table* parameter is set to True (it defaults to False), the
+    wrapper will first attempt to use ``DROP TABLE`` to destroy any existing
+    table before attempting ``CREATE TABLE``. If *ignore_drop_errors* is
+    True (which it is by default) then any errors encountered during the drop
+    operation (e.g. if the table does not exist) will be ignored.
+    """
+
     def __init__(
             self, db_module, connection, table, commit=1000,
             create_table=False, drop_table=False, ignore_drop_errors=True,
