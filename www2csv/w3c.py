@@ -29,6 +29,13 @@ this is the class which wraps a file-like object containing a W3C formatted log
 file and yields rows from it as tuples.
 
 
+Classes
+=======
+
+.. autoclass:: W3CSource
+   :members:
+
+
 Exceptions
 ==========
 
@@ -44,11 +51,20 @@ Exceptions
 .. autoclass:: W3CWarning
 
 
-Classes
-=======
+Examples
+========
 
-.. autoclass:: W3CSource
-   :members:
+A typical usage of this class is as follows::
+
+    import io
+    from www2csv import w3c, csv
+
+    with io.open('logs\\iis.txt', 'rb') as infile:
+        with io.open('iis.csv', 'wb') as outfile:
+            with w3c.W3CSource(infile) as source:
+                with csv.CSVTarget(outfile) as target:
+                    for row in source:
+                        target.write(row)
 
 
 Note for maintainers
@@ -274,17 +290,6 @@ class W3CSource(object):
     wrapper itself (useful in the case that relative timestamps, e.g. with the
     ``#Date`` directive, are being used) in which case the attribute will be
     the lower-cased version of the directive name without the ``#`` prefix.
-
-    A typical usage of this class is as follows::
-
-        import io
-        from www2csv import w3c
-
-        with io.open('source.txt', 'r') as infile:
-            with w3c.W3CSource(infile) as source:
-                for row in source:
-                    # Do something with row
-                    pass
 
     :param source: A file-like object containing the source stream
     """

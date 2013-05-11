@@ -29,11 +29,34 @@ be ignored; instead, users should use the
 :attr:`~www2csv.datatypes.IPv4Address.region`,
 :attr:`~www2csv.datatypes.IPv4Address.city`, and
 :attr:`~www2csv.datatypes.IPv4Address.coords` attributes of the
-:class:`~www2csv.datatypes.IPv4Address` class.
+:class:`~www2csv.datatypes.IPv4Address` and
+:class:`~www2csv.datatypes.IPv6Address` classes.
 
 
-Reference
+Functions
 =========
+
+.. autofunction:: init_database
+
+.. autofunction:: country_code_by_addr
+
+.. autofunction:: country_code_by_addr_v6
+
+.. autofunction:: city_by_addr
+
+.. autofunction:: city_by_addr_v6
+
+.. autofunction:: region_by_addr
+
+.. autofunction:: region_by_addr_v6
+
+.. autofunction:: coords_by_addr
+
+.. autofunction:: coords_by_addr_v6
+
+
+Examples
+========
 
 """
 
@@ -60,17 +83,30 @@ def init_database(v4_filename, v6_filename=None, memcache=True):
     """
     Initializes the global GeoIP database instance in a thread-safe manner.
 
-    If the GeoIP country database hasn't been opened, this function will
-    open it, and store a global reference to it. By default, the function
-    will cache all data in memory (on the assumption that just about any
-    server has more than sufficient RAM for this these days), but this
-    behaviour can be overridden with the ``memcache`` parameter.
+    This function opens GeoIP databases for use by the
+    :class:`~www2csv.datatypes.IPv4Address` and
+    :class:`~www2csv.datatypes.IPv6Address` classes. GeoIP databases are
+    hierarchical: if you open a country-only database, you will only be able to
+    use country-level lookups. However, city-level databases enable all
+    supported lookups (country, region, city, and coordinates).
 
-    The optional v6_filename parameter specifies the location of the
+    By default, the function caches the entire content of (both) the
+    database(s) in memroy (on the assumption that just about any machine has
+    more than sufficient RAM for this), but this behaviour can be overridden
+    with the *memcache* parameter.
+
+    The optional *v6_filename* parameter specifies the location of the
     IPv6 database which will be used for IPv6 addresses. The GeoIP IPv6
     databases are orthogonal to the IPv4 databases (you cannot lookup IPv4
     addresses using an IPv6 database) - hence why the two databases are
-    stored in separate variables.
+    stored and specified separately.
+
+    .. warning::
+
+        At the time of writing, the free GeoLite IPv6 city-level database does
+        not work (the authors seem to be using a new database format which the
+        pygeoip API does not yet know). This does not affect the IPv4
+        city-level database.
 
     :param str v4_filename: The filename of the IPv4 database
     :param str v6_filename: The filename of the IPv6 database (optional)
@@ -88,7 +124,9 @@ def init_database(v4_filename, v6_filename=None, memcache=True):
 
 def country_code_by_addr(address):
     """
-    Returns the country code associated with the specified address.
+    Returns the country code associated with the specified address. You should
+    use the :attr:`~www2csv.datatypes.IPv4Address.country` attribute instead of
+    this function.
 
     :param str address: The address to lookup the country for
     :returns str: The country code associated with the address, or None
@@ -99,7 +137,9 @@ def country_code_by_addr(address):
 
 def country_code_by_addr_v6(address):
     """
-    Returns the country code associated with the specified address.
+    Returns the country code associated with the specified address. You should
+    use the :attr:`~www2csv.datatypes.IPv6Address.country` attribute instead of
+    this function.
 
     :param str address: The address to lookup the country for
     :returns str: The country code associated with the address, or None
@@ -111,7 +151,9 @@ def country_code_by_addr_v6(address):
 
 def region_by_addr(address):
     """
-    Returns the region (e.g. state) associated with the address.
+    Returns the region (e.g. state) associated with the address. You should
+    use the :attr:`~www2csv.datatypes.IPv4Address.region` attribute instead of
+    this function.
 
     Given an address, this function returns the region associated with it.
     In the case of the US, this is the state. In the case of other
@@ -128,7 +170,9 @@ def region_by_addr(address):
 
 def region_by_addr_v6(address):
     """
-    Returns the region (e.g. state) associated with the address.
+    Returns the region (e.g. state) associated with the address. You should use
+    the :attr:`~www2csv.datatypes.IPv6Address.region` attribute instead of this
+    function.
 
     Given an address, this function returns the region associated with it.
     In the case of the US, this is the state. In the case of other
@@ -146,7 +190,9 @@ def region_by_addr_v6(address):
 
 def city_by_addr(address):
     """
-    Returns the city associated with the address.
+    Returns the city associated with the address. You should use the
+    :attr:`~www2csv.datatypes.IPv4Address.city` attribute instead of this
+    function.
 
     Given an address, this function returns the city associated with it.
     Note: this function will raise an exception if the GeoIP database
@@ -161,7 +207,9 @@ def city_by_addr(address):
 
 def city_by_addr_v6(address):
     """
-    Returns the city associated with the address.
+    Returns the city associated with the address. You should use the
+    :attr:`~www2csv.datatypes.IPv6Address.city` attribute instead of this
+    function.
 
     Given an address, this function returns the city associated with it.
     Note: this function will raise an exception if the GeoIP database
@@ -177,7 +225,9 @@ def city_by_addr_v6(address):
 
 def coords_by_addr(address):
     """
-    Returns the coordinates (long, lat) associated with the address.
+    Returns the coordinates (long, lat) associated with the address. You should
+    use the :attr:`~www2csv.datatypes.IPv4Address.coords` attribute instead of
+    this function.
 
     Given an address, this function returns a tuple with the attributes
     longitude and latitude (in that order) representing the (very)
@@ -194,7 +244,9 @@ def coords_by_addr(address):
 
 def coords_by_addr_v6(address):
     """
-    Returns the coordinates (long, lat) associated with the address.
+    Returns the coordinates (long, lat) associated with the address. You should
+    use the :attr:`~www2csv.datatypes.IPv6Address.coords` attribute instead of
+    this function.
 
     Given an address, this function returns a tuple with the attributes
     longitude and latitude (in that order) representing the (very)

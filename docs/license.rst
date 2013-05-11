@@ -92,7 +92,7 @@ The documentation for the :class:`~www2csv.datatypes.IPv4Address`,
 :class:`~www2csv.datatypes.IPv6Network` classes in www2csv are derived from the
 `ipaddress`_ documentation sources which are subject to the following copyright
 and are licensed to the PSF under the contributor agreement which makes them
-subject to the PSF license from the section above.
+subject to the PSF license from the section above:
 
 Copyright (c) 2007 Google Inc.
 

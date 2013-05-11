@@ -15,12 +15,14 @@ modifying them to suit your purposes.
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    www2csv
-   www2csv.datatypes
    www2csv.w3c
    www2csv.csv
    www2csv.sql
+   www2csv.geoip
+   www2csv.datatypes
    www2csv.dns
    www2csv.cache
+
