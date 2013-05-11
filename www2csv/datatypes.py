@@ -832,19 +832,19 @@ class Time(dt.time):
 
        In ``range(24)``.
 
-    .. attribute:: time.minute
+    .. attribute:: minute
 
        In ``range(60)``.
 
-    .. attribute:: time.second
+    .. attribute:: second
 
        In ``range(60)``.
 
-    .. attribute:: time.microsecond
+    .. attribute:: microsecond
 
        In ``range(1000000)``.
 
-    .. attribute:: time.tzinfo
+    .. attribute:: tzinfo
 
        The object passed as the tzinfo argument to the :class:`Time`
        constructor, or ``None`` if none was passed.
