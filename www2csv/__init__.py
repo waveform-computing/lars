@@ -146,7 +146,7 @@ structure in the loop (using the result of the function)::
     with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'w') as outfile:
         with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
             for row in source:
-                new_row = NewRow(row.date, row.time, row.c_ip, r.cs_uri_stem)
+                new_row = NewRow(row.date, row.time, row.c_ip, row.cs_uri_stem)
                 target.write(new_row)
 
 There is no need to convert column data to strings for output; all datatypes
