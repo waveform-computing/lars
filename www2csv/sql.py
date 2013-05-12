@@ -79,8 +79,8 @@ from __future__ import (
     division,
     )
 
-import logging
 import warnings
+import sqlite3
 from datetime import date, time, datetime
 
 from www2csv import datatypes
@@ -189,7 +189,7 @@ class SQLTarget(object):
     +-----------------+-------------------------------------------------------+
     | *hostname_type* | ``VARCHAR(255)``                                      |
     +-----------------+-------------------------------------------------------+
-    | *filename_type* | ``VARCHAR(260)``                                      |
+    | *path_type*     | ``VARCHAR(260)``                                      |
     +-----------------+-------------------------------------------------------+
 
     If the *drop_table* parameter is set to True (it defaults to False), the
@@ -205,7 +205,7 @@ class SQLTarget(object):
             str_type='VARCHAR(1000)', int_type='INTEGER', fixed_type='DOUBLE',
             date_type='DATE', time_type='TIME', datetime_type='TIMESTAMP',
             ip_type='VARCHAR(53)', hostname_type='VARCHAR(255)',
-            filename_type='VARCHAR(260)'):
+            path_type='VARCHAR(260)'):
         if not hasattr(db_module, 'paramstyle'):
             raise NameError('The database module has no "paramstyle" global')
         if not hasattr(db_module, 'Error'):
@@ -220,19 +220,26 @@ class SQLTarget(object):
         self.drop_table = drop_table
         self.ignore_drop_errors = ignore_drop_errors
         self.type_map = {
+            # Python base types
             str:                   str_type,
             int:                   int_type,
             float:                 fixed_type,
             date:                  date_type,
             time:                  time_type,
             datetime:              datetime_type,
+            ipaddress.IPv4Address: ip_type,
+            ipaddress.IPv6Address: ip_type,
+            # www2csv types
+            datatypes.Date:        date_type,
+            datatypes.Time:        time_type,
+            datatypes.DateTime:    datetime_type,
             datatypes.Url:         str_type,
             datatypes.IPv4Address: ip_type,
             datatypes.IPv6Address: ip_type,
             datatypes.IPv4Port:    ip_type,
             datatypes.IPv6Port:    ip_type,
             datatypes.Hostname:    hostname_type,
-            datatypes.Filename:    filename_type,
+            datatypes.Path:        path_type,
             }
         self._first_row = None
         self._row_casts = None
@@ -325,7 +332,7 @@ class SQLTarget(object):
         # Bit of a dirty hack, but it seems the most user-friendly way of
         # dealing with IP addresses depending on the type selected for the
         # target table
-        ip_bases = (datatypes.IPv4Address, datatypes.IPv6Address)
+        ip_bases = (ipaddress.IPv4Address, ipaddress.IPv6Address)
         if self.type_map[datatypes.IPv4Address].upper().startswith('INT'):
             ip_cast = int
         else:
