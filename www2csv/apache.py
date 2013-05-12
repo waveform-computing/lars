@@ -108,9 +108,8 @@ from __future__ import (
 import re
 import warnings
 import logging
-from urllib import unquote_plus
 
-from www2csv.datatypes import date, time, datetime,url, address, hostname, row
+from www2csv import datatypes as dt
 
 
 # Make Py2 str same as Py3
@@ -121,7 +120,19 @@ __all__ = [
     'ApacheSource',
     'ApacheError',
     'ApacheWarning',
+    'COMMON',
+    'COMMON_VHOST',
+    'COMBINED',
+    'REFERER',
+    'USER_AGENT',
     ]
+
+
+COMMON = '%h %l %u %t "%r" %>s %b'
+COMMON_VHOST = '%v %h %l %u %t "%r" %>s %b'
+COMBINED = '%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i"'
+REFERER = '%{Referer} -> %U'
+USER_AGENT = '%{User-agent}i'
 
 
 class ApacheError(StandardError):
@@ -160,9 +171,9 @@ class ApacheSource(object):
     Wraps a steam containing a Apache formatted log file.
 
     This wrapper converts a stream containing an Apache log file into an
-    iterable which yields tuples. Each tuple is a namedtuple instance with the
-    fieldnames of the tuple being derived from the following mapping of Apache
-    format strings:
+    iterable which yields tuples. Each tuple has fieldnames derived from the
+    following mapping of Apache format strings (which occur in the optional
+    *log_format* parameter):
 
     ============= ==================
     Format String Field Name
@@ -173,16 +184,16 @@ class ApacheSource(object):
     %b            size_clf
     %{Foobar}C    cookie_Foobar (1)
     %D            time_taken_ms
-    %{FOOBAR}e    env_FOOBAR
+    %{FOOBAR}e    env_FOOBAR (1)
     %f            filename
     %h            remote_host
     %H            protocol
-    %{Foobar}i    req_Foobar
+    %{Foobar}i    req_Foobar (1)
     %k            keepalive
     %l            ident
     %m            method
-    %{Foobar}n    note_Foobar
-    %{Foobar}o    resp_Foobar
+    %{Foobar}n    note_Foobar (1)
+    %{Foobar}o    resp_Foobar (1)
     %p            port
     %{canonical}p port
     %{local}p     local_port
@@ -216,18 +227,169 @@ class ApacheSource(object):
 
     .. warning::
 
-        The wrapper will only operate on LogFormat specifications that can be
-        unambiguously parsed with a regular expression. In particular, this
+        The wrapper will only operate on *log_format* specifications that can
+        be unambiguously parsed with a regular expression. In particular, this
         means that if a field can contain whitespace it must be surrounded by
         characters that it cannot legitimately contain (or cannot contain
         unescaped versions of). Typically double-quotes are used as Apache
-        (from version 2.0.46) escapes double-quotes within %r, %i, and %o.
-        See Apache's `Custom Log Formats`_ documentation for full details.
+        (from version 2.0.46) escapes double-quotes within %r, %i, and %o.  See
+        Apache's `Custom Log Formats`_ documentation for full details.
 
     :param source: A file-like object containing the source stream
     :param format: Defaults to :data:`COMMON` but can be set to any valid
                    Apache LogFormat string
     """
 
-    def __init__(self, source, format=COMMON):
-        pass
+    def __init__(self, source, log_format=COMMON):
+        self.source = source
+        self.log_format = log_format
+        self._parse_log_format()
+        self._row_pattern = None
+        self._row_funcs = None
+        self._row_type = None
+
+    # This regex is used for extracting the format specifications from an
+    # Apache LogFormat directive. See [1] for full details of the syntax.
+    #
+    # [1] http://httpd.apache.org/docs/2.2/mod/mod_log_config.html#formats
+    LOG_FIELD_RE = re.compile(
+        # Main capturing group to ensure re.split() returns everything
+        r'(%'
+            # Optional status code filter with optional negation
+            r'(?:!?\d{3}(?:,\d{3})*)?'
+            # Optional request original/final modifier
+            r'[<>]?'
+            # Format specification group
+            r'(?:'
+                # Simple specs
+                r'[aAbBDfhHklmpPqrRstTuUvVXIO]|'
+                # Header/env/pid specs
+                r'\{[a-zA-Z][a-zA-Z0-9_-]*\}[einopP]|'
+                # Cookie spec
+                r'\{[^(){}<>[\]@,;:\\"/?= \t]+\}C|'
+                # Time spec
+                r'\{[^}]*\}t'
+            r')'
+        r')'
+        )
+
+    # This regular expression is used to parse a format specification after
+    # extraction from a LogFormat string. It is effectively a simplified form
+    # of LOG_FIELD_RE above with anchors and groups to capture the useful
+    # portions of the spec (basically the formatting character and any {field}
+    # before it.
+    LOG_SPEC_RE = re.compile(
+        r'^%'
+        # Optional status code - non-capturing group as we don't want this
+        r'(?:!?\d{3}(?:,\d{3})*)?'
+        # Optional request modifier - no group as we don't want this either
+        r'[<>]?'
+        # Optional {field} group
+        r'(?P<field>{[^}]*})?'
+        # Specification suffix letter
+        r'(?P<suffix>[aAbBCDefhHiklmnopPqrRstTuUvVXIO])'
+        r'$'
+        )
+
+    # This mapping relates format specifications to user-friendly field names
+    # for use in the generated row tuple. Note that some mappings include a
+    # string substitution portion to accept sanitized versions of, for example,
+    # cookie names, or HTTP header fields.
+    LOG_FIELD_NAMES = {
+       'a': 'remote_ip',
+       'A': 'local_ip',
+       'B': 'size',
+       'b': 'size_clf',
+       'C': 'cookie_%s',
+       'D': 'time_taken_ms',
+       'e': 'env_%s',
+       'f': 'filename',
+       'h': 'remote_host',
+       'H': 'protocol',
+       'i': 'req_%s',
+       'k': 'keepalive',
+       'l': 'ident',
+       'm': 'method',
+       'n': 'note_%s',
+       'o': 'resp_%s',
+       'p': 'port',
+       'P': 'pid',
+       'q': 'url_query',
+       'r': 'request',
+       'R': 'handler',
+       's': 'status',
+       't': 'time',
+       'T': 'time_taken',
+       'u': 'remote_user',
+       'U': 'url_stem',
+       'v': 'server_name',
+       'V': 'canonical_name',
+       'X': 'connection_status',
+       'I': 'bytes_received',
+       'O': 'bytes_sent',
+       }
+
+    def _parse_log_format(self):
+        self._row_pattern = ''
+        self._row_funcs = []
+        self._row_type = None
+        tuple_fields = []
+        # re.split() returns (when given a pattern with a matching group) a
+        # list composed of [str, sep, str, sep, str, ...]. However, our pattern
+        # is actually intended to match format strings rather than separators
+        # (which could be anything) so instead we'll get back something like
+        # [sep, str, sep, str, sep, ...]. This is why separator is initially
+        # True below
+        separator = True
+        for s in self.LOG_FIELD_RE.split(self.log_format):
+            if s:
+                if separator:
+                    self._row_pattern += re.escape(s)
+                else:
+                    tuple_fields.append(self._parse_log_spec(s))
+            separator = not separator
+        self._row_type = dt.row(*tuple_fields)
+
+    def _parse_log_spec(self, s):
+        # This function parses a single %{field}s in an Apache LogFormat string;
+        # it is called by _parse_log_format which handles splitting up the
+        # LogFormat into individual segments
+        m = self.LOG_SPEC_RE.match(s)
+        if m:
+            field, suffix = m.group('field'), m.group('suffix')
+        else:
+            raise ValueError('Invalid format specification "%s"' % s)
+        try:
+            # General case: simple lookup to determine field name
+            field_name = self.LOG_FIELD_NAMES[suffix]
+        except KeyError:
+            raise ValueError('Invalid format suffix "%s"' % suffix)
+        if suffix in 'Ceino':
+            # If a {field} is expected, sanitize it and substitute
+            field_name = field_name % dt.sanitize_name(field)
+        elif suffix == 'p':
+            # Special case: port
+            if field:
+                try:
+                    field_name = {
+                        'canonical': 'port',
+                        'local':     'local_port',
+                        'remote':    'remote_port',
+                        }[field]
+                except KeyError:
+                    raise ValueError('Invalid format in "%%{%s}p"' % field)
+        elif suffix == 'P':
+            # Special case: PID
+            if field:
+                try:
+                    field_name = {
+                        'pid': 'pid',
+                        'tid': 'tid',
+                        'hextid': 'hextid',
+                        }[field]
+                except KeyError:
+                    raise ValueError('Invalid format in "%%{%s}P"' % field)
+        # XXX self._row_pattern +=
+        # XXX self._row_funcs.append()
+        return field_name
+
