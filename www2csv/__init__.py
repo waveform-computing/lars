@@ -141,7 +141,7 @@ structure in the loop (using the result of the function)::
     import io
     from www2csv import datatypes, w3c, csv
 
-    NewRow = datatypes.Row('date', 'time', 'client', 'url')
+    NewRow = datatypes.row('date', 'time', 'client', 'url')
 
     with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'w') as outfile:
         with w3c.W3CSource(infile) as source, csv.CSVTarget(outfile) as target:
