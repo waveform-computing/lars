@@ -24,7 +24,7 @@
 This module provides a wrapper for W3C extended log files, typically used by
 the Microsoft IIS web-server.
 
-The :class:`W3CSource` class is the major element that this module provides;
+The :class:`IISSource` class is the major element that this module provides;
 this is the class which wraps a file-like object containing a W3C formatted log
 file and yields rows from it as tuples.
 
@@ -32,23 +32,23 @@ file and yields rows from it as tuples.
 Classes
 =======
 
-.. autoclass:: W3CSource
+.. autoclass:: IISSource
    :members:
 
 
 Exceptions
 ==========
 
-.. autoclass:: W3CError
+.. autoclass:: IISError
    :members:
 
-.. autoexception:: W3CDirectiveError
+.. autoexception:: IISDirectiveError
 
-.. autoexception:: W3CFieldsError
+.. autoexception:: IISFieldsError
 
-.. autoexception:: W3CVersionError
+.. autoexception:: IISVersionError
 
-.. autoexception:: W3CWarning
+.. autoexception:: IISWarning
 
 
 Examples
@@ -57,11 +57,11 @@ Examples
 A typical usage of this class is as follows::
 
     import io
-    from www2csv import w3c, csv
+    from www2csv import iis, csv
 
     with io.open('logs\\iis.txt', 'rb') as infile:
         with io.open('iis.csv', 'wb') as outfile:
-            with w3c.W3CSource(infile) as source:
+            with iis.IISSource(infile) as source:
                 with csv.CSVTarget(outfile) as target:
                     for row in source:
                         target.write(row)
@@ -109,12 +109,12 @@ str = type('')
 
 
 __all__ = [
-    'W3CSource',
-    'W3CError',
-    'W3CDirectiveError',
-    'W3CFieldsError',
-    'W3CVersionError',
-    'W3CWarning',
+    'IISSource',
+    'IISError',
+    'IISDirectiveError',
+    'IISFieldsError',
+    'IISVersionError',
+    'IISWarning',
     ]
 
 
@@ -132,7 +132,7 @@ def sanitize_name(name):
 
 def url_parse(s):
     """
-    Parse a URI string in a W3C extended log format file.
+    Parse a URI string in a IIS extended log format file.
 
     This is a variant on the urlparse.urlparse function. The result type has
     been extended to include a :meth:`ParseResult.__str__` method which outputs
@@ -146,7 +146,7 @@ def url_parse(s):
 
 def int_parse(s):
     """
-    Parse an integer string in a W3C extended log format file.
+    Parse an integer string in a IIS extended log format file.
 
     This is a simple variant on int() that returns None in the case of a single
     dash being passed to s.
@@ -159,7 +159,7 @@ def int_parse(s):
 
 def fixed_parse(s):
     """
-    Parse an floating point string in a W3C extended log format file.
+    Parse an floating point string in a IIS extended log format file.
 
     This is a simple variant on float() that returns None in the case of a
     single dash being passed to s.
@@ -172,7 +172,7 @@ def fixed_parse(s):
 
 def date_parse(s):
     """
-    Parse a date string in a W3C extended log format file.
+    Parse a date string in a IIS extended log format file.
 
     :param str s: The string containing the date to parse (YYYY-MM-DD format)
     :returns: A datetime.date object representing the date
@@ -182,7 +182,7 @@ def date_parse(s):
 
 def time_parse(s):
     """
-    Parse a time string in a W3C extended log format file.
+    Parse a time string in a IIS extended log format file.
 
     :param str s: The string containing the time to parse (HH:MM:SS format)
     :returns: A datetime.time object representing the time
@@ -192,7 +192,7 @@ def time_parse(s):
 
 def string_parse(s):
     """
-    Parse a string in a W3C extended log format file.
+    Parse a string in a IIS extended log format file.
 
     Quoted strings have the external quotes stripped off and internal quotes,
     which are doubled for escaping purposes, halved. Unquoted strings are
@@ -210,7 +210,7 @@ def string_parse(s):
 
 def name_parse(s):
     """
-    Verify a DNS name in a W3C extended log format file.
+    Verify a DNS name in a IIS extended log format file.
 
     :param str s: The string containing the DNS name to verify
     :returns: The verified string
@@ -220,7 +220,7 @@ def name_parse(s):
 
 def address_parse(s):
     """
-    Verify an IPv4 or IPv6 address in a W3C extended log format file.
+    Verify an IPv4 or IPv6 address in a IIS extended log format file.
 
     :param str s: The string containing the address to verify
     :returns: The verified string
@@ -228,9 +228,9 @@ def address_parse(s):
     return address(s) if s != '-' else None
 
 
-class W3CError(StandardError):
+class IISError(StandardError):
     """
-    Base class for W3CSource errors.
+    Base class for IISSource errors.
 
     Exceptions of this class take the optional arguments line_number and line
     for specifying the index and content of the line that caused the error
@@ -244,44 +244,44 @@ class W3CError(StandardError):
     def __init__(self, message, line_number=None, line=None):
         self.line_number = line_number
         self.line = line
-        super(W3CError, self).__init__(message)
+        super(IISError, self).__init__(message)
 
     def __str__(self):
-        result = super(W3CError, self).__str__()
+        result = super(IISError, self).__str__()
         if self.line_number:
             result = 'Line %d: %s' % (self.line_number, result)
         return result
 
 
-class W3CDirectiveError(W3CError):
+class IISDirectiveError(IISError):
     """
     Raised when an error is encountered in any ``#Directive``.
     """
 
 
-class W3CFieldsError(W3CDirectiveError):
+class IISFieldsError(IISDirectiveError):
     """
     Raised when an error is encountered in a ``#Fields`` directive.
     """
 
 
-class W3CVersionError(W3CDirectiveError):
+class IISVersionError(IISDirectiveError):
     """
     Raised for a ``#Version`` directive with an unknown version is found.
     """
 
 
-class W3CWarning(Warning):
+class IISWarning(Warning):
     """
     Raised when an error is encountered in parsing a log row.
     """
 
 
-class W3CSource(object):
+class IISSource(object):
     """
-    Wraps a steam containing a W3C formatted log file.
+    Wraps a steam containing a IIS formatted log file.
 
-    This wrapper converts a stream containing a W3C formatted log file into an
+    This wrapper converts a stream containing a IIS formatted log file into an
     iterable which yields tuples. Each tuple is a namedtuple instance with the
     fieldnames of the tuple being the sanitized versions of the field names in
     the original log file (as specified in the ``#Fields`` directive).
@@ -307,7 +307,7 @@ class W3CSource(object):
         self._row_funcs = None
         self._row_type = None
 
-    # The following regexes are used to identify directives within W3C log
+    # The following regexes are used to identify directives within IIS log
     # files. Contrary to popular opinion these can occur anywhere within the
     # log file; the draft places no limitations on where they can occur except
     # that #Version and #Fields directives must precede the first line of data.
@@ -333,7 +333,7 @@ class W3CSource(object):
     FIELDS_RE = re.compile(
         r'^#\s*Fields\s*:\s*(?P<text>.*)$', flags=re.IGNORECASE)
 
-    # This is, apparently, the date format used by W3C log files. At least,
+    # This is, apparently, the date format used by IIS log files. At least,
     # it's the format the draft dictates in the Date and Time sections, but
     # bizarrely the example in the Example section uses something quite
     # different (D-MMM-YYYY HH:MM:SS). However, every real-life example we've
@@ -343,10 +343,10 @@ class W3CSource(object):
 
     def _process_directive(self, line):
         """
-        Processes a ``#Directive`` in a W3C log file.
+        Processes a ``#Directive`` in a IIS log file.
 
         This method is called by the :meth:`__iter__` method when a
-        ``#Directive`` line is encountered anywhere in a W3C log file
+        ``#Directive`` line is encountered anywhere in a IIS log file
         (``#Directives`` can occur beyond the header, although it's rare to
         find them in practice). The method parses the ``#Directive`` and sets
         various instance attributes in response, the most important probably
@@ -359,10 +359,10 @@ class W3CSource(object):
         match = self.VERSION_RE.match(line)
         if match:
             if self.version is not None:
-                raise W3CVersionError('Found a second #Version directive')
+                raise IISVersionError('Found a second #Version directive')
             self.version = match.group('text')
             if self.version != '1.0':
-                raise W3CVersionError('Unknown W3C log version %s' % self.version)
+                raise IISVersionError('Unknown IIS log version %s' % self.version)
             return
         match = self.SOFTWARE_RE.match(line)
         if match:
@@ -397,10 +397,10 @@ class W3CSource(object):
                 self.DATETIME_FORMAT
                 )
             return
-        raise W3CDirectiveError('Unrecognized directive %s' % line.rstrip())
+        raise IISDirectiveError('Unrecognized directive %s' % line.rstrip())
 
     # The FIELD_RE regex is intended to match a single header name within the
-    # #Fields specification of a W3C log file. Basically headers come in one of
+    # #Fields specification of a IIS log file. Basically headers come in one of
     # three varieties:
     #
     #   * unprefixed, "identifier"
@@ -419,7 +419,7 @@ class W3CSource(object):
         r'(?P<identifier>[^ ]+)(?(header)\))')
 
     # FIELD_TYPES maps a field's identifier (sans prefix) to a data-type
-    # defined in the W3C draft. Any fields which are not mapped are assumed to
+    # defined in the IIS draft. Any fields which are not mapped are assumed to
     # be type <string> (like all header fields which the draft explicitly
     # defines as having type <string>).
     #
@@ -429,7 +429,7 @@ class W3CSource(object):
     # computer name, aka NetBIOS name).
 
     FIELD_TYPES = {
-        # Specified in the W3C draft standard
+        # Specified in the IIS draft standard
         'bytes':         'integer',
         'cached':        'integer',
         'comment':       'text',
@@ -458,7 +458,7 @@ class W3CSource(object):
         'win32-status':  'integer',
         }
 
-    # TYPES_RE defines regexes for each of the datatypes specified in the W3C
+    # TYPES_RE defines regexes for each of the datatypes specified in the IIS
     # draft. Each regex includes an alternative for an empty case (a single
     # dash).
 
@@ -506,7 +506,7 @@ class W3CSource(object):
         'address': r'(?P<%(name)s>-|([0-9]+(\.[0-9]+){3}|\[[0-9a-fA-F:]+\])(:[0-9]{1,5})?)',
         }
 
-    # TYPES_FUNC defines, for each data-type given in the W3C draft standard, a
+    # TYPES_FUNC defines, for each data-type given in the IIS draft standard, a
     # simple transformation function that converts the raw string extracted by
     # regex into some sensible data format (e.g. int for integer values, a date
     # object for date values, etc.)
@@ -534,7 +534,7 @@ class W3CSource(object):
         """
         logging.debug('Parsing #Fields: %s', line)
         if self.fields:
-            raise W3CFieldsError('Second #Fields directive found')
+            raise IISFieldsError('Second #Fields directive found')
         fields = self.FIELD_RE.findall(line)
         pattern = ''
         tuple_fields = []
@@ -562,7 +562,7 @@ class W3CSource(object):
             pattern += self.TYPES_RE[field_type] % {'name': python_name}
             tuple_funcs.append(self.TYPES_FUNC[field_type])
             if original_name in self.fields:
-                raise W3CFieldsError('Duplicate field name %s' % original_name)
+                raise IISFieldsError('Duplicate field name %s' % original_name)
             self.fields.append(original_name)
             tuple_fields.append(python_name)
         logging.debug('Constructing row regex: ^%s$', pattern)
@@ -573,11 +573,11 @@ class W3CSource(object):
         self._row_funcs = tuple_funcs
 
     def __enter__(self):
-        logging.debug('Entering W3C context')
+        logging.debug('Entering IIS context')
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        logging.debug('Exiting W3C context')
+        logging.debug('Exiting IIS context')
 
     def __iter__(self):
         """
@@ -600,10 +600,10 @@ class W3CSource(object):
                 if line.startswith('#'):
                     self._process_directive(line.rstrip())
                 elif self.version is None:
-                    raise W3CVersionError(
+                    raise IISVersionError(
                         'Missing #Version directive before data')
                 elif not self.fields:
-                    raise W3CFieldsError(
+                    raise IISFieldsError(
                         'Missing #Fields directive before data')
                 else:
                     match = self._row_pattern.match(line.rstrip())
@@ -612,14 +612,14 @@ class W3CSource(object):
                         try:
                             values = [f(v) for (f, v) in zip(self._row_funcs, values)]
                         except ValueError as exc:
-                            raise W3CWarning(str(exc))
+                            raise IISWarning(str(exc))
                         yield self._row_type(*values)
                     else:
-                        raise W3CWarning('Line contains invalid data')
-        except W3CWarning as exc:
+                        raise IISWarning('Line contains invalid data')
+        except IISWarning as exc:
             # Add line number to the warning and report with warn()
-            warnings.warn('Line %d: %s' % (num + 1, str(exc)), W3CWarning)
-        except W3CError as exc:
+            warnings.warn('Line %d: %s' % (num + 1, str(exc)), IISWarning)
+        except IISError as exc:
             # Add line content and number to the exception and re-raise
             if not exc.line_number:
                 raise type(exc)(exc.args[0], line_number=num + 1, line=line)

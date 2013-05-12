@@ -28,24 +28,24 @@ way). A trivial script to convert IIS W3C style log entries into a CSV file is
 shown below::
 
     import io
-    from www2csv import w3c, csv
+    from www2csv import iis, csv
 
     with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'w') as outfile:
-        with w3c.W3CSource(infile) as source, csv.CSVTarget(outfile) as target:
+        with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
             for row in source:
                 target.write(row)
 
 Going through this section by section we can see the following:
 
 #. The first couple of lines import the necessary modules that we'll need; the
-   standard Python `io`_ module for opening files, and the :mod:`w3c` and
+   standard Python `io`_ module for opening files, and the :mod:`iis` and
    :mod:`csv` modules from www2csv for converting the data.
 
 #. Using ``io.open`` we open the input file (with mode ``'r'`` for reading) and
    the output file (with mode ``'w'`` for creating a new file and writing to
    it)
 
-#. We wrap ``infile`` (the input file) with :class:`~www2csv.w3c.W3CSource` to
+#. We wrap ``infile`` (the input file) with :class:`~www2csv.iis.IISSource` to
    parse the input file, and ``outfile`` (the output file) with
    :class:`~www2csv.csv.CSVTarget` to format the output file.
 
@@ -67,10 +67,10 @@ with underscores). To see the structure of a row you can simply print one and
 then terminate the loop::
 
     import io
-    from www2csv import w3c, csv
+    from www2csv import iis, csv
 
     with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'w') as outfile:
-        with w3c.W3CSource(infile) as source, csv.CSVTarget(outfile) as target:
+        with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
             for row in source:
                 print(row)
                 break
@@ -139,12 +139,12 @@ the row structure you want at the top of the file (using the
 structure in the loop (using the result of the function)::
 
     import io
-    from www2csv import datatypes, w3c, csv
+    from www2csv import datatypes, iis, csv
 
     NewRow = datatypes.row('date', 'time', 'client', 'url')
 
     with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'w') as outfile:
-        with w3c.W3CSource(infile) as source, csv.CSVTarget(outfile) as target:
+        with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
             for row in source:
                 new_row = NewRow(row.date, row.time, row.c_ip, r.cs_uri_stem)
                 target.write(new_row)

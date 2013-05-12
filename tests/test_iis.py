@@ -31,7 +31,7 @@ from datetime import datetime, date, time
 
 import pytest
 
-from www2csv import w3c, datatypes
+from www2csv import iis, datatypes
 
 
 # Make Py2 str same as Py3
@@ -48,152 +48,152 @@ FTP_EXAMPLE = """\
 """
 
 def test_directive_regexes():
-    assert w3c.W3CSource.VERSION_RE.match('#Version: 1.0')
-    assert w3c.W3CSource.VERSION_RE.match('# VERSION : 1.0')
-    assert w3c.W3CSource.VERSION_RE.match('# version:100.99')
-    assert not w3c.W3CSource.VERSION_RE.match('#Version: foo')
-    assert w3c.W3CSource.START_DATE_RE.match('#Start-Date: 2000-01-01 00:00:00')
-    assert w3c.W3CSource.START_DATE_RE.match('# START-DATE : 2012-04-28 23:59:59')
-    assert w3c.W3CSource.START_DATE_RE.match('# start-date:1976-01-01 09:00:00')
-    assert not w3c.W3CSource.START_DATE_RE.match('#Start-Date: 2012-06-01')
-    assert w3c.W3CSource.END_DATE_RE.match('#End-Date: 2000-01-01 00:00:00')
-    assert w3c.W3CSource.END_DATE_RE.match('# END-DATE : 2012-04-28 23:59:59')
-    assert w3c.W3CSource.END_DATE_RE.match('# end-date:1976-01-01 09:00:00')
-    assert not w3c.W3CSource.END_DATE_RE.match('#End-Date: 2012-06-01')
-    assert w3c.W3CSource.DATE_RE.match('#Date: 2000-01-01 00:00:00')
-    assert w3c.W3CSource.DATE_RE.match('# DATE : 2012-04-28 23:59:59')
-    assert w3c.W3CSource.DATE_RE.match('# date:1976-01-01 09:00:00')
-    assert not w3c.W3CSource.DATE_RE.match('#Date: 2012-06-01')
-    assert w3c.W3CSource.SOFTWARE_RE.match('#Software: foo')
-    assert w3c.W3CSource.SOFTWARE_RE.match('# software : bar')
-    assert w3c.W3CSource.REMARK_RE.match('#Remark: bar')
-    assert w3c.W3CSource.REMARK_RE.match('# remark : bar')
-    assert w3c.W3CSource.FIELDS_RE.match('#Fields: foo cs-foo rs(foo)')
-    assert w3c.W3CSource.FIELDS_RE.match('# fields : x(bar) date time s-bar')
-    assert w3c.W3CSource.FIELD_RE.match('foo')
-    assert w3c.W3CSource.FIELD_RE.match('cs-foo')
-    assert w3c.W3CSource.FIELD_RE.match('rs(foo)')
-    assert w3c.W3CSource.FIELD_RE.match('x(bar)')
+    assert iis.IISSource.VERSION_RE.match('#Version: 1.0')
+    assert iis.IISSource.VERSION_RE.match('# VERSION : 1.0')
+    assert iis.IISSource.VERSION_RE.match('# version:100.99')
+    assert not iis.IISSource.VERSION_RE.match('#Version: foo')
+    assert iis.IISSource.START_DATE_RE.match('#Start-Date: 2000-01-01 00:00:00')
+    assert iis.IISSource.START_DATE_RE.match('# START-DATE : 2012-04-28 23:59:59')
+    assert iis.IISSource.START_DATE_RE.match('# start-date:1976-01-01 09:00:00')
+    assert not iis.IISSource.START_DATE_RE.match('#Start-Date: 2012-06-01')
+    assert iis.IISSource.END_DATE_RE.match('#End-Date: 2000-01-01 00:00:00')
+    assert iis.IISSource.END_DATE_RE.match('# END-DATE : 2012-04-28 23:59:59')
+    assert iis.IISSource.END_DATE_RE.match('# end-date:1976-01-01 09:00:00')
+    assert not iis.IISSource.END_DATE_RE.match('#End-Date: 2012-06-01')
+    assert iis.IISSource.DATE_RE.match('#Date: 2000-01-01 00:00:00')
+    assert iis.IISSource.DATE_RE.match('# DATE : 2012-04-28 23:59:59')
+    assert iis.IISSource.DATE_RE.match('# date:1976-01-01 09:00:00')
+    assert not iis.IISSource.DATE_RE.match('#Date: 2012-06-01')
+    assert iis.IISSource.SOFTWARE_RE.match('#Software: foo')
+    assert iis.IISSource.SOFTWARE_RE.match('# software : bar')
+    assert iis.IISSource.REMARK_RE.match('#Remark: bar')
+    assert iis.IISSource.REMARK_RE.match('# remark : bar')
+    assert iis.IISSource.FIELDS_RE.match('#Fields: foo cs-foo rs(foo)')
+    assert iis.IISSource.FIELDS_RE.match('# fields : x(bar) date time s-bar')
+    assert iis.IISSource.FIELD_RE.match('foo')
+    assert iis.IISSource.FIELD_RE.match('cs-foo')
+    assert iis.IISSource.FIELD_RE.match('rs(foo)')
+    assert iis.IISSource.FIELD_RE.match('x(bar)')
     # We can't deny invalid prefixes as the standard doesn't limit what
     # characters may appear in an identifier (and MS has already used the "-"
     # delimiter in several of their non-listed fields), so the best we can do
     # is match and make sure the prefix stays None
-    assert w3c.W3CSource.FIELD_RE.match('foo(bar)').group('prefix') is None
-    assert w3c.W3CSource.FIELD_RE.match('foo(bar)').group('identifier') == 'foo(bar)'
+    assert iis.IISSource.FIELD_RE.match('foo(bar)').group('prefix') is None
+    assert iis.IISSource.FIELD_RE.match('foo(bar)').group('identifier') == 'foo(bar)'
 
 def test_sanitize_name():
-    assert w3c.sanitize_name('foo') == 'foo'
-    assert w3c.sanitize_name('FOO') == 'FOO'
-    assert w3c.sanitize_name(' foo ') == '_foo_'
-    assert w3c.sanitize_name('rs-date') == 'rs_date'
-    assert w3c.sanitize_name('cs(User-Agent)') == 'cs_User_Agent_'
+    assert iis.sanitize_name('foo') == 'foo'
+    assert iis.sanitize_name('FOO') == 'FOO'
+    assert iis.sanitize_name(' foo ') == '_foo_'
+    assert iis.sanitize_name('rs-date') == 'rs_date'
+    assert iis.sanitize_name('cs(User-Agent)') == 'cs_User_Agent_'
     with pytest.raises(ValueError):
-        w3c.sanitize_name('')
+        iis.sanitize_name('')
 
 def test_url_parse():
-    assert w3c.url_parse('-') is None
-    assert w3c.url_parse('foo') == datatypes.Url('', '', 'foo', '', '', '')
-    assert w3c.url_parse('//foo/bar') == datatypes.Url('', 'foo', '/bar', '', '', '')
-    assert w3c.url_parse('http://foo/') == datatypes.Url('http', 'foo', '/', '', '', '')
-    assert w3c.url_parse('http://foo/bar?baz=quux') == datatypes.Url('http', 'foo', '/bar', '', 'baz=quux', '')
-    assert w3c.url_parse('https://foo/bar#baz') == datatypes.Url('https', 'foo', '/bar', '', '', 'baz')
+    assert iis.url_parse('-') is None
+    assert iis.url_parse('foo') == datatypes.Url('', '', 'foo', '', '', '')
+    assert iis.url_parse('//foo/bar') == datatypes.Url('', 'foo', '/bar', '', '', '')
+    assert iis.url_parse('http://foo/') == datatypes.Url('http', 'foo', '/', '', '', '')
+    assert iis.url_parse('http://foo/bar?baz=quux') == datatypes.Url('http', 'foo', '/bar', '', 'baz=quux', '')
+    assert iis.url_parse('https://foo/bar#baz') == datatypes.Url('https', 'foo', '/bar', '', '', 'baz')
 
 def test_int_parse():
-    assert w3c.int_parse('-') is None
-    assert w3c.int_parse('0') == 0
-    assert w3c.int_parse('-1') == -1
-    assert w3c.int_parse('101') == 101
+    assert iis.int_parse('-') is None
+    assert iis.int_parse('0') == 0
+    assert iis.int_parse('-1') == -1
+    assert iis.int_parse('101') == 101
     with pytest.raises(ValueError):
-        w3c.int_parse('abc')
+        iis.int_parse('abc')
 
 def test_fixed_parse():
-    assert w3c.fixed_parse('-') is None
-    assert w3c.fixed_parse('0') == 0.0
-    assert w3c.fixed_parse('0.') == 0.0
-    assert w3c.fixed_parse('0.0') == 0.0
-    assert w3c.fixed_parse('-101.5') == -101.5
+    assert iis.fixed_parse('-') is None
+    assert iis.fixed_parse('0') == 0.0
+    assert iis.fixed_parse('0.') == 0.0
+    assert iis.fixed_parse('0.0') == 0.0
+    assert iis.fixed_parse('-101.5') == -101.5
     with pytest.raises(ValueError):
-        w3c.fixed_parse('abc')
+        iis.fixed_parse('abc')
 
 def test_date_parse():
-    assert w3c.date_parse('-') is None
-    assert w3c.date_parse('2000-01-01') == date(2000, 1, 1)
-    assert w3c.date_parse('1986-02-28') == date(1986, 2, 28)
+    assert iis.date_parse('-') is None
+    assert iis.date_parse('2000-01-01') == date(2000, 1, 1)
+    assert iis.date_parse('1986-02-28') == date(1986, 2, 28)
     with pytest.raises(ValueError):
-        w3c.date_parse('1 Jan 2001')
+        iis.date_parse('1 Jan 2001')
     with pytest.raises(ValueError):
-        w3c.date_parse('2000-01-32')
+        iis.date_parse('2000-01-32')
     with pytest.raises(ValueError):
-        w3c.date_parse('abc')
+        iis.date_parse('abc')
 
 def test_time_parse():
-    assert w3c.time_parse('-') is None
-    assert w3c.time_parse('12:34:56') == time(12, 34, 56)
-    assert w3c.time_parse('00:00:00') == time(0, 0, 0)
+    assert iis.time_parse('-') is None
+    assert iis.time_parse('12:34:56') == time(12, 34, 56)
+    assert iis.time_parse('00:00:00') == time(0, 0, 0)
     with pytest.raises(ValueError):
-        w3c.time_parse('1:30:00 PM')
+        iis.time_parse('1:30:00 PM')
     with pytest.raises(ValueError):
-        w3c.time_parse('25:00:30')
+        iis.time_parse('25:00:30')
     with pytest.raises(ValueError):
-        w3c.time_parse('abc')
+        iis.time_parse('abc')
 
 def test_string_parse():
-    assert w3c.string_parse('-') is None
-    assert w3c.string_parse('foo') == 'foo'
-    assert w3c.string_parse('foo+bar') == 'foo bar'
-    assert w3c.string_parse('%28foo+bar%29') == '(foo bar)'
-    assert w3c.string_parse('(foo;+bar;+baz)') == '(foo; bar; baz)'
-    assert w3c.string_parse('"foo"') == 'foo'
-    assert w3c.string_parse('"foo bar"') == 'foo bar'
-    assert w3c.string_parse('"""foo"""') == '"foo"'
-    assert w3c.string_parse('""') == ''
-    assert w3c.string_parse('"""') == '"'
-    assert w3c.string_parse('""""') == '"'
+    assert iis.string_parse('-') is None
+    assert iis.string_parse('foo') == 'foo'
+    assert iis.string_parse('foo+bar') == 'foo bar'
+    assert iis.string_parse('%28foo+bar%29') == '(foo bar)'
+    assert iis.string_parse('(foo;+bar;+baz)') == '(foo; bar; baz)'
+    assert iis.string_parse('"foo"') == 'foo'
+    assert iis.string_parse('"foo bar"') == 'foo bar'
+    assert iis.string_parse('"""foo"""') == '"foo"'
+    assert iis.string_parse('""') == ''
+    assert iis.string_parse('"""') == '"'
+    assert iis.string_parse('""""') == '"'
 
 def test_name_parse():
-    assert w3c.name_parse('-') is None
-    assert w3c.name_parse('foo') == 'foo'
-    assert w3c.name_parse('foo.bar') == 'foo.bar'
-    assert w3c.name_parse('127.0.0.1') == '127.0.0.1'
-    assert w3c.name_parse('f'*63 + '.o') == 'f'*63 + '.o'
-    assert w3c.name_parse('f'*63 + '.oo') == 'f'*63 + '.oo'
+    assert iis.name_parse('-') is None
+    assert iis.name_parse('foo') == 'foo'
+    assert iis.name_parse('foo.bar') == 'foo.bar'
+    assert iis.name_parse('127.0.0.1') == '127.0.0.1'
+    assert iis.name_parse('f'*63 + '.o') == 'f'*63 + '.o'
+    assert iis.name_parse('f'*63 + '.oo') == 'f'*63 + '.oo'
     with pytest.raises(ValueError):
-        w3c.name_parse('foo.')
+        iis.name_parse('foo.')
     with pytest.raises(ValueError):
-        w3c.name_parse('.foo.')
+        iis.name_parse('.foo.')
     with pytest.raises(ValueError):
-        w3c.name_parse('-foo.bar')
+        iis.name_parse('-foo.bar')
     with pytest.raises(ValueError):
-        w3c.name_parse('foo.bar-')
+        iis.name_parse('foo.bar-')
     with pytest.raises(ValueError):
-        w3c.name_parse('f'*64 + '.o')
+        iis.name_parse('f'*64 + '.o')
     with pytest.raises(ValueError):
-        w3c.name_parse('foo.bar.'*32 + '.com')
+        iis.name_parse('foo.bar.'*32 + '.com')
 
 def test_address_parse():
-    assert w3c.address_parse('-') is None
+    assert iis.address_parse('-') is None
     # All possible representations of an IPv4 address (including silly ones)
-    assert str(w3c.address_parse('127.0.0.1')) == '127.0.0.1'
-    assert str(w3c.address_parse('127.0.0.1:80')) == '127.0.0.1:80'
-    assert str(w3c.address_parse('::1')) == '::1'
-    assert str(w3c.address_parse('[::1]')) == '::1'
-    assert str(w3c.address_parse('[::1]:80')) == '[::1]:80'
-    assert str(w3c.address_parse('2001:0db8:85a3:0000:0000:8a2e:0370:7334')) == '2001:db8:85a3::8a2e:370:7334'
-    assert str(w3c.address_parse('[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:22')) == '[2001:db8:85a3::8a2e:370:7334]:22'
-    assert str(w3c.address_parse('[fe80::7334]:22')) == '[fe80::7334]:22'
+    assert str(iis.address_parse('127.0.0.1')) == '127.0.0.1'
+    assert str(iis.address_parse('127.0.0.1:80')) == '127.0.0.1:80'
+    assert str(iis.address_parse('::1')) == '::1'
+    assert str(iis.address_parse('[::1]')) == '::1'
+    assert str(iis.address_parse('[::1]:80')) == '[::1]:80'
+    assert str(iis.address_parse('2001:0db8:85a3:0000:0000:8a2e:0370:7334')) == '2001:db8:85a3::8a2e:370:7334'
+    assert str(iis.address_parse('[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:22')) == '[2001:db8:85a3::8a2e:370:7334]:22'
+    assert str(iis.address_parse('[fe80::7334]:22')) == '[fe80::7334]:22'
     with pytest.raises(ValueError):
-        w3c.address_parse('abc')
+        iis.address_parse('abc')
     with pytest.raises(ValueError):
-        w3c.address_parse('google.com')
+        iis.address_parse('google.com')
     with pytest.raises(ValueError):
-        w3c.address_parse('127.0.0.1:100000')
+        iis.address_parse('127.0.0.1:100000')
     with pytest.raises(ValueError):
-        w3c.address_parse('[::1]:100000')
+        iis.address_parse('[::1]:100000')
 
 def test_exceptions():
-    exc = w3c.W3CError('Something went wrong!', 23)
+    exc = iis.IISError('Something went wrong!', 23)
     assert str(exc) == 'Line 23: Something went wrong!'
-    exc = w3c.W3CError('Something else went wrong!')
+    exc = iis.IISError('Something else went wrong!')
     assert str(exc) == 'Something else went wrong!'
 
 def test_source_01():
@@ -206,7 +206,7 @@ def test_source_01():
 2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
 """
     # Test two normal runs with INTERNET_EXAMPLE and INTRANET_EXAMPLE
-    with w3c.W3CSource(INTERNET_EXAMPLE.splitlines(True)) as source:
+    with iis.IISSource(INTERNET_EXAMPLE.splitlines(True)) as source:
         row = None
         for count, row in enumerate(source):
             assert source.version == '1.0'
@@ -243,7 +243,7 @@ def test_source_01():
 #Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status cs(User-Agent)
 2002-05-02 17:42:15 172.22.255.255 - 172.30.255.255 80 GET /images/picture.jpg - 200 Mozilla/4.0+(compatible;MSIE+5.5;+Windows+2000+Server)
 """
-    with w3c.W3CSource(INTRANET_EXAMPLE.splitlines(True)) as source:
+    with iis.IISSource(INTRANET_EXAMPLE.splitlines(True)) as source:
         row = None
         for count, row in enumerate(source):
             assert source.fields == [
@@ -273,8 +273,8 @@ def test_source_02():
 #Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
 2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
 """
-    with pytest.raises(w3c.W3CVersionError):
-        with w3c.W3CSource(BAD_VERSION.splitlines(True)) as source:
+    with pytest.raises(iis.IISVersionError):
+        with iis.IISSource(BAD_VERSION.splitlines(True)) as source:
             for row in source:
                 pass
     REPEAT_VERSION = """\
@@ -284,8 +284,8 @@ def test_source_02():
 #Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
 2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
 """
-    with pytest.raises(w3c.W3CVersionError):
-        with w3c.W3CSource(REPEAT_VERSION.splitlines(True)) as source:
+    with pytest.raises(iis.IISVersionError):
+        with iis.IISSource(REPEAT_VERSION.splitlines(True)) as source:
             for row in source:
                 pass
     MISSING_VERSION = """\
@@ -294,8 +294,8 @@ def test_source_02():
 #Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
 2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
 """
-    with pytest.raises(w3c.W3CVersionError):
-        with w3c.W3CSource(MISSING_VERSION.splitlines(True)) as source:
+    with pytest.raises(iis.IISVersionError):
+        with iis.IISSource(MISSING_VERSION.splitlines(True)) as source:
             for row in source:
                 pass
     REPEAT_FIELDS = """\
@@ -305,8 +305,8 @@ def test_source_02():
 #Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
 2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
 """
-    with pytest.raises(w3c.W3CFieldsError):
-        with w3c.W3CSource(REPEAT_FIELDS.splitlines(True)) as source:
+    with pytest.raises(iis.IISFieldsError):
+        with iis.IISSource(REPEAT_FIELDS.splitlines(True)) as source:
             for row in source:
                 pass
     MISSING_FIELDS = """\
@@ -315,8 +315,8 @@ def test_source_02():
 #Version: 1.0
 2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
 """
-    with pytest.raises(w3c.W3CFieldsError):
-        with w3c.W3CSource(MISSING_FIELDS.splitlines(True)) as source:
+    with pytest.raises(iis.IISFieldsError):
+        with iis.IISSource(MISSING_FIELDS.splitlines(True)) as source:
             for row in source:
                 pass
     DUPLICATE_FIELD_NAMES = """\
@@ -326,8 +326,8 @@ def test_source_02():
 #Fields: date time c-ip c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
 2002-05-24 20:18:01 172.224.24.114 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
 """
-    with pytest.raises(w3c.W3CFieldsError):
-        with w3c.W3CSource(DUPLICATE_FIELD_NAMES.splitlines(True)) as source:
+    with pytest.raises(iis.IISFieldsError):
+        with iis.IISSource(DUPLICATE_FIELD_NAMES.splitlines(True)) as source:
             for row in source:
                 pass
     INVALID_DIRECTIVE = """\
@@ -337,8 +337,8 @@ def test_source_02():
 #Version: 1.0
 2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
 """
-    with pytest.raises(w3c.W3CDirectiveError):
-        with w3c.W3CSource(INVALID_DIRECTIVE.splitlines(True)) as source:
+    with pytest.raises(iis.IISDirectiveError):
+        with iis.IISSource(INVALID_DIRECTIVE.splitlines(True)) as source:
             for row in source:
                 pass
 
@@ -351,10 +351,10 @@ def test_source_03(recwarn):
 #Fields: date time c-ip
 2002-05-30 20:18:01 172.224.24.300
 """
-    with w3c.W3CSource(BAD_DATA_EXAMPLE_01.splitlines(True)) as source:
+    with iis.IISSource(BAD_DATA_EXAMPLE_01.splitlines(True)) as source:
         for row in source:
             pass
-    assert recwarn.pop(w3c.W3CWarning)
+    assert recwarn.pop(iis.IISWarning)
     recwarn.clear()
     # In this second example, the bad IP address will result in the line
     # failing to even match the line regex
@@ -364,7 +364,7 @@ def test_source_03(recwarn):
 #Fields: date time c-ip
 2002-05-30 20:18:01 foo.bar
 """
-    with w3c.W3CSource(BAD_DATA_EXAMPLE_02.splitlines(True)) as source:
+    with iis.IISSource(BAD_DATA_EXAMPLE_02.splitlines(True)) as source:
         for row in source:
             pass
-    assert recwarn.pop(w3c.W3CWarning)
+    assert recwarn.pop(iis.IISWarning)

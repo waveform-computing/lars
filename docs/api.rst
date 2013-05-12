@@ -18,7 +18,7 @@ modifying them to suit your purposes.
    :maxdepth: 2
 
    www2csv
-   www2csv.w3c
+   www2csv.iis
    www2csv.csv
    www2csv.sql
    www2csv.geoip
