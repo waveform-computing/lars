@@ -194,6 +194,18 @@ from www2csv import geoip, dns
 str = type('')
 
 
+def sanitize_name(name):
+    """
+    Sanitizes the given name for use as a Python identifier.
+
+    :param str name: The name to sanitize
+    :returns str: The sanitized name, suitable for use as an identifier
+    """
+    if name == '':
+        raise ValueError('Cannot sanitize a blank string')
+    return re.sub(r'[^A-Za-z_]', '_', name[:1]) + re.sub(r'[^A-Za-z0-9_]+', '_', name[1:])
+
+
 def datetime(s, format='%Y-%m-%d %H:%M:%S'):
     """
     Returns a :class:`DateTime` object for the given string.

@@ -66,6 +66,15 @@ FTP_EXAMPLE = """\
 """
 
 
+def test_sanitize_name():
+    assert datatypes.sanitize_name('foo') == 'foo'
+    assert datatypes.sanitize_name('FOO') == 'FOO'
+    assert datatypes.sanitize_name(' foo ') == '_foo_'
+    assert datatypes.sanitize_name('rs-date') == 'rs_date'
+    assert datatypes.sanitize_name('cs(User-Agent)') == 'cs_User_Agent_'
+    with pytest.raises(ValueError):
+        datatypes.sanitize_name('')
+
 def test_url():
     assert datatypes.url('foo') == datatypes.Url('', '', 'foo', '', '', '')
     assert datatypes.url('//foo/bar') == datatypes.Url('', 'foo', '/bar', '', '', '')

@@ -99,7 +99,7 @@ import warnings
 import logging
 from urllib import unquote_plus
 
-from www2csv.datatypes import date, time, datetime, url, address, hostname, row
+from www2csv import datatypes as dt
 
 
 # Make Py2 str same as Py3
@@ -116,18 +116,6 @@ __all__ = [
     ]
 
 
-def sanitize_name(name):
-    """
-    Sanitizes the given name for use as a Python identifier.
-
-    :param str name: The name to sanitize
-    :returns str: The sanitized name, suitable for use as an identifier
-    """
-    if name == '':
-        raise ValueError('Cannot sanitize a blank string')
-    return re.sub(r'[^A-Za-z_]', '_', name[:1]) + re.sub(r'[^A-Za-z0-9_]+', '_', name[1:])
-
-
 def url_parse(s):
     """
     Parse a URI string in a IIS extended log format file.
@@ -139,7 +127,7 @@ def url_parse(s):
     :param str s: The string containing the URI to parse
     :returns: A :class:`~www2csv.datatypes.Url` tuple representing the URI
     """
-    return url(s) if s != '-' else None
+    return dt.url(s) if s != '-' else None
 
 
 def int_parse(s):
@@ -175,7 +163,7 @@ def date_parse(s):
     :param str s: The string containing the date to parse (YYYY-MM-DD format)
     :returns: A :class:`~www2csv.datatypes.Date` object representing the date
     """
-    return date(s) if s != '-' else None
+    return dt.date(s) if s != '-' else None
 
 
 def time_parse(s):
@@ -185,7 +173,7 @@ def time_parse(s):
     :param str s: The string containing the time to parse (HH:MM:SS format)
     :returns: A :class:`~www2csv.datatypes.Time` object representing the time
     """
-    return time(s) if s != '-' else None
+    return dt.time(s) if s != '-' else None
 
 
 def string_parse(s):
@@ -213,7 +201,7 @@ def name_parse(s):
     :param str s: The string containing the DNS name to verify
     :returns: A :class:`~www2csv.datatypes.Hostname` value
     """
-    return hostname(s) if s != '-' else None
+    return dt.hostname(s) if s != '-' else None
 
 
 def address_parse(s):
@@ -223,7 +211,7 @@ def address_parse(s):
     :param str s: The string containing the address to verify
     :returns: A :class:`~www2csv.datatypes.IPv4Address` value
     """
-    return address(s) if s != '-' else None
+    return dt.address(s) if s != '-' else None
 
 
 class IISError(StandardError):
@@ -376,21 +364,21 @@ class IISSource(object):
             return
         match = self.START_DATE_RE.match(line)
         if match:
-            self.start = datetime(
+            self.start = dt.datetime(
                 '%s %s' % (match.group('date'), match.group('time')),
                 self.DATETIME_FORMAT
                 )
             return
         match = self.END_DATE_RE.match(line)
         if match:
-            self.finish = datetime(
+            self.finish = dt.datetime(
                 '%s %s' % (match.group('date'), match.group('time')),
                 self.DATETIME_FORMAT
                 )
             return
         match = self.DATE_RE.match(line)
         if match:
-            self.date = datetime(
+            self.date = dt.datetime(
                 '%s %s' % (match.group('date'), match.group('time')),
                 self.DATETIME_FORMAT
                 )
@@ -542,17 +530,17 @@ class IISSource(object):
             # this name, and what type the field has
             if header:
                 original_name = '%s(%s)' % (prefix, identifier)
-                python_name = sanitize_name('%s_%s' % (prefix, identifier))
+                python_name = dt.sanitize_name('%s_%s' % (prefix, identifier))
                 # According to the draft, all header fields are type <string>
                 field_type = 'string'
             elif prefix:
                 original_name = '%s-%s' % (prefix, identifier)
-                python_name = sanitize_name('%s_%s' % (prefix, identifier))
+                python_name = dt.sanitize_name('%s_%s' % (prefix, identifier))
                 # Default to <string> if we don't know the field identifier
                 field_type = self.FIELD_TYPES.get(identifier, 'string')
             else:
                 original_name = identifier
-                python_name = sanitize_name(identifier)
+                python_name = dt.sanitize_name(identifier)
                 field_type = self.FIELD_TYPES.get(identifier, 'string')
             if pattern:
                 pattern += r'\s+'
@@ -566,7 +554,7 @@ class IISSource(object):
         logging.debug('Constructing row regex: ^%s$', pattern)
         self._row_pattern = re.compile('^' + pattern + '$')
         logging.debug('Constructing row tuple with fields: %s', ','.join(tuple_fields))
-        self._row_type = row(*tuple_fields)
+        self._row_type = dt.row(*tuple_fields)
         logging.debug('Constructing row parser functions')
         self._row_funcs = tuple_funcs
 

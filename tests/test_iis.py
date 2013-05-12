@@ -81,15 +81,6 @@ def test_directive_regexes():
     assert iis.IISSource.FIELD_RE.match('foo(bar)').group('prefix') is None
     assert iis.IISSource.FIELD_RE.match('foo(bar)').group('identifier') == 'foo(bar)'
 
-def test_sanitize_name():
-    assert iis.sanitize_name('foo') == 'foo'
-    assert iis.sanitize_name('FOO') == 'FOO'
-    assert iis.sanitize_name(' foo ') == '_foo_'
-    assert iis.sanitize_name('rs-date') == 'rs_date'
-    assert iis.sanitize_name('cs(User-Agent)') == 'cs_User_Agent_'
-    with pytest.raises(ValueError):
-        iis.sanitize_name('')
-
 def test_url_parse():
     assert iis.url_parse('-') is None
     assert iis.url_parse('foo') == datatypes.Url('', '', 'foo', '', '', '')
