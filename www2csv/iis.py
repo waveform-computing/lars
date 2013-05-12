@@ -97,11 +97,9 @@ from __future__ import (
 import re
 import warnings
 import logging
-from datetime import datetime
-from collections import namedtuple
 from urllib import unquote_plus
 
-from www2csv.datatypes import date, time, url, address, hostname
+from www2csv.datatypes import date, time, datetime, url, address, hostname, row
 
 
 # Make Py2 str same as Py3
@@ -139,7 +137,7 @@ def url_parse(s):
     the reconstructed URI.
 
     :param str s: The string containing the URI to parse
-    :returns: A ParseResult tuple representing the URI
+    :returns: A :class:`~www2csv.datatypes.Url` tuple representing the URI
     """
     return url(s) if s != '-' else None
 
@@ -175,7 +173,7 @@ def date_parse(s):
     Parse a date string in a IIS extended log format file.
 
     :param str s: The string containing the date to parse (YYYY-MM-DD format)
-    :returns: A datetime.date object representing the date
+    :returns: A :class:`~www2csv.datatypes.Date` object representing the date
     """
     return date(s) if s != '-' else None
 
@@ -185,7 +183,7 @@ def time_parse(s):
     Parse a time string in a IIS extended log format file.
 
     :param str s: The string containing the time to parse (HH:MM:SS format)
-    :returns: A datetime.time object representing the time
+    :returns: A :class:`~www2csv.datatypes.Time` object representing the time
     """
     return time(s) if s != '-' else None
 
@@ -213,7 +211,7 @@ def name_parse(s):
     Verify a DNS name in a IIS extended log format file.
 
     :param str s: The string containing the DNS name to verify
-    :returns: The verified string
+    :returns: A :class:`~www2csv.datatypes.Hostname` value
     """
     return hostname(s) if s != '-' else None
 
@@ -223,7 +221,7 @@ def address_parse(s):
     Verify an IPv4 or IPv6 address in a IIS extended log format file.
 
     :param str s: The string containing the address to verify
-    :returns: The verified string
+    :returns: A :class:`~www2csv.datatypes.IPv4Address` value
     """
     return address(s) if s != '-' else None
 
@@ -378,21 +376,21 @@ class IISSource(object):
             return
         match = self.START_DATE_RE.match(line)
         if match:
-            self.start = datetime.strptime(
+            self.start = datetime(
                 '%s %s' % (match.group('date'), match.group('time')),
                 self.DATETIME_FORMAT
                 )
             return
         match = self.END_DATE_RE.match(line)
         if match:
-            self.finish = datetime.strptime(
+            self.finish = datetime(
                 '%s %s' % (match.group('date'), match.group('time')),
                 self.DATETIME_FORMAT
                 )
             return
         match = self.DATE_RE.match(line)
         if match:
-            self.date = datetime.strptime(
+            self.date = datetime(
                 '%s %s' % (match.group('date'), match.group('time')),
                 self.DATETIME_FORMAT
                 )
@@ -568,7 +566,7 @@ class IISSource(object):
         logging.debug('Constructing row regex: ^%s$', pattern)
         self._row_pattern = re.compile('^' + pattern + '$')
         logging.debug('Constructing row tuple with fields: %s', ','.join(tuple_fields))
-        self._row_type = namedtuple('row_type', tuple_fields)
+        self._row_type = row(*tuple_fields)
         logging.debug('Constructing row parser functions')
         self._row_funcs = tuple_funcs
 
@@ -586,9 +584,9 @@ class IISSource(object):
         This method is the main body of the class and is responsible for
         transforming lines from the source file-like object into row tuples.
         However, the main work of transforming strings into tuples is actually
-        performed by the regular expressions and namedtuple class set up in
-        response to encountering the ``#Fields`` directive in
-        :meth:`_process_directive` above.
+        performed by the regular expressions and tuple class set up in response
+        to encountering the ``#Fields`` directive in :meth:`_process_directive`
+        above.
         """
         # The main iterator loop is split into two. The reason for this is
         # simply performance. If everything is kept in one loop we wind up
