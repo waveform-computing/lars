@@ -30,6 +30,7 @@ from __future__ import (
 import sys
 import os
 import shutil
+import sqlite3
 from datetime import datetime, date, time
 from ipaddress import ip_address, IPv4Address, IPv6Address
 
@@ -82,6 +83,14 @@ def test_url():
     assert u.hostname == datatypes.hostname('localhost')
     assert u.hostname.address == datatypes.address('127.0.0.1')
 
+def test_row():
+    NewRow = datatypes.row('foo', 'bar', 'baz')
+    assert NewRow._fields == ('foo', 'bar', 'baz')
+    assert NewRow(1, 2, 3) == (1, 2, 3)
+    assert NewRow(1, 2, 3).foo == 1
+    assert NewRow(1, 2, 3).bar == 2
+    assert NewRow(1, 2, 3).baz == 3
+
 def test_datetime():
     assert datatypes.datetime('2000-01-01 12:34:56') == datetime(2000, 1, 1, 12, 34, 56)
     assert datatypes.datetime('1986-02-28 00:00:00') == datetime(1986, 2, 28)
@@ -112,51 +121,68 @@ def test_time():
     with pytest.raises(ValueError):
         datatypes.time('abc')
 
-def test_filename_win():
-    with mock.patch('tests.test_datatypes.datatypes.sys') as mock_sys:
-        with mock.patch('tests.test_datatypes.datatypes.os') as mock_os:
-            mock_sys.platform = 'win32'
-            mock_os.path.splitdrive.return_value = ('C:', r'\foo')
-            mock_os.path.sep = '\\'
-            datatypes.filename(r'C:\foo')
-            assert mock_os.path.splitdrive.called_with(r'C:\foo')
-            mock_os.path.splitdrive.return_value = ('2:', r'\foo')
-            with pytest.raises(ValueError):
-                datatypes.filename(r'2:\foo')
-            assert mock_os.path.splitdrive.called_with(r'2:\foo')
-
-def test_filename(tmpdir):
-    assert datatypes.filename('/') == '/'
-    assert datatypes.filename('/bin') == '/bin'
-    assert datatypes.filename('bin') == 'bin'
-    assert datatypes.filename('bin').abspath == os.path.join(os.getcwd(), 'bin')
-    assert datatypes.filename('/foo/bar').basename == 'bar'
-    assert datatypes.filename('/foo/bar').dirname == '/foo'
-    assert datatypes.filename(tmpdir).exists
-    assert datatypes.filename(tmpdir).atime == datetime.utcfromtimestamp(tmpdir.stat().atime)
-    assert datatypes.filename(tmpdir).mtime == datetime.utcfromtimestamp(tmpdir.stat().mtime)
-    assert datatypes.filename(tmpdir).ctime == datetime.utcfromtimestamp(tmpdir.stat().ctime)
-    assert datatypes.filename(tmpdir).size == tmpdir.stat().size
-    assert datatypes.filename('/foo/bar').isabs
-    assert not datatypes.filename('foo/bar').isabs
-    assert not datatypes.filename(tmpdir).isfile
-    assert not datatypes.filename(tmpdir).islink
-    assert datatypes.filename(tmpdir).isdir
-    assert datatypes.filename(tmpdir).realpath == tmpdir.realpath()
-    assert datatypes.filename('foo/bar').abspath.relative(os.getcwd()) == 'foo/bar'
-    # As we're in a temp directory, it can't be a mount
-    assert not datatypes.filename('.').ismount
-    with pytest.raises(ValueError):
-        datatypes.filename('<foo>')
-    with pytest.raises(ValueError):
-        datatypes.filename('foo*')
-    assert datatypes.filename('/FOO/BAR').normcase == '/FOO/BAR'
-    assert datatypes.filename('/FOO//.//BAR').normpath == '/FOO/BAR'
+def test_path(tmpdir):
+    assert datatypes.path('bin') == 'bin'
+    assert datatypes.path('bin').abspath == os.path.join(os.getcwd(), 'bin')
+    assert datatypes.path(tmpdir).exists
+    assert datatypes.path(tmpdir).atime == datetime.utcfromtimestamp(tmpdir.stat().atime)
+    assert datatypes.path(tmpdir).mtime == datetime.utcfromtimestamp(tmpdir.stat().mtime)
+    assert datatypes.path(tmpdir).ctime == datetime.utcfromtimestamp(tmpdir.stat().ctime)
+    assert datatypes.path(tmpdir).size == tmpdir.stat().size
+    assert not datatypes.path(tmpdir).isfile
+    assert not datatypes.path(tmpdir).islink
+    assert datatypes.path(tmpdir).isdir
+    assert datatypes.path(tmpdir).realpath == tmpdir.realpath()
     tmpdir.join('foo').mksymlinkto(tmpdir)
     tmpdir.join('bar').mksymlinkto(tmpdir.join('foo'))
     tmpdir.join('foo').remove()
-    assert not datatypes.filename(tmpdir.join('bar')).exists
-    assert datatypes.filename(tmpdir.join('bar')).lexists
+    assert not datatypes.path(tmpdir.join('bar')).exists
+    assert datatypes.path(tmpdir.join('bar')).lexists
+
+@pytest.mark.skipif('not sys.platform.startswith("win")')
+def test_path_win():
+    assert datatypes.path('\\') == '\\'
+    assert datatypes.path('\\bin') == '\\bin'
+    assert datatypes.path('C:\\foo\\bar').drive == 'C:'
+    assert datatypes.path('\\foo\\bar').basename == 'bar'
+    assert datatypes.path('\\foo\\bar').basename_no_ext == 'bar'
+    assert datatypes.path('\\foo\\bar.baz').basename == 'bar.baz'
+    assert datatypes.path('\\foo\\bar.baz').basename_no_ext == 'bar'
+    assert datatypes.path('\\foo\\bar.baz').ext == '.baz'
+    assert datatypes.path('\\foo\\bar').dirname == '\\foo'
+    assert datatypes.path('C:\\foo\\bar').isabs
+    assert not datatypes.path('foo\\bar').isabs
+    assert datatypes.path('foo\\bar').abspath.relative(os.getcwd()) == 'foo\\bar'
+    with pytest.raises(ValueError):
+        datatypes.path(r'2:\foo')
+    with pytest.raises(ValueError):
+        datatypes.path('<foo>')
+    with pytest.raises(ValueError):
+        datatypes.path('foo*')
+    assert datatypes.path('\\FOO\\BAR').normcase == '\\foo\\bar'
+    assert datatypes.path('\\FOO\\.\\BAR').normpath == '\\FOO\\BAR'
+
+@pytest.mark.skipif('sys.platform.startswith("win")')
+def test_path_posix():
+    assert datatypes.path('/') == '/'
+    assert datatypes.path('/bin') == '/bin'
+    assert datatypes.path('/foo/bar').basename == 'bar'
+    assert datatypes.path('/foo/bar').basename_no_ext == 'bar'
+    assert datatypes.path('/foo/bar.baz').basename == 'bar.baz'
+    assert datatypes.path('/foo/bar.baz').basename_no_ext == 'bar'
+    assert datatypes.path('/foo/bar.baz').ext == '.baz'
+    assert datatypes.path('/foo/bar').dirname == '/foo'
+    assert datatypes.path('/foo/bar').isabs
+    assert not datatypes.path('foo/bar').isabs
+    assert datatypes.path('foo/bar').abspath.relative(os.getcwd()) == 'foo/bar'
+    # As we're in a temp directory, it can't be a mount
+    assert not datatypes.path('.').ismount
+    with pytest.raises(ValueError):
+        datatypes.path('<foo>')
+    with pytest.raises(ValueError):
+        datatypes.path('foo*')
+    assert datatypes.path('/FOO/BAR').normcase == '/FOO/BAR'
+    assert datatypes.path('/FOO//.//BAR').normpath == '/FOO/BAR'
 
 def test_hostname():
     assert datatypes.hostname('foo') == datatypes.Hostname('foo')
@@ -179,9 +205,21 @@ def test_hostname():
     with pytest.raises(ValueError):
         datatypes.hostname('foo.bar.'*32 + '.com')
 
+def test_network_ipv4():
+    assert datatypes.network('127.0.0.0/8') == datatypes.IPv4Network('127.0.0.0/8')
+    assert datatypes.network(b'127.0.0.0/8') == datatypes.IPv4Network('127.0.0.0/8')
+    with pytest.raises(ValueError):
+        datatypes.network('foo')
+
+def test_network_ipv6():
+    assert datatypes.network('::/8') == datatypes.IPv6Network('::/8')
+    assert datatypes.network(b'::/8') == datatypes.IPv6Network('::/8')
+    with pytest.raises(ValueError):
+        datatypes.network('::/1000')
+
 def test_address_ipv4():
     assert datatypes.address('127.0.0.1') == datatypes.IPv4Address('127.0.0.1')
-    assert datatypes.address('127.0.0.1:80') == datatypes.IPv4Port('127.0.0.1:80')
+    assert datatypes.address(b'127.0.0.1:80') == datatypes.IPv4Port('127.0.0.1:80')
     with pytest.raises(ValueError):
         datatypes.address('abc')
     with pytest.raises(ValueError):
@@ -248,4 +286,17 @@ def test_address():
         assert datatypes.address('0.0.0.0').hostname is None
         from_address.return_value = '::'
         assert datatypes.address('::').hostname is None
+
+def test_sqlite_adapters():
+    pp = sqlite3.PrepareProtocol
+    assert sqlite3.adapters[(datatypes.Date, pp)](datatypes.Date(2000, 1, 1)) == '2000-01-01'
+    assert sqlite3.adapters[(datatypes.Time, pp)](datatypes.Time(12, 34, 56)) == '12:34:56'
+    assert sqlite3.adapters[(datatypes.DateTime, pp)](datatypes.DateTime(2000, 1, 1, 12, 34, 56)) == '2000-01-01 12:34:56'
+    assert sqlite3.adapters[(datatypes.DateTime, pp)](datatypes.DateTime(2000, 1, 1, 12, 34, 56, 789)) == '2000-01-01 12:34:56.000789'
+
+def test_sqlite_converters():
+    assert sqlite3.converters['DATE']('2000-01-01') == datatypes.Date(2000, 1, 1)
+    assert sqlite3.converters['TIME']('12:34:56') == datatypes.Time(12, 34, 56)
+    assert sqlite3.converters['TIMESTAMP']('2000-01-01 12:34:56') == datatypes.DateTime(2000, 1, 1, 12, 34, 56)
+    assert sqlite3.converters['TIMESTAMP']('2000-01-01 12:34:56.000789') == datatypes.DateTime(2000, 1, 1, 12, 34, 56, 789)
 
