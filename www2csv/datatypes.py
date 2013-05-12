@@ -85,8 +85,8 @@
 """
 This module wraps various Python data-types which are commonly found in log
 files to provide them with default string coercions and enhanced attributes.
-Each datatype is given a simple constructor which accepts a string in a common
-format (for example, the :func:`date` function which accepts dates in
+Each datatype is given a simple constructor function which accepts a string in
+a common format (for example, the :func:`date` function which accepts dates in
 ``YYYY-MM-DD`` format), and returns the converted data.
 
 Most of the time you will not need the functions in this module directly, but
@@ -149,6 +149,8 @@ Functions
 
 .. autofunction:: path
 
+.. autofunction:: row
+
 .. autofunction:: time
 
 .. autofunction:: url
@@ -181,6 +183,7 @@ import re
 import datetime as dt
 import urlparse
 import ipaddress
+import sqlite3
 from collections import namedtuple
 from functools import total_ordering
 
@@ -210,7 +213,8 @@ def date(s, format='%Y-%m-%d'):
     :param str format: Optional string containing the date format to parse
     :returns: A :class:`Date` object representing the date
     """
-    return DateTime.strptime(s, format).date()
+    d = DateTime.strptime(s, format)
+    return Date(d.year, d.month, d.day)
 
 
 def time(s, format='%H:%M:%S'):
@@ -221,7 +225,8 @@ def time(s, format='%H:%M:%S'):
     :param str format: Optional string containing the time format to parse
     :returns: A :class:`Time` object representing the time
     """
-    return DateTime.strptime(s, format).time()
+    d = DateTime.strptime(s, format)
+    return Time(d.hour, d.minute, d.second, d.microsecond)
 
 
 def path(s):
@@ -232,6 +237,21 @@ def path(s):
     :returns: A :class:`Path` object representing the path
     """
     return Path(s)
+
+
+def row(*args):
+    """
+    Returns a new tuple sub-class type containing the specified fields. For
+    example::
+
+        NewRow = row('foo', 'bar', 'baz')
+        a_row = NewRow(1, 2, 3)
+        print(a_row.foo)
+
+    :param \\*args: The set of fields to include in the row definition.
+    :returns: A tuple sub-class with the specified fields.
+    """
+    return namedtuple('Row', args)
 
 
 def url(s):
@@ -1770,3 +1790,52 @@ class IPv6Network(ipaddress.IPv6Network):
         Returns True if the address is unspecified. See `RFC 2373 2.5.2`_ for
         details.
     """
+
+# Here we register our derivative Date, Time and DateTime classes with
+# sqlite3's adapter registry. This is necessary as the register doesn't handle
+# derivative types. While we're at it, we register adapters and convertors for
+# the datetime.time type as well which is bizarrely missing from the
+# original...
+
+def register_adapters_and_converters():
+    def adapt_date(val):
+        return val.isoformat()
+
+    def adapt_time(val):
+        return val.isoformat()
+
+    def adapt_datetime(val):
+        return val.isoformat(b" ")
+
+    def convert_date(val):
+        return Date(*map(int, val.split("-")))
+
+    def convert_time(val):
+        return Time(*map(int, val.split(":")))
+
+    def convert_timestamp(val):
+        datepart, timepart = val.split(" ")
+        year, month, day = map(int, datepart.split("-"))
+        timepart_full = timepart.split(".")
+        hours, minutes, seconds = map(int, timepart_full[0].split(":"))
+        if len(timepart_full) == 2:
+            microseconds = int(timepart_full[1])
+        else:
+            microseconds = 0
+        val = DateTime(year, month, day, hours, minutes, seconds, microseconds)
+        return val
+
+    sqlite3.register_adapter(dt.date, adapt_date)
+    sqlite3.register_adapter(Date, adapt_date)
+    sqlite3.register_adapter(dt.time, adapt_time)
+    sqlite3.register_adapter(Time, adapt_time)
+    sqlite3.register_adapter(dt.datetime, adapt_datetime)
+    sqlite3.register_adapter(DateTime, adapt_datetime)
+    sqlite3.register_converter(b"date", convert_date)
+    sqlite3.register_converter(b"time", convert_time)
+    sqlite3.register_converter(b"timestamp", convert_timestamp)
+
+register_adapters_and_converters()
+# Clean up namespace
+del(register_adapters_and_converters)
+
