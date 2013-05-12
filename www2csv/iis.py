@@ -576,11 +576,6 @@ class IISSource(object):
         to encountering the ``#Fields`` directive in :meth:`_process_directive`
         above.
         """
-        # The main iterator loop is split into two. The reason for this is
-        # simply performance. If everything is kept in one loop we wind up
-        # redundantly testing whether we've seen the #Version and #Fields
-        # header directives for *every single* data row. By splitting the loops
-        # in this way we only test for them when required
         try:
             for num, line in enumerate(self.source):
                 if line.startswith('#'):
