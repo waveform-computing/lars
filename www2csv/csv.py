@@ -130,7 +130,7 @@ from __future__ import (
 import io
 import logging
 import codecs
-import csv
+import csv as csv_
 
 
 # Make Py2 str same as Py3
@@ -148,13 +148,13 @@ __all__ = [
     'CSVTarget',
     ]
 
-CSV_DIALECT = csv.excel
-TSV_DIALECT = csv.excel_tab
+CSV_DIALECT = csv_.excel
+TSV_DIALECT = csv_.excel_tab
 
-QUOTE_ALL = csv.QUOTE_ALL
-QUOTE_NONE = csv.QUOTE_NONE
-QUOTE_MINIMAL = csv.QUOTE_MINIMAL
-QUOTE_NONNUMERIC = csv.QUOTE_NONNUMERIC
+QUOTE_ALL = csv_.QUOTE_ALL
+QUOTE_NONE = csv_.QUOTE_NONE
+QUOTE_MINIMAL = csv_.QUOTE_MINIMAL
+QUOTE_NONNUMERIC = csv_.QUOTE_NONNUMERIC
 
 
 # Adapted from the official csv module's documentation:
@@ -171,30 +171,27 @@ class UnicodeWriter(object):
         # so use a fast-path method which skips all the transcoding
         if encoding.lower() == 'utf-8':
             self.writerow = self._writerow_utf8
-            self.writer = csv.writer(f, dialect=dialect, **kwds)
+            self.writer = csv_.writer(f, dialect=dialect, **kwds)
         else:
-            self.queue = io.StringIO()
-            self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
-
-    def writerow(self, row):
-        self.writer.writerow([
-            s.encode('utf-8') if isinstance(s, str) else
-            str(s) if not isinstance(s, (int, long, float)) else
-            s
-            for s in row])
-        data = self.queue.getvalue()
-        data = data.decode('utf-8')
-        data = self.encoder.encode(data)
-        self.stream.write(data)
-        self.queue.truncate(0)
+            self._queue = io.BytesIO()
+            self.writer = csv_.writer(self._queue, dialect=dialect, **kwds)
 
     def _writerow_utf8(self, row):
         self.writer.writerow([
+            s if isinstance(s, (int, long, float)) else
             s.encode('utf-8') if isinstance(s, str) else
-            str(s) if not isinstance(s, (int, long, float)) else
-            s
+            str(s).encode('utf-8')
             for s in row
             ])
+
+    def writerow(self, row):
+        self._writerow_utf8(row)
+        data = self._queue.getvalue()
+        data = data.decode('utf-8')
+        data = self.encoder.encode(data)
+        self.stream.write(data)
+        self._queue.seek(0)
+        self._queue.truncate()
 
 
 class CSVSource(object):
