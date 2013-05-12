@@ -18,6 +18,7 @@ modifying them to suit your purposes.
    :maxdepth: 2
 
    www2csv
+   www2csv.apache
    www2csv.iis
    www2csv.csv
    www2csv.sql
