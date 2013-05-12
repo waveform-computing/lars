@@ -27,11 +27,8 @@ from __future__ import (
     division,
     )
 
+import io
 from collections import namedtuple
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
 
 import pytest
 
@@ -42,43 +39,69 @@ from www2csv import csv, datatypes
 str = type('')
 
 
-def test_target():
+@pytest.fixture
+def rows():
     # Construct some test rows with appropriate namedtuples
     Row = namedtuple('Row', (
         'timestamp', 'client', 'method', 'url', 'time_taken', 'status',
         'size',
         ))
-    row1 = Row(
-        datatypes.datetime('2002-06-24 16:40:23'),
-        datatypes.address('172.224.24.114'),
-        'POST',
-        datatypes.url('/Default.htm'),
-        0.67,
-        200,
-        7930,
-        )
-    row2 = Row(
-        datatypes.datetime('2002-05-02 20:18:01'),
-        datatypes.address('172.22.255.255'),
-        'GET',
-        datatypes.url('/images/picture.jpg'),
-        0.1,
-        302,
-        16328,
-        )
+    return [
+        Row(
+            datatypes.datetime('2002-06-24 16:40:23'),
+            datatypes.address('172.224.24.114'),
+            'POST',
+            datatypes.url('/Default.htm'),
+            0.67,
+            200,
+            7930,
+            ),
+        Row(
+            datatypes.datetime('2002-05-02 20:18:01'),
+            datatypes.address('172.22.255.255'),
+            'GET',
+            datatypes.url('/images/picture.jpg'),
+            0.1,
+            302,
+            16328,
+            ),
+        ]
+
+def test_target(rows):
     # Attempt to write to a StringIO buffer
-    out = StringIO.StringIO()
+    out = io.BytesIO()
     with csv.CSVTarget(out) as target:
-        target.write(row1)
-        target.write(row2)
+        for row in rows:
+            target.write(row)
         with pytest.raises(TypeError):
             target.write(('foo',))
-    out = out.getvalue()
-    assert len(out.splitlines()) == 2
+    out = out.getvalue().splitlines()
+    assert len(out) == 2
+    assert out[0] == '2002-06-24 16:40:23,172.224.24.114,POST,/Default.htm,0.67,200,7930'
+    assert out[1] == '2002-05-02 20:18:01,172.22.255.255,GET,/images/picture.jpg,0.1,302,16328'
+
+def test_header(rows):
     # Do it again, this time with a header
-    out = StringIO.StringIO()
+    out = io.BytesIO()
     with csv.CSVTarget(out, header=True) as target:
-        target.write(row1)
-        target.write(row2)
+        for row in rows:
+            target.write(row)
+    out = out.getvalue().splitlines()
+    assert len(out) == 3
+    assert out[0] == 'timestamp,client,method,url,time_taken,status,size'
+    assert out[1] == '2002-06-24 16:40:23,172.224.24.114,POST,/Default.htm,0.67,200,7930'
+    assert out[2] == '2002-05-02 20:18:01,172.22.255.255,GET,/images/picture.jpg,0.1,302,16328'
+
+def test_non_unicode(rows):
+    # Do it with a non-utf-8 encoding to cover the full transcoding path
+    out = io.BytesIO()
+    with csv.CSVTarget(out, encoding='ascii') as target:
+        for row in rows:
+            target.write(row)
     out = out.getvalue()
-    assert len(out.splitlines()) == 3
+    print(repr(out))
+    out = out.splitlines()
+    assert len(out) == 2
+    assert out[0] == '2002-06-24 16:40:23,172.224.24.114,POST,/Default.htm,0.67,200,7930'
+    assert out[1] == '2002-05-02 20:18:01,172.22.255.255,GET,/images/picture.jpg,0.1,302,16328'
+
