@@ -32,7 +32,7 @@ import sys
 import os
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
-from utils import description, get_version, require_python
+from utils import description, get_version
 
 if not sys.version_info >= (2, 7):
     raise ValueError('This package requires Python 2.7 or above')
