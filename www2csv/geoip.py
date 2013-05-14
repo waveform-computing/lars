@@ -91,7 +91,7 @@ def init_database(v4_filename, v6_filename=None, memcache=True):
     supported lookups (country, region, city, and coordinates).
 
     By default, the function caches the entire content of (both) the
-    database(s) in memroy (on the assumption that just about any machine has
+    database(s) in memory (on the assumption that just about any machine has
     more than sufficient RAM for this), but this behaviour can be overridden
     with the *memcache* parameter.
 

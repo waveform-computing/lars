@@ -1078,10 +1078,13 @@ class Url(namedtuple('Url', 'scheme netloc path params query_str fragment'), url
     of the URL. You can obtain the original URL as a string by requesting the
     string conversion of this class, for example::
 
-        u = datatypes.url('http://foo/bar/baz')
-        assert u.scheme == 'http'
-        assert u.hostname == 'foo'
-        assert str(u) == 'http://foo/bar/baz'
+        >>> u = datatypes.url('http://foo/bar/baz')
+        >>> print u.scheme
+        http
+        >>> print u.hostname
+        foo
+        >>> print str(u)
+        http://foo/bar/baz
 
     .. attribute:: scheme
 
@@ -1108,8 +1111,13 @@ class Url(namedtuple('Url', 'scheme netloc path params query_str fragment'), url
     .. attribute:: query
 
        The query string, parsed into a mapping of keys to lists of values. For
-       example, the query string ``'?a=1&a=2&b=3&c='`` becomes
-       ``{'a': ['1', '2'], 'b': ['3'], 'c': ['']}``
+       example::
+
+          >>> u = datatypes.url('foo/bar?a=1&a=2&b=3&c=')
+          >>> print u.query
+          {'a': ['1', '2'], 'c': [''], 'b': ['3']}
+          >>> print 'a' in u.query
+          True
 
     .. attribute:: fragment
 
