@@ -81,53 +81,6 @@ def test_directive_regexes():
     assert iis.IISSource.FIELD_RE.match('foo(bar)').group('prefix') is None
     assert iis.IISSource.FIELD_RE.match('foo(bar)').group('identifier') == 'foo(bar)'
 
-def test_url_parse():
-    assert iis.url_parse('-') is None
-    assert iis.url_parse('foo') == datatypes.Url('', '', 'foo', '', '', '')
-    assert iis.url_parse('//foo/bar') == datatypes.Url('', 'foo', '/bar', '', '', '')
-    assert iis.url_parse('http://foo/') == datatypes.Url('http', 'foo', '/', '', '', '')
-    assert iis.url_parse('http://foo/bar?baz=quux') == datatypes.Url('http', 'foo', '/bar', '', 'baz=quux', '')
-    assert iis.url_parse('https://foo/bar#baz') == datatypes.Url('https', 'foo', '/bar', '', '', 'baz')
-
-def test_int_parse():
-    assert iis.int_parse('-') is None
-    assert iis.int_parse('0') == 0
-    assert iis.int_parse('-1') == -1
-    assert iis.int_parse('101') == 101
-    with pytest.raises(ValueError):
-        iis.int_parse('abc')
-
-def test_fixed_parse():
-    assert iis.fixed_parse('-') is None
-    assert iis.fixed_parse('0') == 0.0
-    assert iis.fixed_parse('0.') == 0.0
-    assert iis.fixed_parse('0.0') == 0.0
-    assert iis.fixed_parse('-101.5') == -101.5
-    with pytest.raises(ValueError):
-        iis.fixed_parse('abc')
-
-def test_date_parse():
-    assert iis.date_parse('-') is None
-    assert iis.date_parse('2000-01-01') == date(2000, 1, 1)
-    assert iis.date_parse('1986-02-28') == date(1986, 2, 28)
-    with pytest.raises(ValueError):
-        iis.date_parse('1 Jan 2001')
-    with pytest.raises(ValueError):
-        iis.date_parse('2000-01-32')
-    with pytest.raises(ValueError):
-        iis.date_parse('abc')
-
-def test_time_parse():
-    assert iis.time_parse('-') is None
-    assert iis.time_parse('12:34:56') == time(12, 34, 56)
-    assert iis.time_parse('00:00:00') == time(0, 0, 0)
-    with pytest.raises(ValueError):
-        iis.time_parse('1:30:00 PM')
-    with pytest.raises(ValueError):
-        iis.time_parse('25:00:30')
-    with pytest.raises(ValueError):
-        iis.time_parse('abc')
-
 def test_string_parse():
     assert iis.string_parse('-') is None
     assert iis.string_parse('foo') == 'foo'
@@ -140,46 +93,6 @@ def test_string_parse():
     assert iis.string_parse('""') == ''
     assert iis.string_parse('"""') == '"'
     assert iis.string_parse('""""') == '"'
-
-def test_name_parse():
-    assert iis.name_parse('-') is None
-    assert iis.name_parse('foo') == 'foo'
-    assert iis.name_parse('foo.bar') == 'foo.bar'
-    assert iis.name_parse('127.0.0.1') == '127.0.0.1'
-    assert iis.name_parse('f'*63 + '.o') == 'f'*63 + '.o'
-    assert iis.name_parse('f'*63 + '.oo') == 'f'*63 + '.oo'
-    with pytest.raises(ValueError):
-        iis.name_parse('foo.')
-    with pytest.raises(ValueError):
-        iis.name_parse('.foo.')
-    with pytest.raises(ValueError):
-        iis.name_parse('-foo.bar')
-    with pytest.raises(ValueError):
-        iis.name_parse('foo.bar-')
-    with pytest.raises(ValueError):
-        iis.name_parse('f'*64 + '.o')
-    with pytest.raises(ValueError):
-        iis.name_parse('foo.bar.'*32 + '.com')
-
-def test_address_parse():
-    assert iis.address_parse('-') is None
-    # All possible representations of an IPv4 address (including silly ones)
-    assert str(iis.address_parse('127.0.0.1')) == '127.0.0.1'
-    assert str(iis.address_parse('127.0.0.1:80')) == '127.0.0.1:80'
-    assert str(iis.address_parse('::1')) == '::1'
-    assert str(iis.address_parse('[::1]')) == '::1'
-    assert str(iis.address_parse('[::1]:80')) == '[::1]:80'
-    assert str(iis.address_parse('2001:0db8:85a3:0000:0000:8a2e:0370:7334')) == '2001:db8:85a3::8a2e:370:7334'
-    assert str(iis.address_parse('[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:22')) == '[2001:db8:85a3::8a2e:370:7334]:22'
-    assert str(iis.address_parse('[fe80::7334]:22')) == '[fe80::7334]:22'
-    with pytest.raises(ValueError):
-        iis.address_parse('abc')
-    with pytest.raises(ValueError):
-        iis.address_parse('google.com')
-    with pytest.raises(ValueError):
-        iis.address_parse('127.0.0.1:100000')
-    with pytest.raises(ValueError):
-        iis.address_parse('[::1]:100000')
 
 def test_exceptions():
     exc = iis.IISError('Something went wrong!', 23)

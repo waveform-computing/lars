@@ -99,7 +99,7 @@ import warnings
 import logging
 from urllib import unquote_plus
 
-from www2csv import datatypes as dt
+from www2csv import parsers, datatypes as dt
 
 
 # Make Py2 str same as Py3
@@ -114,66 +114,6 @@ __all__ = [
     'IISVersionError',
     'IISWarning',
     ]
-
-
-def url_parse(s):
-    """
-    Parse a URI string in a IIS extended log format file.
-
-    This is a variant on the urlparse.urlparse function. The result type has
-    been extended to include a :meth:`ParseResult.__str__` method which outputs
-    the reconstructed URI.
-
-    :param str s: The string containing the URI to parse
-    :returns: A :class:`~www2csv.datatypes.Url` tuple representing the URI
-    """
-    return dt.url(s) if s != '-' else None
-
-
-def int_parse(s):
-    """
-    Parse an integer string in a IIS extended log format file.
-
-    This is a simple variant on int() that returns None in the case of a single
-    dash being passed to s.
-
-    :param str s: The string containing the integer number to parse
-    :returns: An int value
-    """
-    return int(s) if s != '-' else None
-
-
-def fixed_parse(s):
-    """
-    Parse an floating point string in a IIS extended log format file.
-
-    This is a simple variant on float() that returns None in the case of a
-    single dash being passed to s.
-
-    :param str s: The string containing the floating point number to parse
-    :returns: An float value
-    """
-    return float(s) if s != '-' else None
-
-
-def date_parse(s):
-    """
-    Parse a date string in a IIS extended log format file.
-
-    :param str s: The string containing the date to parse (YYYY-MM-DD format)
-    :returns: A :class:`~www2csv.datatypes.Date` object representing the date
-    """
-    return dt.date(s) if s != '-' else None
-
-
-def time_parse(s):
-    """
-    Parse a time string in a IIS extended log format file.
-
-    :param str s: The string containing the time to parse (HH:MM:SS format)
-    :returns: A :class:`~www2csv.datatypes.Time` object representing the time
-    """
-    return dt.time(s) if s != '-' else None
 
 
 def string_parse(s):
@@ -192,26 +132,6 @@ def string_parse(s):
     if s[:1] == '"':
         return s[1:-1].replace('""', '"')
     return unquote_plus(s)
-
-
-def name_parse(s):
-    """
-    Verify a DNS name in a IIS extended log format file.
-
-    :param str s: The string containing the DNS name to verify
-    :returns: A :class:`~www2csv.datatypes.Hostname` value
-    """
-    return dt.hostname(s) if s != '-' else None
-
-
-def address_parse(s):
-    """
-    Verify an IPv4 or IPv6 address in a IIS extended log format file.
-
-    :param str s: The string containing the address to verify
-    :returns: A :class:`~www2csv.datatypes.IPv4Address` value
-    """
-    return dt.address(s) if s != '-' else None
 
 
 class IISError(StandardError):
@@ -405,7 +325,7 @@ class IISSource(object):
         r'(?P<identifier>[^ ]+)(?(header)\))')
 
     # FIELD_TYPES maps a field's identifier (sans prefix) to a data-type
-    # defined in the IIS draft. Any fields which are not mapped are assumed to
+    # defined in the W3C draft. Any fields which are not mapped are assumed to
     # be type <string> (like all header fields which the draft explicitly
     # defines as having type <string>).
     #
@@ -415,27 +335,27 @@ class IISSource(object):
     # computer name, aka NetBIOS name).
 
     FIELD_TYPES = {
-        # Specified in the IIS draft standard
+        # Specified in the W3C draft standard
         'bytes':         'integer',
         'cached':        'integer',
         'comment':       'text',
         'count':         'integer',
-        'date':          'date',
-        'dns':           'name',
+        'date':          'date_iso',
+        'dns':           'hostname',
         'interval':      'integer',
-        'ip':            'address',
-        'method':        'name',
+        'ip':            'address_port',
+        'method':        'hostname', # No really, that's what the draft says!
         'status':        'integer',
-        'time-from':     'time',
+        'time-from':     'time_iso',
         'time-taken':    'fixed',
-        'time':          'time',
-        'time-to':       'time',
-        'uri-query':     'uri',
-        'uri-stem':      'uri',
-        'uri':           'uri',
+        'time':          'time_iso',
+        'time-to':       'time_iso',
+        'uri-query':     'url',
+        'uri-stem':      'url',
+        'uri':           'url',
         # Extended IIS definitions
         'computername':  'string',
-        'host':          'name',
+        'host':          'hostname',
         'port':          'integer',
         'sitename':      'string',
         'substatus':     'integer',
@@ -444,68 +364,37 @@ class IISSource(object):
         'win32-status':  'integer',
         }
 
-    # TYPES_RE defines regexes for each of the datatypes specified in the IIS
-    # draft. Each regex includes an alternative for an empty case (a single
-    # dash).
+    # TYPES defines conversion functions and regexes for each of the datatypes
+    # used in the W3C draft
 
-    TYPES_RE = {
-        # In the following regexes, there must be a single group which
-        # covers the entire match. The group must be a named group with the
-        # name %(name)s, which will be substituted for the Python-ified field
-        # name in the regex constructed for row matching
-        'integer': r'(?P<%(name)s>-|\d+)',
-        'fixed':   r'(?P<%(name)s>-|\d+(\.\d*)?)',
-        'date':    r'(?P<%(name)s>-|\d{4}-\d{2}-\d{2})',
-        'time':    r'(?P<%(name)s>-|\d{2}:\d{2}:\d{2})',
-        # Note - we do NOT try and validate URIs with this regex (as to do so
-        # is incredibly complicated and much better left to a function), merely
-        # perform some rudimentary extraction. The complex stuff on the left
-        # side of the disjunction comes from RFC3986 appendix B. The reason for
-        # the empty "-" production appearing on the right is due to an issue
-        # with disjuncts in Perl-style regex implementations, see
-        # <http://lingpipe-blog.com/2008/05/07/tokenization-vs-eager-regular-expressions/>
-        # for details
-        'uri':     r'(?P<%(name)s>(([^:/?#\s]+):)?(//([^/?#\s]*))?([^?#\s]*)(\?([^#\s]*))?(#(\S*))?|-)',
+    TYPES = {
+        'integer':      (parsers.int_parse,      parsers.INTEGER),
+        'fixed':        (parsers.fixed_parse,    parsers.FIXED),
+        'date_iso':     (parsers.date_parse,     parsers.DATE_ISO),
+        'time_iso':     (parsers.time_parse,     parsers.TIME_ISO),
+        'url':          (parsers.url_parse,      parsers.URL),
         # This regex deviates from the draft's specifications; in practice IIS
         # always URI encodes the content of prefix(header) fields but the draft
         # demands a "quoted string" format instead. The draft also demands that
         # the usual empty-field notation of a dash ("-") is not used for
         # "string" type fields (presumably an empty pair of quotes should be
         # used, although the draft doesn't explicitly state this), but, again,
-        # practice deviates from this
-        'string':  r'(?P<%(name)s>"([^"]|"")*"|[^"\s]\S*|-)',
+        # practice deviates from this. This is very specific to the W3C format
+        # so this isn't one of the standard regexes
+        'string':       (string_parse,           r'(?P<%(name)s>"([^"]|"")*"|[^"\s]\S*|-)'),
         # The draft dictates <alpha> for names, but firstly doesn't define what
         # <alpha> actually means; furthermore if we assume if means alphabetic
         # chars only (as seems reasonable) that's not even slightly sufficient
         # for validating DNS names (which is what this type is for), and
         # generally one expects that in the case of DNS resolution failure, an
-        # IP address might be recorded in such fields too. In fact, doing DNS
-        # (or IP) validation is extremely hard to do properly with regexes so
-        # here we use a trivial regex to pull out a string containing the right
-        # alphabet and do validation in a later function
-        'name':    r'(?P<%(name)s>-|[a-zA-Z0-9:.-]+)',
+        # IP address might be recorded in such fields too. Here we simply use
+        # our default hostname regex
+        'hostname':     (parsers.hostname_parse, parsers.HOSTNAME),
         # Again, the draft's BNF for an IP address is deficient (e.g. doesn't
         # specify a limit on octets, and isn't compatible with IPv6 which will
-        # presumably start appearing in logs at some point), and again regex
-        # validation of IP addresses is extremely hard to do properly so we
-        # perform validation later in a function
-        'address': r'(?P<%(name)s>-|([0-9]+(\.[0-9]+){3}|\[[0-9a-fA-F:]+\])(:[0-9]{1,5})?)',
-        }
-
-    # TYPES_FUNC defines, for each data-type given in the IIS draft standard, a
-    # simple transformation function that converts the raw string extracted by
-    # regex into some sensible data format (e.g. int for integer values, a date
-    # object for date values, etc.)
-
-    TYPES_FUNC = {
-        'integer': int_parse,
-        'fixed':   fixed_parse,
-        'date':    date_parse,
-        'time':    time_parse,
-        'uri':     url_parse,
-        'string':  string_parse,
-        'name':    name_parse,
-        'address': address_parse,
+        # presumably start appearing in logs at some point), so we use our
+        # generic address+port regex
+        'address_port': (parsers.address_parse,  parsers.ADDRESS_PORT),
         }
 
     def _process_fields(self, line):
@@ -545,12 +434,14 @@ class IISSource(object):
             if pattern:
                 pattern += r'\s+'
             logging.debug('Field %s has type %s', original_name, field_type)
-            pattern += self.TYPES_RE[field_type] % {'name': python_name}
-            tuple_funcs.append(self.TYPES_FUNC[field_type])
+            field_fn, field_re = self.TYPES[field_type]
+            pattern += field_re % {'name': python_name}
+            tuple_funcs.append(field_fn)
             if original_name in self.fields:
                 raise IISFieldsError('Duplicate field name %s' % original_name)
             self.fields.append(original_name)
             tuple_fields.append(python_name)
+        logging.getLogger().setLevel(logging.DEBUG)
         logging.debug('Constructing row regex: ^%s$', pattern)
         self._row_pattern = re.compile('^' + pattern + '$')
         logging.debug('Constructing row tuple with fields: %s', ','.join(tuple_fields))
