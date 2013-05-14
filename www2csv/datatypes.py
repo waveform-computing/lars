@@ -241,16 +241,6 @@ def time(s, format='%H:%M:%S'):
     return Time(d.hour, d.minute, d.second, d.microsecond)
 
 
-def path(s):
-    """
-    Returns a :class:`Path` object for the given string.
-
-    :param str s: The string containing the path to parse
-    :returns: A :class:`Path` object representing the path
-    """
-    return Path(s)
-
-
 def row(*args):
     """
     Returns a new tuple sub-class type containing the specified fields. For
@@ -266,6 +256,25 @@ def row(*args):
     return namedtuple('Row', args)
 
 
+def path(s):
+    """
+    Returns a :class:`Path` object for the given string.
+
+    :param str s: The string containing the path to parse
+    :returns: A :class:`Path` object representing the path
+    """
+    i = s.rfind('/') + 1
+    dirname, basename = s[:i], s[i:]
+    if dirname and dirname != '/'*len(dirname):
+        dirname = dirname.rstrip('/')
+    i = basename.rfind('.')
+    if i > 0:
+        ext = basename[i:]
+    else:
+        ext = ''
+    return Path(dirname, basename, ext)
+
+
 def url(s):
     """
     Returns a :class:`Url` object for the given string.
@@ -274,6 +283,27 @@ def url(s):
     :returns: A :class:`Url` tuple representing the URL
     """
     return Url(*urlparse.urlparse(s))
+
+
+def request(s):
+    """
+    Returns a :class:`Request` object for the given string.
+
+    :param str s: The string containing the request line to parse
+    :returns: A :class:`Request` tuple representing the request line
+    """
+    try:
+        method, s = s.split(' ', 1)
+    except ValueError:
+        raise ValueError('Request line is missing a space separated method')
+    try:
+        s, protocol = s.rsplit(' ', 1)
+    except ValueError:
+        raise ValueError('Request line is missing a space separated protocol')
+    s = s.strip()
+    if not s:
+        raise ValueError('Request line URL cannot be blank')
+    return Request(method, url(s) if s != '*' else None, protocol)
 
 
 def hostname(s):
@@ -952,205 +982,92 @@ class Time(dt.time):
     """
 
 
-# Py3k: The base class of type('') is simply a short-hand way of saying unicode
-# on py2 (because of the future import at the top of the module) and str on py3
-class Path(type('')):
+class Path(namedtuple('Path', 'dirname basename ext')):
     """
     Represents a path.
 
     This type is returned by the :func:`path` function and represents a path in
-    the platform's native format (e.g. with drive and backslash separators on
-    Windows, no drive and forward slash separators on Linux/Mac OS X). Numerous
-    attributes are provided for extracting any part of the path and querying
-    the attributes of the corresponding file (if any) on disk.
+    POSIX format (forward slash separators and no drive potion). It is used to
+    represent the path portion of URLs and provides attributes for extracting
+    parts of the path there-in.
 
-    :param str s: The string containing the path to parse
+    The original path can be obtained as a string by asking for the string
+    conversion of this class, like so::
+
+        p = datatypes.path('/foo/bar/baz.ext')
+        assert p.dirname == '/foo/bar'
+        assert p.basename == 'baz.ext'
+        assert str(p) == '/foo/bar/baz.ext'
+
+    .. attribute:: dirname
+
+       A string containing all of the path except the basename at the end
+
+    .. attribute:: basename
+
+       A string containing the basename (filename and extension) at the end
+       of the path
+
+    .. attribute:: ext
+
+       A string containing the filename's extension (including the leading dot)
     """
 
-    drive_part_re = re.compile(r'^[a-zA-Z]:$', flags=re.UNICODE)
-    file_part_re = re.compile(r'[\x00-\x1f\x7f\\/?:*"><|]', flags=re.UNICODE)
-
-    def __init__(self, s):
-        s = str(s)
-        # Split the path into drive and path parts
-        if sys.platform.startswith('win'):
-            drive, path = os.path.splitdrive(s)
-            if drive and not self.drive_part_re.match(drive):
-                raise ValueError('%s has an invalid drive portion' % s)
-        else:
-            path = s
-        parts = path.split(os.path.sep)
-        # For the sake of sanity, raise a ValueError in the case of certain
-        # characters which just shouldn't be present in paths
-        for part in parts:
-            if part and self.file_part_re.search(part):
-                raise ValueError(
-                    '%s cannot contain control characters or any of '
-                    'the following: \\ / ? : * " > < |' % s)
-        super(Path, self).__init__(s)
-
-    def relative(self, start=os.curdir):
-        """
-        Return the path relative to the ``start`` path which defaults to ``.``
-        if it is not specified.
-        """
-        return Path(os.path.relpath(self, start))
+    __slots__ = ()
 
     @property
-    def abspath(self):
+    def dirs(self):
         """
-        If the path is relative, this property returns the equivalent absolute
-        path, by resolving relative to the current working directory.
+        Returns a sequence of the directories making up :attr:`dirname`
         """
-        return Path(os.path.abspath(self))
-
-    @property
-    def drive(self):
-        """
-        Returns the drive portion of the path (on Windows), or the blank string
-        (on all other supported platforms).
-        """
-        return Path(os.path.splitdrive(self)[0])
-
-    @property
-    def basename(self):
-        """
-        Returns the filename portion of the path, including its extension (the
-        portion after the final dot).
-        """
-        return Path(os.path.basename(self))
+        return [d for d in self.dirname.split('/') if d]
 
     @property
     def basename_no_ext(self):
         """
-        Returns the filename portion of the path, excluding the extension
-        after the final dot.
+        Returns a string containing basename with the extension removed
+        (including the final dot separator).
         """
-        return Path(os.path.splitext(os.path.basename(self))[0])
-
-    @property
-    def dirname(self):
-        """
-        Returns the path without the final filename portion.
-        """
-        return Path(os.path.dirname(self))
-
-    @property
-    def ext(self):
-        """
-        Returns the extension of the filename part of the path (the portion
-        after the final dot).
-        """
-        return Path(os.path.splitext(self)[1])
-
-    @property
-    def exists(self):
-        """
-        Returns True if the path currently exists on disk and is not a broken
-        symlink.
-        """
-        return os.path.exists(self)
-
-    @property
-    def lexists(self):
-        """
-        Returns True if the path currently exists on disk even if it is a
-        broken symlink.
-        """
-        return os.path.lexists(self)
-
-    @property
-    def atime(self):
-        """
-        If the path exists on disk, returns the last access time as a
-        :class:`DateTime` object, otherwise returns None.
-        """
-        # XXX What happens when the file doesn't exist?!
-        return DateTime.utcfromtimestamp(os.path.getatime(self))
-
-    @property
-    def mtime(self):
-        """
-        If the path exists on disk, returns the last modification time as a
-        :class:`DateTime` object, otherwise returns None.
-        """
-        return DateTime.utcfromtimestamp(os.path.getmtime(self))
-
-    @property
-    def ctime(self):
-        """
-        If the path exists on disk, returns the last meta-data modification
-        time (aka the creation time) as a :class:`DateTime` object,
-        otherwise returns None.
-        """
-        return DateTime.utcfromtimestamp(os.path.getctime(self))
-
-    @property
-    def size(self):
-        """
-        If the path exists on disk, returns the size of the file in bytes,
-        otherwise returns None.
-        """
-        return os.path.getsize(self)
+        if self.ext:
+            return self.basename[:-len(self.ext)]
+        else:
+            return self.basename
 
     @property
     def isabs(self):
         """
-        Returns True if the path is an absolute path.
+        Returns True if the path is absolute (dirname begins with one or more
+        forward slashes).
         """
-        return os.path.isabs(self)
+        return self.dirname.startswith('/')
 
-    @property
-    def isfile(self):
+    def join(self, *paths):
         """
-        Returns True if the path represents an existing file on the disk.
-        """
-        return os.path.isfile(self)
+        Joins this path with the specified parts, returning a new :class:`Path`
+        object.
 
-    @property
-    def isdir(self):
+        :param \\*paths: The parts to append to this path
+        :returns: A new :class:`Path` object representing the extended path
         """
-        Returns True if the path represents an existing directory on the disk.
-        """
-        return os.path.isdir(self)
+        result = str(self)
+        for p in paths:
+            if not isinstance(p, str):
+                p = str(p)
+            # Strip doubled slashes? Or leave this to normpath?
+            if p.startswith('/'):
+                result = p
+            elif not result or result.endswith('/'):
+                result += p
+            else:
+                result += '/' + p
+        return path(result)
 
-    @property
-    def islink(self):
-        """
-        Returns True if the path represents a symlink on the disk.
-        """
-        return os.path.islink(self)
-
-    @property
-    def ismount(self):
-        """
-        Returns True if the path represents an active mount-point on the disk.
-        """
-        return os.path.ismount(self)
-
-    @property
-    def normcase(self):
-        """
-        Returns the lowercase version of the path on Windows, or the path
-        unchanged on Linux or Mac OS X.
-        """
-        return Path(os.path.normcase(self))
-
-    @property
-    def normpath(self):
-        """
-        Returns the path with redundant sections (``.`` for the current
-        directory, doubled slashes, etc.) removed.
-        """
-        return Path(os.path.normpath(self))
-
-    @property
-    def realpath(self):
-        """
-        Returns the path after resolution of symlinks. Note that this may
-        change the behaviour of the path on certain platforms.
-        """
-        return Path(os.path.realpath(self))
+    def __str__(self):
+        result = self.dirname
+        if not result or result.endswith('/'):
+            return result + self.basename
+        else:
+            return result + '/' + self.basename
 
 
 class Url(namedtuple('Url', 'scheme netloc path params query fragment'), urlparse.ResultMixin):
@@ -1158,7 +1075,13 @@ class Url(namedtuple('Url', 'scheme netloc path params query fragment'), urlpars
     Represents a URL.
 
     This type is returned by the :func:`url` function and represents the parts
-    of the URL.
+    of the URL. You can obtain the original URL as a string by requesting the
+    string conversion of this class, for example::
+
+        u = datatypes.url('http://foo/bar/baz')
+        assert u.scheme == 'http'
+        assert u.hostname == 'foo'
+        assert str(u) == 'http://foo/bar/baz'
 
     .. attribute:: scheme
 
@@ -1220,6 +1143,34 @@ class Url(namedtuple('Url', 'scheme netloc path params query fragment'), urlpars
     @property
     def hostname(self):
         return hostname(super(Url, self).hostname)
+
+
+class Request(namedtuple('Request', 'method url protocol')):
+    """
+    Represents an HTTP request line.
+
+    This type is returned by the :func:`request` function and represents the
+    three parts of an HTTP request line: the method, the URL (optional, can be
+    None in the case of methods like OPTIONS), and the protocol. The following
+    attributes exist:
+
+    .. attribute:: method
+
+       The method of the request (typically GET, POST, or PUT but can
+       technically be any valid HTTP token)
+
+    .. attribute:: url
+
+       The requested URL. May be an absolute URL, an absolute path, an authority
+       token, or None in the case that the request line contained "*" for the
+       URL.
+
+    .. attribute:: protocol
+
+       The HTTP protocol version requested. A string of the format 'HTTP/x.y'
+       where x.y is the version number. At the time of writing only HTTP/1.0
+       and HTTP/1.1 are defined.
+    """
 
 
 @total_ordering

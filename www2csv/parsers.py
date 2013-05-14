@@ -69,6 +69,14 @@ __all__ = [
 
 _URL = r'(([^:/?#\s]+):)?(//([^/?#\s]*))?([^?#\s]*)(\?([^#\s]*))?(#(\S*))?'
 
+# The following regex for paths is ridiculously lax (and practically guaranteed
+# to make any undelimited regex containing it ambiguous. Unfortunately there's
+# not much we can do about this as none of the log formats escape filename
+# fields! In other words, it's down to users not to use nutty filenames and to
+# specify log formats containing sensible delims around any paths
+
+_PATH = r'([^\x00-\x1f\x7f]*)'
+
 # METHOD can never be unknown (there wouldn't be a request without it), so it's
 # one of the few regexes with no "-" option. Extension methods can potentially
 # be used, hence this regex just matches the "token" production in RFC2616 2.2.
@@ -95,6 +103,7 @@ TIME_ISO = r'(?P<%(name)s>-|\d{2}:\d{2}:\d{2})'
 # <http://lingpipe-blog.com/2008/05/07/tokenization-vs-eager-regular-expressions/>
 
 URL      = r'(?P<%%(name)s>%s|-)' % _URL
+PATH     = r'(?P<%%(name)s>%s|-)' % _PATH
 METHOD   = r'(?P<%%(name)s>%s)' % _METHOD
 PROTOCOL = r'(?P<%%(name)s>%s)' % _PROTOCOL
 REQUEST  = r'(?P<%%(name)s>%s %s %s)' % (_METHOD, _URL, _PROTOCOL)
@@ -112,6 +121,24 @@ ADDRESS      = r'(?P<%(name)s>-|[0-9]+(\.[0-9]+){3}|[0-9a-fA-F:]+)'
 ADDRESS_PORT = r'(?P<%(name)s>-|([0-9]+(\.[0-9]+){3}|\[[0-9a-fA-F:]+\])(:[0-9]{1,5})?)'
 
 
+def request_parse(s):
+    """
+    Parse an HTTP request line in a log file.
+
+    This is a basic function that simply returns the three components of a
+    request line (method, url, and protocol) as tuple. No check is made for "-"
+    or missing methods/protocols - without a request, there'd be nothing to log
+    and method and protocol are mandatory in a request line. If URL is "*"
+    (denoting a missing URL for methods which do not require one, like
+    OPTIONS), the middle element of the returned tuple will be None.
+
+    :param str s: The string containing the request line to parse
+    :returns: A :class:`~www2csv.datatypes.Request` tuple representing the
+              request line
+    """
+    return dt.request(s)
+
+
 def url_parse(s):
     """
     Parse a URL string in a log file.
@@ -119,12 +146,23 @@ def url_parse(s):
     This is a variant on the standard Python urlparse.urlparse function. The
     result type has been extended to include a
     :meth:`~www2csv.datatypes.Url.__str__` method which outputs the
-    reconstructed URL.
+    reconstructed URL, and to have specialized hostname and path properties
+    which return enhanced objects instead of simple strings.
 
     :param str s: The string containing the URI to parse
     :returns: A :class:`~www2csv.datatypes.Url` tuple representing the URL
     """
     return dt.url(s) if s != '-' else None
+
+
+def path_parse(s):
+    """
+    Parse a POSIX-style (slash separated) path string in a log file.
+
+    :param str s: The srting containing the POSIX-style path to parse
+    :returns: A :class:`~www2csv.datatypes.Path` object representing the path
+    """
+    return dt.path(s) if s != '-' else None
 
 
 def int_parse(s):
