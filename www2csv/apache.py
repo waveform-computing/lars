@@ -108,8 +108,10 @@ from __future__ import (
 import re
 import warnings
 import logging
+import functools
 
-from www2csv import datatypes as dt
+from www2csv import parsers, datatypes as dt
+from www2csv.strptime import TimeRE, _strptime_datetime
 
 
 # Make Py2 str same as Py3
@@ -128,11 +130,94 @@ __all__ = [
     ]
 
 
+# Common Apache LogFormat strings
 COMMON = '%h %l %u %t "%r" %>s %b'
 COMMON_VHOST = '%v %h %l %u %t "%r" %>s %b'
 COMBINED = '%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i"'
 REFERER = '%{Referer} -> %U'
 USER_AGENT = '%{User-agent}i'
+
+# Standard Apache time format
+APACHE_TIME = '[%d/%b/%Y:%H:%M:%S %z]'
+
+
+# We need a reference to the "standard English" locale for parsing the
+# unadorned %t time format in Apache log files. The only truly safe way of
+# doing this (given that an English locale may not even be installed on the
+# machine) is to hard-code a fake one. The following is derived from a machine
+# with the locale explicitly set to en_US (presumably what Apache means they
+# refer to "standard English"...):
+class EnglishLocaleTime(object):
+    def __init__(self):
+        self.a_month = [
+            '',
+            'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+            'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
+            ]
+        self.a_weekday = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+        self.am_pm = ['am', 'pm']
+        self.f_month = [
+            '',
+            'january', 'february', 'march',
+            'april',   'may',      'june',
+            'july',    'august',   'september',
+            'october', 'november', 'december',
+            ]
+        self.f_weekday = [
+            'monday', 'tuesday', 'wednesday',
+            'thursday', 'friday', 'saturday', 'sunday',
+            ]
+        self.lang = ('en_US', 'UTF-8')
+        self.LC_date = '%m/%d/%Y'
+        self.LC_date_time = '%a %d %b %Y %I:%M:%S %p %Z'
+        self.LC_time = '%I:%M:%S %p'
+        self.timezone = (frozenset(('utc', 'gmt')), frozenset('bst'))
+
+
+_string_parse_re = re.compile(r'\\(x[0-9a-fA-F]{2}|[^x])')
+def string_parse(s):
+    """
+    Parse a string in an Apache log file.
+
+    This function unescapes backslash-prefixed escape sequences. Specifically,
+    ``\\xhh`` hex-sequences, and the standard C whitespace sequences of
+    ``\\n``, ``\\t``, and ``\\f``. Anything else prefixed with a backslash
+    (such as a double-quote or another backslash) has the leading backslash
+    removed but is left otherwise unchanged.
+
+    :param str s: The string to parse
+    :returns: The decoded string
+    """
+    if s == '-':
+        return None
+    whitespace = {
+        '\\n': '\n',
+        '\\t': '\t',
+        '\\f': '\f',
+        }
+    def unescape(match):
+        match = match.group(0)
+        if match.startswith('\\x'):
+            return chr(int(match[2:4], base=16))
+        else:
+            return whitespace.get(match, match[-1])
+    return _string_parse_re.sub(unescape, s)
+
+
+def time_parse(s, fmt):
+    """
+    Parse a time value in an Apache log file.
+
+    Note that this function is not intended to be used on its own, but rather
+    to be treated as the template for an implementation derived with the
+    :func:`~functools.partial` function from functools.
+
+    :param str s: The string containing the time to parse
+    :param str fmt: The strptime format the string must conform to
+    :returns: A naive :class:`~www2csv.datatypes.DateTime` object
+    """
+    d = _strptime_datetime(dt.DateTime, s, fmt)
+    return d.replace(tzinfo=None) - d.utcoffset()
 
 
 class ApacheError(StandardError):
@@ -222,7 +307,7 @@ class ApacheSource(object):
 
     (1)
         Any characters in the field-name which are invalid in a Python
-        identifier are converted to underscore, e.g. %{foo-bar}C becomes
+        identifier are converted to underscore, e.g. ``%{foo-bar}C`` becomes
         ``"cookie_foo_bar"``.
 
     .. warning::
@@ -232,17 +317,22 @@ class ApacheSource(object):
         means that if a field can contain whitespace it must be surrounded by
         characters that it cannot legitimately contain (or cannot contain
         unescaped versions of). Typically double-quotes are used as Apache
-        (from version 2.0.46) escapes double-quotes within %r, %i, and %o.  See
-        Apache's `Custom Log Formats`_ documentation for full details.
+        (from version 2.0.46) escapes double-quotes within ``%r``, ``%i``, and
+        ``%o``.  See Apache's `Custom Log Formats`_ documentation for full
+        details.
 
     :param source: A file-like object containing the source stream
-    :param format: Defaults to :data:`COMMON` but can be set to any valid
+    :param str format: Defaults to :data:`COMMON` but can be set to any valid
                    Apache LogFormat string
+    :param bool localized_time: If False, assume customized ``%t`` format
+                   strings use English strings for months and weekdays.
+                   Defaults to True (assume localized strings)
     """
 
-    def __init__(self, source, log_format=COMMON):
+    def __init__(self, source, log_format=COMMON, localized_time=True):
         self.source = source
         self.log_format = log_format
+        self._time_re = TimeRE()
         self._parse_log_format()
         self._row_pattern = None
         self._row_funcs = None
@@ -252,7 +342,7 @@ class ApacheSource(object):
     # Apache LogFormat directive. See [1] for full details of the syntax.
     #
     # [1] http://httpd.apache.org/docs/2.2/mod/mod_log_config.html#formats
-    LOG_FIELD_RE = re.compile(
+    FIELD_RE1 = re.compile(
         # Main capturing group to ensure re.split() returns everything
         r'(%'
             # Optional status code filter with optional negation
@@ -265,8 +355,8 @@ class ApacheSource(object):
                 r'[aAbBDfhHklmpPqrRstTuUvVXIO]|'
                 # Header/env/pid specs
                 r'\{[a-zA-Z][a-zA-Z0-9_-]*\}[einopP]|'
-                # Cookie spec
-                r'\{[^(){}<>[\]@,;:\\"/?= \t]+\}C|'
+                # Cookie spec (any HTTP token is permitted as a name)
+                r'\{[^\x00-\x1F\x7F(){}<>[\]@,;:\\"/?= \t]+\}C|'
                 # Time spec
                 r'\{[^}]*\}t'
             r')'
@@ -275,10 +365,10 @@ class ApacheSource(object):
 
     # This regular expression is used to parse a format specification after
     # extraction from a LogFormat string. It is effectively a simplified form
-    # of LOG_FIELD_RE above with anchors and groups to capture the useful
+    # of FIELD_RE1 above with anchors and groups to capture the useful
     # portions of the spec (basically the formatting character and any {field}
     # before it.
-    LOG_SPEC_RE = re.compile(
+    FIELD_RE2 = re.compile(
         r'^%'
         # Optional status code - non-capturing group as we don't want this
         r'(?:!?\d{3}(?:,\d{3})*)?'
@@ -291,43 +381,67 @@ class ApacheSource(object):
         r'$'
         )
 
-    # This mapping relates format specifications to user-friendly field names
-    # for use in the generated row tuple. Note that some mappings include a
-    # string substitution portion to accept sanitized versions of, for example,
-    # cookie names, or HTTP header fields.
-    LOG_FIELD_NAMES = {
-       'a': 'remote_ip',
-       'A': 'local_ip',
-       'B': 'size',
-       'b': 'size_clf',
-       'C': 'cookie_%s',
-       'D': 'time_taken_ms',
-       'e': 'env_%s',
-       'f': 'filename',
-       'h': 'remote_host',
-       'H': 'protocol',
-       'i': 'req_%s',
-       'k': 'keepalive',
-       'l': 'ident',
-       'm': 'method',
-       'n': 'note_%s',
-       'o': 'resp_%s',
-       'p': 'port',
-       'P': 'pid',
-       'q': 'url_query',
-       'r': 'request',
-       'R': 'handler',
-       's': 'status',
-       't': 'time',
-       'T': 'time_taken',
-       'u': 'remote_user',
-       'U': 'url_stem',
-       'v': 'server_name',
-       'V': 'canonical_name',
-       'X': 'connection_status',
-       'I': 'bytes_received',
-       'O': 'bytes_sent',
-       }
+    # This mapping relates format specifications to field names and types, for
+    # use in the generated row tuple. Note that some mappings include a string
+    # substitution portion to accept sanitized versions of, for example, cookie
+    # names, or HTTP header fields.
+    FIELD_DEFS = {
+        'a': ('remote_ip',         'address'),
+        'A': ('local_ip',          'address'),
+        'B': ('size',              'integer'),
+        'b': ('size_clf',          'integer'),
+        'C': ('cookie_%s',         'string'),
+        'D': ('time_taken_ms',     'integer'),
+        'e': ('env_%s',            'string'),
+        'f': ('filename',          'path'),
+        'h': ('remote_host',       'hostname'),
+        'H': ('protocol',          'protocol'),
+        'i': ('req_%s',            'string'),
+        'k': ('keepalive',         'integer'),
+        'l': ('ident',             'string'),
+        'm': ('method',            'method'),
+        'n': ('note_%s',           'string'),
+        'o': ('resp_%s',           'string'),
+        'p': ('port',              'integer'),
+        'P': ('pid',               'integer'),
+        'q': ('url_query',         'url'),
+        'r': ('request',           'request'),
+        'R': ('handler',           'string'),
+        's': ('status',            'integer'),
+        't': ('time',              'time'),
+        'T': ('time_taken',        'integer'),
+        'u': ('remote_user',       'string'),
+        'U': ('url_stem',          'url'),
+        'v': ('server_name',       'hostname'),
+        'V': ('canonical_name',    'hostname'),
+        'X': ('connection_status', 'keepalive'),
+        'I': ('bytes_received',    'integer'),
+        'O': ('bytes_sent',        'integer'),
+        }
+
+    TYPES = {
+        'address':   (parsers.address_parse,  parsers.ADDRESS),
+        'path':      (parsers.path_parse,     parsers.PATH),
+        'hostname':  (parsers.hostname_parse, parsers.HOSTNAME),
+        'integer':   (parsers.int_parse,      parsers.INTEGER),
+        'method':    (None,                   parsers.METHOD),
+        'protocol':  (None,                   parsers.PROTOCOL),
+        'request':   (parsers.request_parse,  parsers.REQUEST),
+        'url':       (parsers.url_parse,      parsers.URL),
+        # Apache escapes non-printable and "special" chars with hex (\xhh)
+        # sequences, except for newline, tab, and double-quote which are all
+        # simply back-slash escaped. This is Apache specific and hence isn't
+        # taken from the standard parsers module
+        'string':    (string_parse,           r'(?P<%(name)s>([^\x00-\x1f\x7f\\"]|\\x[0-9a-fA-F]{2}|\\[^x])+|-)'),
+        # Apache field type which indicates the keep-alive state of the
+        # connection when the request is done (X=connection aborted before
+        # completion, +=keep connection alive, -=close connection)
+        'keepalive': (None,                   r'(?P<%(name)s>[X+-])'),
+        # Apache can include just about anything at all in a time format string
+        # so we special-case this type and construct a custom regex and parsing
+        # function for it later from the format given
+        'time':      (None,                   None),
+        }
 
     def _parse_log_format(self):
         self._row_pattern = ''
@@ -341,55 +455,96 @@ class ApacheSource(object):
         # [sep, str, sep, str, sep, ...]. This is why separator is initially
         # True below
         separator = True
-        for s in self.LOG_FIELD_RE.split(self.log_format):
+        for s in self.FIELD_RE1.split(self.log_format):
             if s:
                 if separator:
                     self._row_pattern += re.escape(s)
                 else:
-                    tuple_fields.append(self._parse_log_spec(s))
+                    name, pattern, parser = self._parse_log_field(s)
+                    tuple_fields.append(name)
+                    self._row_pattern += pattern
+                    self._row_funcs.append(parser)
             separator = not separator
         self._row_type = dt.row(*tuple_fields)
 
-    def _parse_log_spec(self, s):
-        # This function parses a single %{field}s in an Apache LogFormat string;
-        # it is called by _parse_log_format which handles splitting up the
-        # LogFormat into individual segments
-        m = self.LOG_SPEC_RE.match(s)
+    def _parse_log_field(self, s):
+        # This function parses a single %{field}s in an Apache LogFormat
+        # string; it is called by _parse_log_format which handles splitting up
+        # the LogFormat into individual segments
+        m = self.FIELD_RE2.match(s)
         if m:
-            field, suffix = m.group('field'), m.group('suffix')
+            data, suffix = m.group('field'), m.group('suffix')
         else:
-            raise ValueError('Invalid format specification "%s"' % s)
+            # This should never happen
+            raise RuntimeError('Internal error in FIELD_RE2')
         try:
             # General case: simple lookup to determine field name
-            field_name = self.LOG_FIELD_NAMES[suffix]
+            template, field_type = self.FIELD_DEFS[suffix]
         except KeyError:
             raise ValueError('Invalid format suffix "%s"' % suffix)
+        name = self._generate_name(template, data, suffix)
+        pattern, parser = self._generate_parser(data, field_type, field_name)
+        return field_name, pattern, parser
+
+    def _generate_name(self, template, data, suffix):
+        # This function constructs the field name from the FIELD_DEFS template,
+        # the field extracted from the spec (if any) and the type suffix. The
+        # result MUST be a valid Python identifier
         if suffix in 'Ceino':
-            # If a {field} is expected, sanitize it and substitute
-            field_name = field_name % dt.sanitize_name(field)
+            # If a data is expected, sanitize it and substitute into template
+            if not data:
+                raise ValueError(
+                    'Missing {str} for format suffix "%s"' % suffix)
+            return template % dt.sanitize_name(data)
         elif suffix == 'p':
             # Special case: port
-            if field:
+            if data:
                 try:
-                    field_name = {
+                    return {
                         'canonical': 'port',
                         'local':     'local_port',
                         'remote':    'remote_port',
-                        }[field]
+                        }[data]
                 except KeyError:
-                    raise ValueError('Invalid format in "%%{%s}p"' % field)
+                    raise ValueError('Invalid format in "%%{%s}p"' % data)
         elif suffix == 'P':
             # Special case: PID
-            if field:
+            if data:
                 try:
-                    field_name = {
+                    return {
                         'pid': 'pid',
                         'tid': 'tid',
                         'hextid': 'hextid',
-                        }[field]
+                        }[data]
                 except KeyError:
-                    raise ValueError('Invalid format in "%%{%s}P"' % field)
-        # XXX self._row_pattern +=
-        # XXX self._row_funcs.append()
-        return field_name
+                    raise ValueError('Invalid format in "%%{%s}P"' % data)
+        else:
+            return template
 
+    def _generate_parser(self, data, field_type, field_name):
+        if field_type == 'time':
+            # Special case: time. Use the Python's internal _strptime.TimeRE to
+            # convert the strftime format into a locale-dependent unanchored
+            # regex. For Python 2.7, a backport of Python 3.2's _strptime is
+            # used as the former lacks support for the %z format spec.
+            if data:
+                fmt_locale = None
+                fmt = data
+            else:
+                fmt_locale = EnglishLocalTime()
+                fmt = APACHE_TIME
+            try:
+                time_regex = TimeRE(fmt_locale).pattern(fmt)
+            except KeyError as exc:
+                raise ValueError(
+                    'Invalid time format spec %%%s in %s' % (str(exc), fmt))
+            # Wrap the generated regex in a capturing pattern with a name
+            # placeholder
+            pattern = '(?P<%%(name)s>%s)' % time_regex
+            # Derive a parser for parsing the particular time format
+            parser = functools.partial(time_parse, fmt=fmt)
+        else:
+            parser, pattern = self.TYPES[field_type]
+            if parser is None:
+                parser = lambda s: s
+        return pattern % {'name': field_name}, parser
