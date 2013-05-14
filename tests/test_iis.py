@@ -27,25 +27,100 @@ from __future__ import (
     division,
     )
 
-from datetime import datetime, date, time
-
 import pytest
 
-from www2csv import iis, datatypes
+from www2csv import iis, datatypes as dt
 
 
 # Make Py2 str same as Py3
 str = type('')
 
 
-FTP_EXAMPLE = """\
+INTERNET_EXAMPLE = """\
 #Software: Microsoft Internet Information Services 6.0
 #Version: 1.0
-#Date: 2002-06-04 16:40:23
-#Fields: time c-ip cs-method cs-uri-stem sc-status 
-16:40:23 10.152.10.200 [6994]USER anonymous 331
-16:40:25 10.152.10.200 [6994]PASS anonymous@example.net 530
+#Date: 2002-05-24 20:18:01
+#Remark: This is some simple test data adapted from http://www.microsoft.com/technet/prodtechnol/WindowsServer2003/Library/IIS/ffdd7079-47be-4277-921f-7a3a6e610dcb.mspx
+#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
+2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
 """
+
+INTRANET_EXAMPLE = """\
+#Software: Microsoft Internet Information Services 6.0
+#Version: 1.0
+#Start-Date: 2002-05-02 17:42:15
+#End-Date: 2002-05-02 18:40:00
+#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status cs(User-Agent)
+2002-05-02 17:42:15 172.22.255.255 - 172.30.255.255 80 GET /images/picture.jpg - 200 Mozilla/4.0+(compatible;MSIE+5.5;+Windows+2000+Server)
+"""
+
+BAD_VERSION = """\
+#Software: Microsoft Internet Information Services 6.0
+#Version: 2.0
+#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
+2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
+"""
+
+MISSING_VERSION = """\
+#Software: Microsoft Internet Information Services 6.0
+#Date: 2002-05-24 20:18:01
+#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
+2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
+"""
+
+REPEAT_VERSION = """\
+#Software: Microsoft Internet Information Services 6.0
+#Version: 1.0
+#Version: 1.0
+#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
+2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
+"""
+
+REPEAT_FIELDS = """\
+#Software: Microsoft Internet Information Services 6.0
+#Date: 2002-05-24 20:18:01
+#Fields: time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
+#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
+2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
+"""
+
+MISSING_FIELDS = """\
+#Software: Microsoft Internet Information Services 6.0
+#Date: 2002-05-24 20:18:01
+#Version: 1.0
+2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
+"""
+
+DUPLICATE_FIELD_NAMES = """\
+#Software: Microsoft Internet Information Services 6.0
+#Date: 2002-05-24 20:18:01
+#Version: 1.0
+#Fields: date time c-ip c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
+2002-05-24 20:18:01 172.224.24.114 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
+"""
+
+INVALID_DIRECTIVE = """\
+#Software: Microsoft Internet Information Services 6.0
+#Date: 2002-05-24 20:18:01
+#Foo: Bar
+#Version: 1.0
+2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
+"""
+
+BAD_DATA_EXAMPLE_01 = """\
+#Version: 1.0
+#Date: 2002-05-24 20:18:01
+#Fields: date time c-ip
+2002-05-30 20:18:01 172.224.24.300
+"""
+
+BAD_DATA_EXAMPLE_02 = """\
+#Version: 1.0
+#Date: 2002-05-24 20:18:01
+#Fields: date time c-ip
+2002-05-30 20:18:01 foo.bar
+"""
+
 
 def test_directive_regexes():
     assert iis.IISSource.VERSION_RE.match('#Version: 1.0')
@@ -101,29 +176,21 @@ def test_exceptions():
     assert str(exc) == 'Something else went wrong!'
 
 def test_source_01():
-    INTERNET_EXAMPLE = """\
-#Software: Microsoft Internet Information Services 6.0
-#Version: 1.0
-#Date: 2002-05-24 20:18:01
-#Remark: This is some simple test data adapted from http://www.microsoft.com/technet/prodtechnol/WindowsServer2003/Library/IIS/ffdd7079-47be-4277-921f-7a3a6e610dcb.mspx
-#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
-2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
-"""
     # Test two normal runs with INTERNET_EXAMPLE and INTRANET_EXAMPLE
     with iis.IISSource(INTERNET_EXAMPLE.splitlines(True)) as source:
         row = None
         for count, row in enumerate(source):
             assert source.version == '1.0'
             assert source.software == 'Microsoft Internet Information Services 6.0'
-            assert source.date == datetime(2002, 5, 24, 20, 18, 1)
+            assert source.date == dt.DateTime(2002, 5, 24, 20, 18, 1)
             assert source.fields == [
                 'date', 'time', 'c-ip', 'cs-username', 's-ip', 's-port',
                 'cs-method', 'cs-uri-stem', 'cs-uri-query', 'sc-status',
                 'sc-bytes', 'cs-bytes', 'time-taken', 'cs(User-Agent)',
                 'cs(Referrer)',
                 ]
-            assert row.date == date(2002, 5, 24)
-            assert row.time == time(20, 18, 1)
+            assert row.date == dt.Date(2002, 5, 24)
+            assert row.time == dt.Time(20, 18, 1)
             assert str(row.c_ip) == '172.224.24.114'
             assert row.cs_username is None
             assert str(row.s_ip) == '206.73.118.24'
@@ -139,14 +206,6 @@ def test_source_01():
             assert row.cs_Referrer == 'http://64.224.24.114/'
         assert row
         assert count == 0
-    INTRANET_EXAMPLE = """\
-#Software: Microsoft Internet Information Services 6.0
-#Version: 1.0
-#Start-Date: 2002-05-02 17:42:15
-#End-Date: 2002-05-02 18:40:00
-#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status cs(User-Agent)
-2002-05-02 17:42:15 172.22.255.255 - 172.30.255.255 80 GET /images/picture.jpg - 200 Mozilla/4.0+(compatible;MSIE+5.5;+Windows+2000+Server)
-"""
     with iis.IISSource(INTRANET_EXAMPLE.splitlines(True)) as source:
         row = None
         for count, row in enumerate(source):
@@ -155,8 +214,8 @@ def test_source_01():
                 'cs-method', 'cs-uri-stem', 'cs-uri-query', 'sc-status',
                 'cs(User-Agent)',
                 ]
-            assert row.date == date(2002, 5, 2)
-            assert row.time == time(17, 42, 15)
+            assert row.date == dt.Date(2002, 5, 2)
+            assert row.time == dt.Time(17, 42, 15)
             assert str(row.c_ip) == '172.22.255.255'
             assert row.cs_username is None
             assert str(row.s_ip) == '172.30.255.255'
@@ -171,76 +230,30 @@ def test_source_01():
 
 def test_source_02():
     # Test invalid headers
-    BAD_VERSION = """\
-#Software: Microsoft Internet Information Services 6.0
-#Version: 2.0
-#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
-2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
-"""
     with pytest.raises(iis.IISVersionError):
         with iis.IISSource(BAD_VERSION.splitlines(True)) as source:
             for row in source:
                 pass
-    REPEAT_VERSION = """\
-#Software: Microsoft Internet Information Services 6.0
-#Version: 1.0
-#Version: 1.0
-#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
-2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
-"""
     with pytest.raises(iis.IISVersionError):
         with iis.IISSource(REPEAT_VERSION.splitlines(True)) as source:
             for row in source:
                 pass
-    MISSING_VERSION = """\
-#Software: Microsoft Internet Information Services 6.0
-#Date: 2002-05-24 20:18:01
-#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
-2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
-"""
     with pytest.raises(iis.IISVersionError):
         with iis.IISSource(MISSING_VERSION.splitlines(True)) as source:
             for row in source:
                 pass
-    REPEAT_FIELDS = """\
-#Software: Microsoft Internet Information Services 6.0
-#Date: 2002-05-24 20:18:01
-#Fields: time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
-#Fields: date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
-2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
-"""
     with pytest.raises(iis.IISFieldsError):
         with iis.IISSource(REPEAT_FIELDS.splitlines(True)) as source:
             for row in source:
                 pass
-    MISSING_FIELDS = """\
-#Software: Microsoft Internet Information Services 6.0
-#Date: 2002-05-24 20:18:01
-#Version: 1.0
-2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
-"""
     with pytest.raises(iis.IISFieldsError):
         with iis.IISSource(MISSING_FIELDS.splitlines(True)) as source:
             for row in source:
                 pass
-    DUPLICATE_FIELD_NAMES = """\
-#Software: Microsoft Internet Information Services 6.0
-#Date: 2002-05-24 20:18:01
-#Version: 1.0
-#Fields: date time c-ip c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes time-taken cs(User-Agent) cs(Referrer) 
-2002-05-24 20:18:01 172.224.24.114 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
-"""
     with pytest.raises(iis.IISFieldsError):
         with iis.IISSource(DUPLICATE_FIELD_NAMES.splitlines(True)) as source:
             for row in source:
                 pass
-    INVALID_DIRECTIVE = """\
-#Software: Microsoft Internet Information Services 6.0
-#Date: 2002-05-24 20:18:01
-#Foo: Bar
-#Version: 1.0
-2002-05-24 20:18:01 172.224.24.114 - 206.73.118.24 80 GET /Default.htm - 200 7930 248 31 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+2000+Server) http://64.224.24.114/
-"""
     with pytest.raises(iis.IISDirectiveError):
         with iis.IISSource(INVALID_DIRECTIVE.splitlines(True)) as source:
             for row in source:
@@ -249,12 +262,6 @@ def test_source_02():
 def test_source_03(recwarn):
     # Test data warnings - in this first case the line regex won't pick up that
     # the IP address is invalid, but the data conversion routine will
-    BAD_DATA_EXAMPLE_01 = """\
-#Version: 1.0
-#Date: 2002-05-24 20:18:01
-#Fields: date time c-ip
-2002-05-30 20:18:01 172.224.24.300
-"""
     with iis.IISSource(BAD_DATA_EXAMPLE_01.splitlines(True)) as source:
         for row in source:
             pass
@@ -262,12 +269,6 @@ def test_source_03(recwarn):
     recwarn.clear()
     # In this second example, the bad IP address will result in the line
     # failing to even match the line regex
-    BAD_DATA_EXAMPLE_02 = """\
-#Version: 1.0
-#Date: 2002-05-24 20:18:01
-#Fields: date time c-ip
-2002-05-30 20:18:01 foo.bar
-"""
     with iis.IISSource(BAD_DATA_EXAMPLE_02.splitlines(True)) as source:
         for row in source:
             pass

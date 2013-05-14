@@ -33,7 +33,7 @@ or otherwise Apache formatted log file and yields rows from it as tuples.
 Classes
 =======
 
-.. autoclass:: ApacheSource
+.. autoclass:: ApacheSource(source, log_format=COMMON, localized_time=True)
    :members:
 
 
@@ -112,6 +112,7 @@ import functools
 
 from www2csv import parsers, datatypes as dt
 from www2csv.strptime import TimeRE, _strptime_datetime
+from www2csv.timezone import timedelta, timezone
 
 
 # Make Py2 str same as Py3
@@ -136,9 +137,6 @@ COMMON_VHOST = '%v %h %l %u %t "%r" %>s %b'
 COMBINED = '%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i"'
 REFERER = '%{Referer} -> %U'
 USER_AGENT = '%{User-agent}i'
-
-# Standard Apache time format
-APACHE_TIME = '[%d/%b/%Y:%H:%M:%S %z]'
 
 
 # We need a reference to the "standard English" locale for parsing the
@@ -204,7 +202,7 @@ def string_parse(s):
     return _string_parse_re.sub(unescape, s)
 
 
-def time_parse(s, fmt):
+def time_parse_format(s, fmt):
     """
     Parse a time value in an Apache log file.
 
@@ -217,7 +215,87 @@ def time_parse(s, fmt):
     :returns: A naive :class:`~www2csv.datatypes.DateTime` object
     """
     d = _strptime_datetime(dt.DateTime, s, fmt)
-    return d.replace(tzinfo=None) - d.utcoffset()
+    return dt.DateTime(*(d.utctimetuple()[:6] + (d.microsecond,)))
+
+
+def time_parse_common(s):
+    """
+    Parse a time in Apache's standard format in an Apache log file.
+
+    Note that this function does *not* take a time format, but assumes that
+    the default Apache format of ``[%d/%b/%Y:%H:%M:%S %z]`` is in use.
+
+    :param str s: The string containing the time to parse
+    :returns: A naive :class:`~www2csv.datatypes.DateTime` object
+    """
+    if not (24 <= len(s) <= 28):
+        raise ValueError('Invalid length')
+    if s[0] != '[':
+        raise ValueError('Expected "[" at 0')
+    if s[-1] != ']':
+        raise ValueError('Expected "]" at %d' % (len(s) - 1))
+    i = 1
+    if s[i + 1] == '/':
+        day = int(s[i])
+        i += 1
+    else:
+        day = int(s[i:i + 2])
+        i += 2
+    if s[i] != '/':
+        raise ValueError('Expected "/" at %d' % i)
+    i += 1
+    month = [
+        '',
+        'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+        'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
+        ].index(s[i:i + 3].lower())
+    i += 3
+    if s[i] != '/':
+        raise ValueError('Expected "/" at %d' % i)
+    i += 1
+    year = int(s[i:i + 4])
+    i += 4
+    if s[i] != ':':
+        raise ValueError('Expected ":" at %d' % i)
+    i += 1
+    if s[i + 1] == ':':
+        hour = int(s[i])
+        i += 1
+    else:
+        hour = int(s[i:i + 2])
+        i += 2
+    if s[i] != ':':
+        raise ValueError('Expected ":" at %d' % i)
+    i += 1
+    if s[i + 1] == ':':
+        minute = int(s[i])
+        i += 1
+    else:
+        minute = int(s[i:i + 2])
+        i += 2
+    if s[i] != ':':
+        raise ValueError('Expected ":" at %d' % i)
+    i += 1
+    if s[i + 1] == ' ':
+        second = int(s[i])
+        i += 1
+    else:
+        second = int(s[i:i + 2])
+        i += 2
+    if s[i] != ' ':
+        raise ValueError('Expected " " at %d' % i)
+    i += 1
+    tz_sign = s[i]
+    if tz_sign not in '-+':
+        raise ValueError('Expected + or - at %d' % i)
+    i += 1
+    tz_offset = int(s[i:i + 2]) * 60 + int(s[i + 2:i + 4])
+    tz_offset = timedelta(seconds=tz_offset * 60)
+    if tz_sign == '-':
+        tz_offset = -tz_offset
+    tz = timezone(tz_offset)
+    d = dt.DateTime(year, month, day, hour, minute, second, tzinfo=tz)
+    return dt.DateTime(*(d.utctimetuple()[:6]))
 
 
 class ApacheError(StandardError):
@@ -266,7 +344,7 @@ class ApacheSource(object):
     %a            remote_ip
     %A            local_ip
     %B            size
-    %b            size_clf
+    %b            size
     %{Foobar}C    cookie_Foobar (1)
     %D            time_taken_ms
     %{FOOBAR}e    env_FOOBAR (1)
@@ -324,22 +402,26 @@ class ApacheSource(object):
     :param source: A file-like object containing the source stream
     :param str format: Defaults to :data:`COMMON` but can be set to any valid
                    Apache LogFormat string
-    :param bool localized_time: If False, assume customized ``%t`` format
-                   strings use English strings for months and weekdays.
-                   Defaults to True (assume localized strings)
     """
 
-    def __init__(self, source, log_format=COMMON, localized_time=True):
+    def __init__(self, source, log_format=COMMON):
+        # XXX REMOVE ME! XXX
+        logging.getLogger().setLevel(logging.DEBUG)
+        # XXX REMOVE ME! XXX
         self.source = source
         self.log_format = log_format
-        self._time_re = TimeRE()
-        self._parse_log_format()
         self._row_pattern = None
         self._row_funcs = None
         self._row_type = None
+        self._parse_log_format()
 
     # This regex is used for extracting the format specifications from an
-    # Apache LogFormat directive. See [1] for full details of the syntax.
+    # Apache LogFormat directive. The regex deliberately doesn't attempt a
+    # precise match to the specification [1] as there have already been several
+    # changes from 2.0, to 2.2, and 2.4; rather than change the fundamental
+    # structure these changes have simply introduced new options, ergo it seems
+    # better to attempt a generic match and deal with the details down in the
+    # _generate* methods below.
     #
     # [1] http://httpd.apache.org/docs/2.2/mod/mod_log_config.html#formats
     FIELD_RE1 = re.compile(
@@ -349,17 +431,10 @@ class ApacheSource(object):
             r'(?:!?\d{3}(?:,\d{3})*)?'
             # Optional request original/final modifier
             r'[<>]?'
-            # Format specification group
-            r'(?:'
-                # Simple specs
-                r'[aAbBDfhHklmpPqrRstTuUvVXIO]|'
-                # Header/env/pid specs
-                r'\{[a-zA-Z][a-zA-Z0-9_-]*\}[einopP]|'
-                # Cookie spec (any HTTP token is permitted as a name)
-                r'\{[^\x00-\x1F\x7F(){}<>[\]@,;:\\"/?= \t]+\}C|'
-                # Time spec
-                r'\{[^}]*\}t'
-            r')'
+            # Format specification data
+            r'(?:\{[^}]*\})?'
+            # Format specification
+            r'[a-zA-Z]'
         r')'
         )
 
@@ -377,7 +452,7 @@ class ApacheSource(object):
         # Optional {field} group
         r'(?P<field>{[^}]*})?'
         # Specification suffix letter
-        r'(?P<suffix>[aAbBCDefhHiklmnopPqrRstTuUvVXIO])'
+        r'(?P<suffix>[a-zA-Z])'
         r'$'
         )
 
@@ -389,7 +464,7 @@ class ApacheSource(object):
         'a': ('remote_ip',         'address'),
         'A': ('local_ip',          'address'),
         'B': ('size',              'integer'),
-        'b': ('size_clf',          'integer'),
+        'b': ('size',              'integer'),
         'C': ('cookie_%s',         'string'),
         'D': ('time_taken_ms',     'integer'),
         'e': ('env_%s',            'string'),
@@ -461,10 +536,22 @@ class ApacheSource(object):
                     self._row_pattern += re.escape(s)
                 else:
                     name, pattern, parser = self._parse_log_field(s)
+                    if name in tuple_fields:
+                        # This can happen if someone's stupid enough to, say,
+                        # include %B and %b in a format string. If we actually
+                        # encounter this a simple workaround is possible but
+                        # this keeps things more user-friendly for the time
+                        raise ValueError('Duplicate row field name %s' % name)
                     tuple_fields.append(name)
                     self._row_pattern += pattern
                     self._row_funcs.append(parser)
             separator = not separator
+        # IGNORECASE is required for the time format which needs
+        # case-insensitive matching on abbreviated or full weekday or month
+        # names
+        logging.debug('Constructing row regex: %s', self._row_pattern)
+        self._row_pattern = re.compile(self._row_pattern, re.IGNORECASE)
+        logging.debug('Constructing row tuple with fields: %s', ','.join(tuple_fields))
         self._row_type = dt.row(*tuple_fields)
 
     def _parse_log_field(self, s):
@@ -476,15 +563,15 @@ class ApacheSource(object):
             data, suffix = m.group('field'), m.group('suffix')
         else:
             # This should never happen
-            raise RuntimeError('Internal error in FIELD_RE2')
+            raise RuntimeError('Internal error in FIELD_RE2') # pragma: no cover
         try:
             # General case: simple lookup to determine field name
             template, field_type = self.FIELD_DEFS[suffix]
         except KeyError:
             raise ValueError('Invalid format suffix "%s"' % suffix)
-        name = self._generate_name(template, data, suffix)
-        pattern, parser = self._generate_parser(data, field_type, field_name)
-        return field_name, pattern, parser
+        name, pattern, parser = self._generate_parser(
+            data, field_type, self._generate_name(template, data, suffix))
+        return name, pattern, parser
 
     def _generate_name(self, template, data, suffix):
         # This function constructs the field name from the FIELD_DEFS template,
@@ -523,28 +610,94 @@ class ApacheSource(object):
 
     def _generate_parser(self, data, field_type, field_name):
         if field_type == 'time':
-            # Special case: time. Use the Python's internal _strptime.TimeRE to
-            # convert the strftime format into a locale-dependent unanchored
-            # regex. For Python 2.7, a backport of Python 3.2's _strptime is
-            # used as the former lacks support for the %z format spec.
+            # Special case: time
             if data:
-                fmt_locale = None
-                fmt = data
+                # If it's a custom format use Python's internal
+                # _strptime.TimeRE class to convert the strftime format into a
+                # locale-dependent regex. For Python 2.7, a backport of Python
+                # 3.2's _strptime is used as the former lacks support for the
+                # %z format spec.
+                try:
+                    time_regex = TimeRE().pattern(data)
+                except KeyError as exc:
+                    raise ValueError(
+                        'Invalid time format spec %%%s in %s' % (str(exc), data))
+                # Wrap the generated regex in a capturing pattern with a name
+                # placeholder
+                pattern = r'(?P<%%(name)s>%s)' % time_regex
+                # Derive a parser for parsing the particular time format
+                parser = functools.partial(time_parse_format, fmt=data)
             else:
-                fmt_locale = EnglishLocalTime()
-                fmt = APACHE_TIME
-            try:
-                time_regex = TimeRE(fmt_locale).pattern(fmt)
-            except KeyError as exc:
-                raise ValueError(
-                    'Invalid time format spec %%%s in %s' % (str(exc), fmt))
-            # Wrap the generated regex in a capturing pattern with a name
-            # placeholder
-            pattern = '(?P<%%(name)s>%s)' % time_regex
-            # Derive a parser for parsing the particular time format
-            parser = functools.partial(time_parse, fmt=fmt)
+                # If it's just %t with no format, we use another special case:
+                # a hard-coded pattern and parser. This is primarily because in
+                # this case the format is locale-independent (always English),
+                # but secondly it gives a nice performance boost to the most
+                # common case
+                pattern = (
+                    r'(?P<%(name)s>'
+                    r'\['                                                  # [
+                    r'(?:3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])'              # %d
+                    r'/'                                                   # /
+                    r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)' # %b
+                    r'/'                                                   # /
+                    r'(?:\d\d\d\d)'                                        # %Y
+                    r':'                                                   # :
+                    r'(?:2[0-3]|[0-1]\d|\d)'                               # %H
+                    r':'                                                   # :
+                    r'(?:[0-5]\d|\d)'                                      # %M
+                    r':'                                                   # :
+                    r'(?:6[0-1]|[0-5]\d|\d)'                               # %S
+                    r'\s+'                                                 #
+                    r'(?:[+-]\d\d[0-5]\d)'                                 # %z
+                    r'\]'                                                  # ]
+                    r')'
+                    )
+                parser = time_parse_common
         else:
+            # General case: just lookup the parser and pattern in the class'
+            # TYPES dictionary and construct an identity function if there's
+            # no parser
             parser, pattern = self.TYPES[field_type]
             if parser is None:
                 parser = lambda s: s
-        return pattern % {'name': field_name}, parser
+        return field_name, pattern % {'name': field_name}, parser
+
+    def __enter__(self):
+        logging.debug('Entering Apache context')
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        logging.debug('Exiting Apache context')
+
+    def __iter__(self):
+        """
+        Yields a row tuple for each line in the file-like source object.
+
+        This method is the main body of the class and is responsible for
+        transforming lines from the source file-like object into row tuples.
+        However, the main work of transforming strings into tuples is actually
+        performed by the regular expressions and tuple class set up in the
+        initializer above.
+        """
+        try:
+            for num, line in enumerate(self.source):
+                logging.debug(self._row_pattern)
+                match = self._row_pattern.match(line.rstrip())
+                if match:
+                    values = match.group(*self._row_type._fields)
+                    try:
+                        values = [f(v) for (f, v) in zip(self._row_funcs, values)]
+                    except ValueError as exc:
+                        raise ApacheWarning(str(exc))
+                    yield self._row_type(*values)
+                else:
+                    raise ApacheWarning('Line contains invalid data')
+        except ApacheWarning as exc:
+            # Add line number to the warning and report with warn()
+            warnings.warn('Line %d: %s' % (num + 1, str(exc)), ApacheWarning)
+        except ApacheError as exc:
+            # Add line content and number to the exception and re-raise
+            if not exc.line_number:
+                raise type(exc)(exc.args[0], line_number=num + 1, line=line)
+            raise # pragma: no cover
+
