@@ -32,25 +32,6 @@ from __future__ import (
 
 import io
 import re
-import sys
-
-def require_python(minimum):
-    """
-    Throws an exception if Python interpreter is below minimum.
-
-    :param int minimum: the minimum Python level required, expressed in hex
-    :raises ValueError: when the Python interpreter version is too low
-    """
-    if sys.hexversion < minimum:
-        parts = []
-        while minimum:
-            parts.insert(0, minimum & 0xff)
-            minimum >>= 8
-        if parts[-1] == 0xf0:
-            error = 'Python %d.%d.%d or better is required' % parts[:3]
-        else:
-            error = 'Python %d.%d.%d (%02x) or better is required' % parts
-        raise ValueError(error)
 
 def get_version(filename):
     """

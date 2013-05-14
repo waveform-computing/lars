@@ -34,6 +34,9 @@ from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 from utils import description, get_version, require_python
 
+if not sys.version_info >= (2, 7):
+    raise ValueError('This package requires Python 2.7 or above')
+
 HERE = os.path.abspath(os.path.dirname(__file__))
 
 # Workaround <http://www.eby-sarna.com/pipermail/peak/2010-May/003357.html>
@@ -50,8 +53,6 @@ except LookupError:
     ascii = codecs.lookup('ascii')
     func = lambda name, enc=ascii: {True: enc}.get(name=='mbcs')
     codecs.register(func)
-
-require_python(0x020700f0)
 
 # All meta-data is defined as global variables so that other modules can query
 # it easily without having to wade through distutils nonsense
