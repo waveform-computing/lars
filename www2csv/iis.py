@@ -421,7 +421,11 @@ class IISSource(object):
                 original_name = '%s(%s)' % (prefix, identifier)
                 python_name = dt.sanitize_name('%s_%s' % (prefix, identifier))
                 # According to the draft, all header fields are type <string>
-                field_type = 'string'
+                # but for user-friendliness we special-case Referr?er here
+                if identifier.lower() in ('referer', 'referrer'):
+                    field_type = 'url'
+                else:
+                    field_type = 'string'
             elif prefix:
                 original_name = '%s-%s' % (prefix, identifier)
                 python_name = dt.sanitize_name('%s_%s' % (prefix, identifier))

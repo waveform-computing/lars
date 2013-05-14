@@ -450,7 +450,7 @@ class ApacheSource(object):
         # Optional request modifier - no group as we don't want this either
         r'[<>]?'
         # Optional {field} group
-        r'(?P<field>{[^}]*})?'
+        r'(?P<field>\{[^}]*\})?'
         # Specification suffix letter
         r'(?P<suffix>[a-zA-Z])'
         r'$'
@@ -564,6 +564,9 @@ class ApacheSource(object):
         else:
             # This should never happen
             raise RuntimeError('Internal error in FIELD_RE2') # pragma: no cover
+        if data:
+            # Strip {} from data
+            data = data[1:-1]
         try:
             # General case: simple lookup to determine field name
             template, field_type = self.FIELD_DEFS[suffix]
@@ -653,6 +656,9 @@ class ApacheSource(object):
                     r')'
                     )
                 parser = time_parse_common
+        elif field_type == 'string' and field_name.lower() in ('req_referer', 'req_referrer'):
+            # Special case: treat referer header as a URL
+            parser, pattern = parsers.url_parse, parsers.URL
         else:
             # General case: just lookup the parser and pattern in the class'
             # TYPES dictionary and construct an identity function if there's

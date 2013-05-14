@@ -49,6 +49,15 @@ lj1090.inktomisearch.com - - [07/Mar/2004:17:18:41 -0800] "GET /twiki/bin/view/M
 """
 
 EXAMPLE_03 = """\
+78.86.48.95 - - [28/Oct/2011:00:00:05 +0100] "GET /template/images/ITSheader.jpg HTTP/1.1" 200 14745 "-" "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; Trident/4.0; byond_4.0; SLCC1; .NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.5.30729; .NET CLR 3.0.30729; InfoPath.2; OfficeLiveConnector.1.5; OfficeLivePatch.1.3; .NET4.0E; .NET4.0C)"
+217.129.225.117 - - [28/Oct/2011:00:00:07 +0100] "GET /images/spacer.gif HTTP/1.1" 200 43 "http://eprints.lse.ac.uk/33718/" "Mozilla/5.0 (Windows; U; Windows NT 5.1; pt-BR; rv:1.9.2.23) Gecko/20110920 Firefox/3.6.23"
+"""
+
+EXAMPLE_04="""\
+49600,80
+65000,80
+12345,443
+123,443
 """
 
 def test_english_locale():
@@ -167,7 +176,36 @@ def test_source_01():
         assert count == 1
 
 def test_source_02():
-    # Test silly formats
+    # Test combined format
+    # Some simple example log file lines
+    with apache.ApacheSource(EXAMPLE_03.splitlines(True), log_format=apache.COMBINED) as source:
+        row = None
+        for count, row in enumerate(source):
+            if count == 0:
+                assert row.remote_host == dt.hostname('78.86.48.95')
+                assert row.ident is None
+                assert row.remote_user is None
+                assert row.time == dt.DateTime(2011, 10, 27, 23, 0, 5)
+                assert row.request == dt.Request('GET', dt.url('/template/images/ITSheader.jpg'), 'HTTP/1.1')
+                assert row.status == 200
+                assert row.size == 14745
+                assert row.req_Referer is None
+                assert row.req_User_agent == 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; Trident/4.0; byond_4.0; SLCC1; .NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.5.30729; .NET CLR 3.0.30729; InfoPath.2; OfficeLiveConnector.1.5; OfficeLivePatch.1.3; .NET4.0E; .NET4.0C)'
+            elif count == 1:
+                assert row.remote_host == dt.hostname('217.129.225.117')
+                assert row.ident is None
+                assert row.remote_user is None
+                assert row.time == dt.DateTime(2011, 10, 27, 23, 0, 7)
+                assert row.request == dt.Request('GET', dt.url('/images/spacer.gif'), 'HTTP/1.1')
+                assert row.status == 200
+                assert row.size == 43
+                assert row.req_Referer == dt.url('http://eprints.lse.ac.uk/33718/')
+                assert row.req_User_agent == 'Mozilla/5.0 (Windows; U; Windows NT 5.1; pt-BR; rv:1.9.2.23) Gecko/20110920 Firefox/3.6.23'
+        assert row
+        assert count == 1
+
+def test_source_03():
+    # Test broken formats
     with pytest.raises(ValueError):
         with apache.ApacheSource('', log_format='%b %B'):
             pass
@@ -178,3 +216,6 @@ def test_source_02():
         with apache.ApacheSource('', log_format='%C'):
             pass
     # Some example log file lines with weird characters in some places...
+
+def test_source_04():
+    # Test miscellaneous stuff like the port and pid field naming

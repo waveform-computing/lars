@@ -203,7 +203,7 @@ def test_source_01():
             assert row.cs_bytes == 248
             assert row.time_taken == 31.0
             assert row.cs_User_Agent == 'Mozilla/4.0 (compatible; MSIE 5.01; Windows 2000 Server)'
-            assert row.cs_Referrer == 'http://64.224.24.114/'
+            assert row.cs_Referrer == dt.url('http://64.224.24.114/')
         assert row
         assert count == 0
     with iis.IISSource(INTRANET_EXAMPLE.splitlines(True)) as source:
