@@ -42,27 +42,32 @@ lordgun.org - foo [07/Mar/2004:17:01:53 -0800] "GET /razor.html HTTP/1.0" 302 28
 """
 
 EXAMPLE_02 = """\
-64.242.88.10 - - [07/Mar/2004:17:16:00 -0800] "GET /twiki/bin/search/Main/?scope=topic®ex=on&search=^g HTTP/1.1" 200 3675
-64.242.88.10 - - [07/Mar/2004:17:17:27 -0800] "GET /twiki/bin/search/TWiki/?scope=topic®ex=on&search=^d HTTP/1.1" 200 5773
-lj1036.inktomisearch.com - - [07/Mar/2004:17:18:36 -0800] "GET /robots.txt HTTP/1.0" 200 68
-lj1090.inktomisearch.com - - [07/Mar/2004:17:18:41 -0800] "GET /twiki/bin/view/Main/LondonOffice HTTP/1.0" 200 3860
-"""
-
-EXAMPLE_03 = """\
 78.86.48.95 - - [28/Oct/2011:00:00:05 +0100] "GET /template/images/ITSheader.jpg HTTP/1.1" 200 14745 "-" "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; Trident/4.0; byond_4.0; SLCC1; .NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.5.30729; .NET CLR 3.0.30729; InfoPath.2; OfficeLiveConnector.1.5; OfficeLivePatch.1.3; .NET4.0E; .NET4.0C)"
 217.129.225.117 - - [28/Oct/2011:00:00:07 +0100] "GET /images/spacer.gif HTTP/1.1" 200 43 "http://eprints.lse.ac.uk/33718/" "Mozilla/5.0 (Windows; U; Windows NT 5.1; pt-BR; rv:1.9.2.23) Gecko/20110920 Firefox/3.6.23"
 """
 
-EXAMPLE_04="""\
+EXAMPLE_03="""\
 49600,80 1000
 65000,80 2000
 12345,443 65000
 123,443 100
 """
 
-EXAMPLE_05="""\
+EXAMPLE_04="""\
 2004-03-07T16:56:39-0800 HTTP/1.0 GET /twiki/bin/view/Sandbox/WebHome?rev=1.6 200 8545
 2004-03-07T17:01:53-0500 HTTP/1.1 HEAD /razor.html 302 2869
+"""
+
+MULTIPLE_REMOTE_HOSTS = """\
+172.16.102.33, 41.231.129.45 - - [28/Oct/2011:00:00:09 +0100] "GET /images/header/studentServicesCentre.jpg HTTP/1.0" 200 33228 "http://www.m-omani.com/smf/index.php?topic=287.0" "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)"
+"""
+
+INVALID_REMOTE_HOST = """\
+this.is.an.extermely.long.hostname.with.altogether.far.too.many.parts.to.make.any.kind.of.sense.let.alone.permit.some.innocent.young.framework.from.possibly.having.a.hope.in.hell.of.parsing.it.without.throwing.a.major.wobbly.and.chucking.its.toys.out.of.the.pram - - [8/Oct/2001:12:45:09 +0100] "GET /images/header/studentServicesCentre.jpg HTTP/1.0" 200 33228 "http://www.m-omani.com/smf/index.php?topic=287.0" "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)"
+"""
+
+INVALID_CHARS = """\
+64.242.88.10 - - [07/Mar/2004:17:16:00 -0800] "GET /twiki/bin/search/Main/?scope=topic®ex=on&search=^g HTTP/1.1" 200 3675
 """
 
 def test_english_locale():
@@ -185,7 +190,8 @@ def test_source_01():
 def test_source_02():
     # Test combined format
     # Some simple example log file lines
-    with apache.ApacheSource(EXAMPLE_03.splitlines(True), log_format=apache.COMBINED) as source:
+    with apache.ApacheSource(
+            EXAMPLE_02.splitlines(True), log_format=apache.COMBINED) as source:
         row = None
         for count, row in enumerate(source):
             if count == 0:
@@ -214,6 +220,45 @@ def test_source_02():
         assert count == 1
 
 def test_source_03():
+    # Test miscellaneous stuff like the port and pid field naming
+    with apache.ApacheSource(
+            EXAMPLE_03.splitlines(True),
+            log_format="%{local}p,%{remote}p %{pid}P") as source:
+        row = None
+        for count, row in enumerate(source):
+            assert row.local_port == [49600, 65000, 12345, 123][count]
+            assert row.remote_port == [80, 80, 443, 443][count]
+            assert row.pid == [1000, 2000, 65000, 100][count]
+        assert row
+        assert count == 3
+
+def test_source_04():
+    # Test custom date formats
+    with apache.ApacheSource(
+            EXAMPLE_04.splitlines(True),
+            log_format="%{%Y-%m-%dT%H:%M:%S%z}t %H %m %U%q %>s %O") as source:
+        row = None
+        for count, row in enumerate(source):
+            if count == 0:
+                assert row.time == dt.datetime('2004-03-08 00:56:39')
+                assert row.method == 'GET'
+                assert row.protocol == 'HTTP/1.0'
+                assert row.url_stem == dt.url('/twiki/bin/view/Sandbox/WebHome')
+                assert row.url_query == dt.url('?rev=1.6')
+                assert row.status == 200
+                assert row.bytes_sent == 8545
+            elif count == 1:
+                assert row.time == dt.datetime('2004-03-07 22:01:53')
+                assert row.method == 'HEAD'
+                assert row.protocol == 'HTTP/1.1'
+                assert row.url_stem == dt.url('/razor.html')
+                assert row.url_query is None
+                assert row.status == 302
+                assert row.bytes_sent == 2869
+        assert row
+        assert count == 1
+
+def test_source_05(recwarn):
     # Test broken formats
     with pytest.raises(ValueError):
         with apache.ApacheSource('', log_format='%b %B'):
@@ -233,39 +278,16 @@ def test_source_03():
     with pytest.raises(ValueError):
         with apache.ApacheSource('', log_format='%{%H%:%M:%S}t'):
             pass                                  #  ^ Extraneous caret
-    # Some example log file lines with weird characters in some places...
-
-def test_source_04():
-    # Test miscellaneous stuff like the port and pid field naming
+    # Log file with
     with apache.ApacheSource(
-            EXAMPLE_04.splitlines(True),
-            log_format="%{local}p,%{remote}p %{pid}P") as source:
-        for count, row in enumerate(source):
-            assert row.local_port == [49600, 65000, 12345, 123][count]
-            assert row.remote_port == [80, 80, 443, 443][count]
-            assert row.pid == [1000, 2000, 65000, 100][count]
-        assert row
-        assert count == 3
-
-def test_source_05():
-    # Test custom date formats
+            MULTIPLE_REMOTE_HOSTS.splitlines(True), log_format=apache.COMBINED) as source:
+        for row in source:
+            break
+    assert recwarn.pop(apache.ApacheWarning)
+    recwarn.clear()
     with apache.ApacheSource(
-            EXAMPLE_05.splitlines(True),
-            log_format="%{%Y-%m-%dT%H:%M:%S%z}t %m %H %U%q %>s %O") as source:
-        for count, row in enumerate(source):
-            if count == 0:
-                assert row.time == dt.datetime('2004-03-08 00:56:39')
-                assert row.method == 'GET'
-                assert row.protocol == 'HTTP/1.0'
-                assert row.url_stem == dt.url('/twiki/bin/view/Sandbox/WebHome')
-                assert row.url_query == dt.url('?rev=1.6')
-                assert row.status == 200
-                assert row.bytes_sent == 8545
-            elif count == 1:
-                assert row.time == dt.datetime('2004-03-07 22:01:53')
-                assert row.method == 'HEAD'
-                assert row.protocol == 'HTTP/1.1'
-                assert row.url_stem == dt.url('/razor.html')
-                assert row.url_query is None
-                assert row.status == 302
-                assert row.bytes_sent == 2869
+            INVALID_REMOTE_HOST.splitlines(True), log_format=apache.COMBINED) as source:
+        for row in source:
+            break
+    assert recwarn.pop(apache.ApacheWarning)
+

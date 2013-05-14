@@ -689,7 +689,6 @@ class ApacheSource(object):
         """
         try:
             for num, line in enumerate(self.source):
-                logging.debug(self._row_pattern)
                 match = self._row_pattern.match(line.rstrip())
                 if match:
                     values = match.group(*self._row_type._fields)

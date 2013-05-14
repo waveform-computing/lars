@@ -1070,7 +1070,7 @@ class Path(namedtuple('Path', 'dirname basename ext')):
             return result + '/' + self.basename
 
 
-class Url(namedtuple('Url', 'scheme netloc path params query fragment'), urlparse.ResultMixin):
+class Url(namedtuple('Url', 'scheme netloc path params query_str fragment'), urlparse.ResultMixin):
     """
     Represents a URL.
 
@@ -1101,9 +1101,15 @@ class Url(namedtuple('Url', 'scheme netloc path params query fragment'), urlpars
 
        The parameters of the URL
 
-    .. attribute:: query
+    .. attribute:: query_str
 
        The query string of the URL from the first question-mark in the path
+
+    .. attribute:: query
+
+       The query string, parsed into a mapping of keys to lists of values. For
+       example, the query string ``'?a=1&a=2&b=3&c='`` becomes
+       ``{'a': ['1', '2'], 'b': ['3'], 'c': ['']}``
 
     .. attribute:: fragment
 
@@ -1143,6 +1149,10 @@ class Url(namedtuple('Url', 'scheme netloc path params query fragment'), urlpars
     @property
     def hostname(self):
         return hostname(super(Url, self).hostname)
+
+    @property
+    def query(self):
+        return urlparse.parse_qs(self.query_str, keep_blank_values=True)
 
 
 class Request(namedtuple('Request', 'method url protocol')):

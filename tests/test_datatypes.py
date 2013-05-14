@@ -121,6 +121,16 @@ def test_url():
     assert u.hostname == dt.hostname('localhost')
     assert u.hostname.address == dt.address('127.0.0.1')
 
+def test_url_query():
+    url = dt.url('http://foo/bar?baz=quux&x=1&y=')
+    assert 'baz' in url.query
+    assert 'x' in url.query
+    assert 'y' in url.query
+    assert not 'z' in url.query
+    assert url.query['baz'] == ['quux']
+    assert url.query['x'] == ['1']
+    assert url.query['y'] == ['']
+
 def test_request():
     assert dt.request('OPTIONS * HTTP/1.1') == dt.Request('OPTIONS', None, 'HTTP/1.1')
     assert dt.request('GET / HTTP/1.0') == dt.Request('GET', dt.url('/'), 'HTTP/1.0')
