@@ -64,10 +64,10 @@ __all__ = [
 
 # Note - we do NOT try and validate URLs with this regex (as to do so is
 # incredibly complicated and much better left to a function), merely perform
-# some rudimentary extraction. The complex stuff on the left side of the
-# disjunction comes from RFC3986 appendix B.
+# some rudimentary extraction. The complex stuff below is derived from RFC3986
+# appendix B.
 
-_URL = r'(([^:/?#\s]+):)?(//([^/?#\s]*))?([^?#\s]*)(\?([^#\s]*))?(#(\S*))?'
+_URL = r'([^:/?#\s]+:)?(//[^/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?'
 
 # The following regex for paths is ridiculously lax (and practically guaranteed
 # to make any undelimited regex containing it ambiguous. Unfortunately there's
@@ -152,7 +152,7 @@ def url_parse(s):
     :param str s: The string containing the URI to parse
     :returns: A :class:`~www2csv.datatypes.Url` tuple representing the URL
     """
-    return dt.url(s) if s != '-' else None
+    return dt.url(s) if s not in ('-', '') else None
 
 
 def path_parse(s):

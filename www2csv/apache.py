@@ -479,14 +479,14 @@ class ApacheSource(object):
         'o': ('resp_%s',           'string'),
         'p': ('port',              'integer'),
         'P': ('pid',               'integer'),
-        'q': ('url_query',         'url'),
+        'q': ('url_query',         'url-query'),
         'r': ('request',           'request'),
         'R': ('handler',           'string'),
         's': ('status',            'integer'),
         't': ('time',              'time'),
         'T': ('time_taken',        'integer'),
         'u': ('remote_user',       'string'),
-        'U': ('url_stem',          'url'),
+        'U': ('url_stem',          'url-stem'),
         'v': ('server_name',       'hostname'),
         'V': ('canonical_name',    'hostname'),
         'X': ('connection_status', 'keepalive'),
@@ -503,11 +503,13 @@ class ApacheSource(object):
         'protocol':  (None,                   parsers.PROTOCOL),
         'request':   (parsers.request_parse,  parsers.REQUEST),
         'url':       (parsers.url_parse,      parsers.URL),
+        'url-stem':  (parsers.url_parse,      r'(?P<%(name)s>([^:/?#\s]+:)?(//[^/?#\s]*)?[^?#\s]*)'),
+        'url-query': (parsers.url_parse,      r'(?P<%(name)s>(\?[^#\s]*)?(#\S*)?)'),
         # Apache escapes non-printable and "special" chars with hex (\xhh)
         # sequences, except for newline, tab, and double-quote which are all
         # simply back-slash escaped. This is Apache specific and hence isn't
         # taken from the standard parsers module
-        'string':    (string_parse,           r'(?P<%(name)s>([^\x00-\x1f\x7f\\"]|\\x[0-9a-fA-F]{2}|\\[^x])+|-)'),
+        'string':    (string_parse,           r'(?P<%(name)s>(?:[^\x00-\x1f\x7f\\"]|\\x[0-9a-fA-F]{2}|\\[^x])+|-)'),
         # Apache field type which indicates the keep-alive state of the
         # connection when the request is done (X=connection aborted before
         # completion, +=keep connection alive, -=close connection)

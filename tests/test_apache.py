@@ -54,10 +54,15 @@ EXAMPLE_03 = """\
 """
 
 EXAMPLE_04="""\
-49600,80
-65000,80
-12345,443
-123,443
+49600,80 1000
+65000,80 2000
+12345,443 65000
+123,443 100
+"""
+
+EXAMPLE_05="""\
+2004-03-07T16:56:39-0800 HTTP/1.0 GET /twiki/bin/view/Sandbox/WebHome?rev=1.6 200 8545
+2004-03-07T17:01:53-0500 HTTP/1.1 HEAD /razor.html 302 2869
 """
 
 def test_english_locale():
@@ -172,6 +177,8 @@ def test_source_01():
                 assert row.request == dt.Request('GET', dt.url('/razor.html'), 'HTTP/1.0')
                 assert row.status == 302
                 assert row.size == 2869
+            else:
+                assert False
         assert row
         assert count == 1
 
@@ -201,6 +208,8 @@ def test_source_02():
                 assert row.size == 43
                 assert row.req_Referer == dt.url('http://eprints.lse.ac.uk/33718/')
                 assert row.req_User_agent == 'Mozilla/5.0 (Windows; U; Windows NT 5.1; pt-BR; rv:1.9.2.23) Gecko/20110920 Firefox/3.6.23'
+            else:
+                assert False
         assert row
         assert count == 1
 
@@ -215,7 +224,48 @@ def test_source_03():
     with pytest.raises(ValueError):
         with apache.ApacheSource('', log_format='%C'):
             pass
+    with pytest.raises(ValueError):
+        with apache.ApacheSource('', log_format='%{foo}p'):
+            pass
+    with pytest.raises(ValueError):
+        with apache.ApacheSource('', log_format='%{rid}P'):
+            pass
+    with pytest.raises(ValueError):
+        with apache.ApacheSource('', log_format='%{%H%:%M:%S}t'):
+            pass                                  #  ^ Extraneous caret
     # Some example log file lines with weird characters in some places...
 
 def test_source_04():
     # Test miscellaneous stuff like the port and pid field naming
+    with apache.ApacheSource(
+            EXAMPLE_04.splitlines(True),
+            log_format="%{local}p,%{remote}p %{pid}P") as source:
+        for count, row in enumerate(source):
+            assert row.local_port == [49600, 65000, 12345, 123][count]
+            assert row.remote_port == [80, 80, 443, 443][count]
+            assert row.pid == [1000, 2000, 65000, 100][count]
+        assert row
+        assert count == 3
+
+def test_source_05():
+    # Test custom date formats
+    with apache.ApacheSource(
+            EXAMPLE_05.splitlines(True),
+            log_format="%{%Y-%m-%dT%H:%M:%S%z}t %m %H %U%q %>s %O") as source:
+        for count, row in enumerate(source):
+            if count == 0:
+                assert row.time == dt.datetime('2004-03-08 00:56:39')
+                assert row.method == 'GET'
+                assert row.protocol == 'HTTP/1.0'
+                assert row.url_stem == dt.url('/twiki/bin/view/Sandbox/WebHome')
+                assert row.url_query == dt.url('?rev=1.6')
+                assert row.status == 200
+                assert row.bytes_sent == 8545
+            elif count == 1:
+                assert row.time == dt.datetime('2004-03-07 22:01:53')
+                assert row.method == 'HEAD'
+                assert row.protocol == 'HTTP/1.1'
+                assert row.url_stem == dt.url('/razor.html')
+                assert row.url_query is None
+                assert row.status == 302
+                assert row.bytes_sent == 2869
