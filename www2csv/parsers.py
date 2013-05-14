@@ -33,7 +33,7 @@ from __future__ import (
     division,
     )
 
-from www2csv import regexes, datatypes as dt
+from www2csv import datatypes as dt
 
 
 # Make Py2 str same as Py3
