@@ -113,7 +113,7 @@ def test_url():
     u = dt.url('http://localhost/foo/bar#baz')
     assert u.scheme == 'http'
     assert u.netloc == 'localhost'
-    assert u.path == '/foo/bar'
+    assert u.path_str == '/foo/bar'
     assert u.fragment == 'baz'
     assert u.username is None
     assert u.password is None

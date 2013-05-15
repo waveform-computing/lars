@@ -1070,7 +1070,7 @@ class Path(namedtuple('Path', 'dirname basename ext')):
             return result + '/' + self.basename
 
 
-class Url(namedtuple('Url', 'scheme netloc path params query_str fragment'), urlparse.ResultMixin):
+class Url(namedtuple('Url', 'scheme netloc path_str params query_str fragment'), urlparse.ResultMixin):
     """
     Represents a URL.
 
@@ -1096,9 +1096,20 @@ class Url(namedtuple('Url', 'scheme netloc path params query_str fragment'), url
        (separated by a colon), and historically the username and password
        (prefixed to the hostname and separated with an ampersand)
 
-    .. attribute:: path
+    .. attribute:: path_str
 
        The path of the URL from the first slash after the network location
+
+    .. attribute:: path
+
+       The path of the URL, parsed into a tuple which splits out the directory,
+       filename, and extension::
+
+          >>> u = datatypes.url('foo/bar/baz.html')
+          >>> u.path
+          Path(dirname='foo/bar', basename='baz.html', ext='.html')
+          >>> u.path.isabs
+          False
 
     .. attribute:: params
 
@@ -1161,6 +1172,10 @@ class Url(namedtuple('Url', 'scheme netloc path params query_str fragment'), url
     @property
     def query(self):
         return urlparse.parse_qs(self.query_str, keep_blank_values=True)
+
+    @property
+    def path(self):
+        return path(self.path_str)
 
 
 class Request(namedtuple('Request', 'method url protocol')):
