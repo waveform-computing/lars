@@ -24,6 +24,7 @@ modifying them to suit your purposes.
    www2csv.sql
    www2csv.geoip
    www2csv.datatypes
+   www2csv.progress
    www2csv.dns
    www2csv.cache
 
