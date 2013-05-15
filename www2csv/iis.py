@@ -33,7 +33,45 @@ Classes
 =======
 
 .. autoclass:: IISSource
-   :members:
+    :members:
+
+    .. attribute:: count
+
+        Returns the number of rows successfully read from the source
+
+    .. attribute:: date
+
+        The timestamp specified by the last encountered ``#Date`` directive (if
+        any), as a :class:`~www2csv.datatypes.DateTime` instance
+
+    .. attribute:: fields
+
+        A sequence of fields names found in the ``#Fields`` directive in the
+        file header
+
+    .. attribute:: finish
+
+        The timestamp found in the ``#End-Date`` directive (if any, as a
+        :class:`~www2csv.datatypes.DateTime` instance)
+
+    .. attribute:: remark
+
+        The remarks recorded in the ``#Remark`` directive (if any)
+
+    .. attribute:: software
+
+        The name of the software which produced the source file as given by
+        the ``#Software`` directive (if any)
+
+    .. attribute:: start
+
+        The timestamp found in the ``#Start-Date`` directive (if any), as a
+        :class:`~www2csv.datatypes.DateTime` instance
+
+    .. attribute:: version
+
+        The version of the source file, as given by the ``#Version`` directive
+        in the header
 
 
 Exceptions
@@ -209,6 +247,7 @@ class IISSource(object):
         self.finish = None
         self.date = None
         self.fields = []
+        self.count = 0
         self._row_pattern = None
         self._row_funcs = None
         self._row_type = None
@@ -454,6 +493,7 @@ class IISSource(object):
 
     def __enter__(self):
         logging.debug('Entering IIS context')
+        self.count = 0
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -488,6 +528,7 @@ class IISSource(object):
                             values = [f(v) for (f, v) in zip(self._row_funcs, values)]
                         except ValueError as exc:
                             raise IISWarning(str(exc))
+                        self.count += 1
                         yield self._row_type(*values)
                     else:
                         raise IISWarning('Line contains invalid data')

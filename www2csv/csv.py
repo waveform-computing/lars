@@ -240,6 +240,7 @@ class CSVTarget(object):
         self.dialect = dialect
         self.encoding = encoding
         self.keywords = kwargs
+        self.count = 0
         self._first_row = None
         self._writer = None
 
@@ -268,4 +269,5 @@ class CSVTarget(object):
                 logging.debug('Writing header row')
                 self._writer.writerow(row._fields)
         self._writer.writerow(row)
+        self.count += 1
 

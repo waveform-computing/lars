@@ -33,8 +33,20 @@ or otherwise Apache formatted log file and yields rows from it as tuples.
 Classes
 =======
 
-.. autoclass:: ApacheSource(source, log_format=COMMON, localized_time=True)
-   :members:
+.. autoclass:: ApacheSource(source, log_format=COMMON)
+    :members:
+
+    .. attribute:: source
+
+        The file-like object that the source reads rows from
+
+    .. attribute:: count
+
+        Returns the number of rows successfully read from the source
+
+    .. attribute:: log_format
+
+        The Apache LogFormat string that the class will use to decode rows
 
 
 Data
@@ -405,11 +417,9 @@ class ApacheSource(object):
     """
 
     def __init__(self, source, log_format=COMMON):
-        # XXX REMOVE ME! XXX
-        logging.getLogger().setLevel(logging.DEBUG)
-        # XXX REMOVE ME! XXX
         self.source = source
         self.log_format = log_format
+        self.count = 0
         self._row_pattern = None
         self._row_funcs = None
         self._row_type = None
@@ -672,6 +682,7 @@ class ApacheSource(object):
 
     def __enter__(self):
         logging.debug('Entering Apache context')
+        self.count = 0
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -696,6 +707,7 @@ class ApacheSource(object):
                         values = [f(v) for (f, v) in zip(self._row_funcs, values)]
                     except ValueError as exc:
                         raise ApacheWarning(str(exc))
+                    self.count += 1
                     yield self._row_type(*values)
                 else:
                     raise ApacheWarning('Line contains invalid data')

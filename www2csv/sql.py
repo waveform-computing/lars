@@ -38,7 +38,38 @@ Classes
 =======
 
 .. autoclass:: SQLTarget
-   :members:
+    :members:
+
+    .. attribute:: commit
+
+        The number of rows which the class will attempt to write before
+        performing a COMMIT. It is strongly recommended to set this to a
+        reasonably large number (e.g. 1000) to ensure decent INSERT performance
+
+    .. attribute:: count
+
+        Returns the number of rows successfully written to the database so far
+
+    .. attribute:: create_table
+
+        If True, the class will attempt to create the target table during the
+        first call to the :meth:`write` method
+
+    .. attribute:: drop_table
+
+        If True, the class will attempt to unconditionally drop any existing
+        target table during the first call to the :meth:`write` method
+
+    .. attribute:: ignore_drop_errors
+
+        If True, and :attr:`drop_table` is True, any errors encountered during
+        the ``DROP TABLE`` operation will be ignored (typically useful when you
+        are not sure the target table exists or not)
+
+    .. attribute:: table
+
+        The name of the target table in the database, including any required
+        escaping or quotation
 
 
 Exceptions
@@ -171,7 +202,7 @@ class SQLTarget(object):
     |                 | precision.                                            |
     +-----------------+-------------------------------------------------------+
     | *bool_type*     | ``SMALLINT`` - used for any boolean values in the     |
-    |                 | input (0 for False, 1 for True)
+    |                 | input (0 for False, 1 for True)                       |
     +-----------------+-------------------------------------------------------+
     | *date_type*     | ``DATE``                                              |
     +-----------------+-------------------------------------------------------+
@@ -247,15 +278,16 @@ class SQLTarget(object):
             datatypes.Hostname:    hostname_type,
             datatypes.Path:        path_type,
             }
+        self.count = 0
         self._first_row = None
         self._row_casts = None
         self._cursor = None
         self._insert = None
-        self._counter = 0
 
     def __enter__(self):
         logging.debug('Entering SQL context')
         logging.debug('Constructing cursor')
+        self.count = 0
         self._cursor = self.connection.cursor()
         return self
 
@@ -267,7 +299,6 @@ class SQLTarget(object):
         self._first_row = None
         self._row_casts = None
         self._insert = None
-        self._counter = 0
         logging.debug('COMMIT')
         self.connection.commit()
 
@@ -380,7 +411,8 @@ class SQLTarget(object):
         except self.db_module.Error as exc:
             warnings.warn(
                 '%s while inserting row %s' % (str(exc), str(row)), SQLWarning)
-        self._counter += 1
-        if self._counter % self.commit == 0:
+        self.count += 1
+        if self.count % self.commit == 0:
             logging.debug('COMMIT')
             self.connection.commit()
+

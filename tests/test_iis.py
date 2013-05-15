@@ -205,7 +205,7 @@ def test_source_01():
             assert row.cs_User_Agent == 'Mozilla/4.0 (compatible; MSIE 5.01; Windows 2000 Server)'
             assert row.cs_Referrer == dt.url('http://64.224.24.114/')
         assert row
-        assert count == 0
+        assert count + 1 == source.count
     with iis.IISSource(INTRANET_EXAMPLE.splitlines(True)) as source:
         row = None
         for count, row in enumerate(source):
@@ -226,7 +226,7 @@ def test_source_01():
             assert row.sc_status == 200
             assert row.cs_User_Agent == 'Mozilla/4.0 (compatible;MSIE 5.5; Windows 2000 Server)'
         assert row
-        assert count == 0
+        assert count + 1 == source.count
 
 def test_source_02():
     # Test invalid headers
