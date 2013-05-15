@@ -1227,7 +1227,7 @@ class Hostname(str):
             # XXX What about IPv6 addresses? Check with address_parse?
             if not self.name_part_re.match(part):
                 raise ValueError('DNS label %s is invalid' % part)
-        super(Hostname, self).__init__(s)
+        super(Hostname, self).__init__()
 
     @property
     def address(self):
