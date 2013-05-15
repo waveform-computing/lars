@@ -70,6 +70,15 @@ def rows():
             302,
             16328,
             ),
+        Row(
+            datatypes.datetime('2002-05-29 12:34:56'),
+            datatypes.address('9.180.235.203'),
+            'HEAD',
+            datatypes.url('/images/picture.jpg'),
+            0.1,
+            202,
+            None,
+            ),
         ]
 
 class FakeDbModule(object):
@@ -96,13 +105,14 @@ def test_target_01(db, rows):
     with sql.SQLTarget(sqlite3, db, table='foo', create_table=True) as target:
         target.write(rows[0])
         target.write(rows[1])
+        target.write(rows[2])
         with pytest.raises(TypeError):
             target.write(('foo',))
     cursor = db.cursor()
     # Ensure the table got created and contains 2 rows which accurately reflect
     # the rows we fed in
     cursor.execute('SELECT COUNT(*) FROM foo')
-    assert cursor.fetchall()[0][0] == 2
+    assert cursor.fetchall()[0][0] == 3
     cursor.execute("SELECT * FROM foo WHERE method = ?", (rows[0].method,))
     data = cursor.fetchall()[0]
     assert data[0] == rows[0].timestamp
@@ -121,6 +131,15 @@ def test_target_01(db, rows):
     assert data[4] == rows[1].time_taken
     assert data[5] == rows[1].status
     assert data[6] == rows[1].size
+    cursor.execute("SELECT * FROM foo WHERE method = ?", (rows[2].method,))
+    data = cursor.fetchall()[0]
+    assert data[0] == rows[2].timestamp
+    assert data[1] == str(rows[2].client)
+    assert data[2] == rows[2].method
+    assert data[3] == str(rows[2].url)
+    assert data[4] == rows[2].time_taken
+    assert data[5] == rows[2].status
+    assert data[6] == rows[2].size
 
 def test_target_02(db, rows):
     # Test writing IP addresses as integers instead of strings
@@ -129,11 +148,14 @@ def test_target_02(db, rows):
             ip_type='INTEGER') as target:
         target.write(rows[0])
         target.write(rows[1])
+        target.write(rows[2])
     cursor = db.cursor()
     cursor.execute("SELECT client FROM foo WHERE method = ?", (rows[0].method,))
     assert cursor.fetchall()[0][0] == int(ipaddress.ip_address(rows[0].client))
     cursor.execute("SELECT client FROM foo WHERE method = ?", (rows[1].method,))
     assert cursor.fetchall()[0][0] == int(ipaddress.ip_address(rows[1].client))
+    cursor.execute("SELECT client FROM foo WHERE method = ?", (rows[2].method,))
+    assert cursor.fetchall()[0][0] == int(ipaddress.ip_address(rows[2].client))
 
 def test_target_03(db, rows):
     # Test auto-DROP with a raise in the case the drop fails

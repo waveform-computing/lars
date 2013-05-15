@@ -170,6 +170,9 @@ class SQLTarget(object):
     |                 | ``NUMERIC`` or ``DECIMAL`` specification for          |
     |                 | precision.                                            |
     +-----------------+-------------------------------------------------------+
+    | *bool_type*     | ``SMALLINT`` - used for any boolean values in the     |
+    |                 | input (0 for False, 1 for True)
+    +-----------------+-------------------------------------------------------+
     | *date_type*     | ``DATE``                                              |
     +-----------------+-------------------------------------------------------+
     | *time_type*     | ``TIME``                                              |
@@ -205,9 +208,9 @@ class SQLTarget(object):
             self, db_module, connection, table, commit=1000,
             create_table=False, drop_table=False, ignore_drop_errors=True,
             str_type='VARCHAR(1000)', int_type='INTEGER', fixed_type='DOUBLE',
-            date_type='DATE', time_type='TIME', datetime_type='TIMESTAMP',
-            ip_type='VARCHAR(53)', hostname_type='VARCHAR(255)',
-            path_type='VARCHAR(260)'):
+            bool_type='SMALLINT', date_type='DATE', time_type='TIME',
+            datetime_type='TIMESTAMP', ip_type='VARCHAR(53)',
+            hostname_type='VARCHAR(255)', path_type='VARCHAR(260)'):
         if not hasattr(db_module, 'paramstyle'):
             raise NameError('The database module has no "paramstyle" global')
         if not hasattr(db_module, 'Error'):
@@ -226,6 +229,7 @@ class SQLTarget(object):
             str:                   str_type,
             int:                   int_type,
             float:                 fixed_type,
+            bool:                  bool_type,
             date:                  date_type,
             time:                  time_type,
             datetime:              datetime_type,
@@ -366,7 +370,9 @@ class SQLTarget(object):
         # XXX What about paramstyles pyformat and named? Eurgh...
         cast_to_str = (datatypes.IPv4Address, datatypes.IPv6Address)
         params = [
-            cast(value) if cast else value
+            None if value is None else
+            cast(value) if cast else
+            value
             for (cast, value) in zip(self._row_casts, row)
             ]
         try:
