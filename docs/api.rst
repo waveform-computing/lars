@@ -15,7 +15,7 @@ modifying them to suit your purposes.
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    www2csv
    www2csv.apache

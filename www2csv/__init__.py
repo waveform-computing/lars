@@ -135,7 +135,7 @@ Manipulating row content
 
 If you wish to modify the output structure,the simplest method is to declare
 the row structure you want at the top of the file (using the
-:func:`~www2csv.datatypes.Row` function) and then construct rows with the new
+:func:`~www2csv.datatypes.row` function) and then construct rows with the new
 structure in the loop (using the result of the function)::
 
     import io

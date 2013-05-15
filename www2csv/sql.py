@@ -125,7 +125,7 @@ class SQLTarget(object):
     This wrapper provides a simple :meth:`write` method which can be used to
     insert row tuples into a specified table, which can optionally by created
     automatically by the wrapper before insertion of the first row. The wrapper
-    must be passed a database connection object that confirms to the Python
+    must be passed a database connection object that conforms to the Python
     DB-API (version 2.0) as defined by `PEP-249`_.
 
     The *db_module* parameter must be passed the module that defines the
