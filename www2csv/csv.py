@@ -178,6 +178,7 @@ class UnicodeWriter(object):
 
     def _writerow_utf8(self, row):
         self.writer.writerow([
+            None if s is None else
             s if isinstance(s, (int, long, float)) else
             s.encode('utf-8') if isinstance(s, str) else
             str(s).encode('utf-8')
