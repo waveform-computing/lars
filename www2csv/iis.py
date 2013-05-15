@@ -470,8 +470,8 @@ class IISSource(object):
         to encountering the ``#Fields`` directive in :meth:`_process_directive`
         above.
         """
-        try:
-            for num, line in enumerate(self.source):
+        for num, line in enumerate(self.source):
+            try:
                 if line.startswith('#'):
                     self._process_directive(line.rstrip())
                 elif self.version is None:
@@ -491,12 +491,12 @@ class IISSource(object):
                         yield self._row_type(*values)
                     else:
                         raise IISWarning('Line contains invalid data')
-        except IISWarning as exc:
-            # Add line number to the warning and report with warn()
-            warnings.warn('Line %d: %s' % (num + 1, str(exc)), IISWarning)
-        except IISError as exc:
-            # Add line content and number to the exception and re-raise
-            if not exc.line_number:
-                raise type(exc)(exc.args[0], line_number=num + 1, line=line)
-            raise # pragma: no cover
+            except IISWarning as exc:
+                # Add line number to the warning and report with warn()
+                warnings.warn('Line %d: %s' % (num + 1, str(exc)), IISWarning)
+            except IISError as exc:
+                # Add line content and number to the exception and re-raise
+                if not exc.line_number:
+                    raise type(exc)(exc.args[0], line_number=num + 1, line=line)
+                raise # pragma: no cover
 
