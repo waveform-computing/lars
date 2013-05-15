@@ -185,7 +185,7 @@ class IISWarning(Warning):
 
 class IISSource(object):
     """
-    Wraps a steam containing a IIS formatted log file.
+    Wraps a stream containing a IIS formatted log file.
 
     This wrapper converts a stream containing a IIS formatted log file into an
     iterable which yields tuples. Each tuple is a namedtuple instance with the

@@ -30,7 +30,7 @@ shown below::
     import io
     from www2csv import iis, csv
 
-    with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'w') as outfile:
+    with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'wb') as outfile:
         with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
             for row in source:
                 target.write(row)
@@ -42,8 +42,8 @@ Going through this section by section we can see the following:
    :mod:`csv` modules from www2csv for converting the data.
 
 #. Using ``io.open`` we open the input file (with mode ``'r'`` for reading) and
-   the output file (with mode ``'w'`` for creating a new file and writing to
-   it)
+   the output file (with mode ``'wb'`` for creating a new file and writing 
+   (binary mode) to it)
 
 #. We wrap ``infile`` (the input file) with :class:`~www2csv.iis.IISSource` to
    parse the input file, and ``outfile`` (the output file) with
@@ -69,7 +69,7 @@ then terminate the loop::
     import io
     from www2csv import iis, csv
 
-    with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'w') as outfile:
+    with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'wb') as outfile:
         with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
             for row in source:
                 print(row)
@@ -90,14 +90,15 @@ Given the following input file (long lines indented for readability)::
 
 This will produce this output on the command line::
 
-    row_type(date=datetime.date(2002, 5, 24), time=datetime.time(20, 18, 1),
+    Row(date=Date(2002, 5, 24), time=Time(20, 18, 1), 
         c_ip=IPv4Address(u'172.224.24.114'), cs_username=None,
         s_ip=IPv4Address(u'206.73.118.24'), s_port=80, cs_method=u'GET',
-        cs_uri_stem=Url(scheme='', netloc='', path='/Default.htm', params='',
-        query='', fragment=''), cs_uri_query=None, sc_status=200,
+        cs_uri_stem=Url(scheme='', netloc='', path=u'/Default.htm', params='',
+        query_str='', fragment=''), cs_uri_query=None, sc_status=200,
         sc_bytes=7930, cs_bytes=248, time_taken=31.0,
-        cs_User_Agent='Mozilla/4.0 (compatible; MSIE 5.01; Windows 2000
-        Server)', cs_Referrer='http://64.224.24.114/')
+        cs_User_Agent=u'Mozilla/4.0 (compatible; MSIE 5.01; Windows 2000
+        Server)', cs_Referrer=Url(scheme=u'http', netloc=u'64.224.24.114',
+         path=u'/', params='', query_str='', fragment=''))
 
 From this one can see that field names like ``c-ip`` have been converted into
 ``c_ip`` (``-`` is an illegal character in Python identifiers). Furthermore it
@@ -143,7 +144,7 @@ structure in the loop (using the result of the function)::
 
     NewRow = datatypes.row('date', 'time', 'client', 'url')
 
-    with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'w') as outfile:
+    with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'wb') as outfile:
         with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
             for row in source:
                 new_row = NewRow(row.date, row.time, row.c_ip, row.cs_uri_stem)

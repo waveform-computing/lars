@@ -987,7 +987,7 @@ class Path(namedtuple('Path', 'dirname basename ext')):
     Represents a path.
 
     This type is returned by the :func:`path` function and represents a path in
-    POSIX format (forward slash separators and no drive potion). It is used to
+    POSIX format (forward slash separators and no drive portion). It is used to
     represent the path portion of URLs and provides attributes for extracting
     parts of the path there-in.
 
