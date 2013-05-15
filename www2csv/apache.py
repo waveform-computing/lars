@@ -331,7 +331,7 @@ class ApacheWarning(Warning):
 
 class ApacheSource(object):
     """
-    Wraps a steam containing a Apache formatted log file.
+    Wraps a stream containing a Apache formatted log file.
 
     This wrapper converts a stream containing an Apache log file into an
     iterable which yields tuples. Each tuple has fieldnames derived from the
