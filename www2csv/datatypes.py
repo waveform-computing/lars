@@ -308,11 +308,24 @@ def request(s):
 
 def hostname(s):
     """
-    Returns a :class:`Hostname` object for the given string.
+    Returns a :class:`Hostname`, :class:`IPv4Address`, or :class:`IPv6Address`
+    object for the given string depending on whether it represents an IP
+    address or a hostname.
 
     :param str s: The string containing the hostname to parse
-    :returns: A :class:`Hostname` instance
+    :returns: A :class:`Hostname`, :class:`IPv4Address`, or
+              :class:`IPv6Address` instance
     """
+    if isinstance(s, bytes):
+        s = str(s)
+    try:
+        return IPv4Address(s)
+    except ValueError:
+        pass
+    try:
+        return IPv6Address(s)
+    except ValueError:
+        pass
     return Hostname(s)
 
 

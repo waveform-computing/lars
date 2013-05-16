@@ -101,7 +101,7 @@ def test_hostname_parse():
     assert parsers.hostname_parse('-') is None
     assert parsers.hostname_parse('foo') == 'foo'
     assert parsers.hostname_parse('foo.bar') == 'foo.bar'
-    assert parsers.hostname_parse('127.0.0.1') == '127.0.0.1'
+    assert str(parsers.hostname_parse('127.0.0.1')) == '127.0.0.1'
     assert parsers.hostname_parse('f'*63 + '.o') == 'f'*63 + '.o'
     assert parsers.hostname_parse('f'*63 + '.oo') == 'f'*63 + '.oo'
     with pytest.raises(ValueError):
