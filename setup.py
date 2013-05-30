@@ -56,13 +56,13 @@ except LookupError:
 
 # All meta-data is defined as global variables so that other modules can query
 # it easily without having to wade through distutils nonsense
-NAME         = 'www2csv'
+NAME         = 'lars'
 DESCRIPTION  = 'A framework for converting web-logs into various formats'
 KEYWORDS     = ['web', 'www', 'logs', 'database']
 AUTHOR       = 'Dave Hughes'
 AUTHOR_EMAIL = 'dave@waveform.org.uk'
 MANUFACTURER = 'waveform'
-URL          = 'http://bitbucket.org/waveform/www2csv'
+URL          = 'http://bitbucket.org/waveform/lars'
 
 REQUIRES = [
     'ipaddress', # Google's IPv4/IPv6 parsing library (part of stdlib in py3k)
@@ -90,7 +90,7 @@ ENTRY_POINTS = {
     }
 
 PACKAGES = [
-    'www2csv',
+    'lars',
     ]
 
 PACKAGE_DATA = {

@@ -25,12 +25,12 @@ This module provides a common interface to the GeoIP database. Most users will
 only need to be aware of the :func:`init_database` function in this module,
 which is used to initialize the GeoIP database(s). All other functions should
 be ignored; instead, users should use the
-:attr:`~www2csv.datatypes.IPv4Address.country`,
-:attr:`~www2csv.datatypes.IPv4Address.region`,
-:attr:`~www2csv.datatypes.IPv4Address.city`, and
-:attr:`~www2csv.datatypes.IPv4Address.coords` attributes of the
-:class:`~www2csv.datatypes.IPv4Address` and
-:class:`~www2csv.datatypes.IPv6Address` classes.
+:attr:`~lars.datatypes.IPv4Address.country`,
+:attr:`~lars.datatypes.IPv4Address.region`,
+:attr:`~lars.datatypes.IPv4Address.city`, and
+:attr:`~lars.datatypes.IPv4Address.coords` attributes of the
+:class:`~lars.datatypes.IPv4Address` and
+:class:`~lars.datatypes.IPv6Address` classes.
 
 
 Functions
@@ -84,8 +84,8 @@ def init_database(v4_filename, v6_filename=None, memcache=True):
     Initializes the global GeoIP database instance in a thread-safe manner.
 
     This function opens GeoIP databases for use by the
-    :class:`~www2csv.datatypes.IPv4Address` and
-    :class:`~www2csv.datatypes.IPv6Address` classes. GeoIP databases are
+    :class:`~lars.datatypes.IPv4Address` and
+    :class:`~lars.datatypes.IPv6Address` classes. GeoIP databases are
     hierarchical: if you open a country-only database, you will only be able to
     use country-level lookups. However, city-level databases enable all
     supported lookups (country, region, city, and coordinates).
@@ -125,7 +125,7 @@ def init_database(v4_filename, v6_filename=None, memcache=True):
 def country_code_by_addr(address):
     """
     Returns the country code associated with the specified address. You should
-    use the :attr:`~www2csv.datatypes.IPv4Address.country` attribute instead of
+    use the :attr:`~lars.datatypes.IPv4Address.country` attribute instead of
     this function.
 
     :param str address: The address to lookup the country for
@@ -138,7 +138,7 @@ def country_code_by_addr(address):
 def country_code_by_addr_v6(address):
     """
     Returns the country code associated with the specified address. You should
-    use the :attr:`~www2csv.datatypes.IPv6Address.country` attribute instead of
+    use the :attr:`~lars.datatypes.IPv6Address.country` attribute instead of
     this function.
 
     :param str address: The address to lookup the country for
@@ -152,7 +152,7 @@ def country_code_by_addr_v6(address):
 def region_by_addr(address):
     """
     Returns the region (e.g. state) associated with the address. You should
-    use the :attr:`~www2csv.datatypes.IPv4Address.region` attribute instead of
+    use the :attr:`~lars.datatypes.IPv4Address.region` attribute instead of
     this function.
 
     Given an address, this function returns the region associated with it.
@@ -171,7 +171,7 @@ def region_by_addr(address):
 def region_by_addr_v6(address):
     """
     Returns the region (e.g. state) associated with the address. You should use
-    the :attr:`~www2csv.datatypes.IPv6Address.region` attribute instead of this
+    the :attr:`~lars.datatypes.IPv6Address.region` attribute instead of this
     function.
 
     Given an address, this function returns the region associated with it.
@@ -191,7 +191,7 @@ def region_by_addr_v6(address):
 def city_by_addr(address):
     """
     Returns the city associated with the address. You should use the
-    :attr:`~www2csv.datatypes.IPv4Address.city` attribute instead of this
+    :attr:`~lars.datatypes.IPv4Address.city` attribute instead of this
     function.
 
     Given an address, this function returns the city associated with it.
@@ -208,7 +208,7 @@ def city_by_addr(address):
 def city_by_addr_v6(address):
     """
     Returns the city associated with the address. You should use the
-    :attr:`~www2csv.datatypes.IPv6Address.city` attribute instead of this
+    :attr:`~lars.datatypes.IPv6Address.city` attribute instead of this
     function.
 
     Given an address, this function returns the city associated with it.
@@ -226,7 +226,7 @@ def city_by_addr_v6(address):
 def coords_by_addr(address):
     """
     Returns the coordinates (long, lat) associated with the address. You should
-    use the :attr:`~www2csv.datatypes.IPv4Address.coords` attribute instead of
+    use the :attr:`~lars.datatypes.IPv4Address.coords` attribute instead of
     this function.
 
     Given an address, this function returns a tuple with the attributes
@@ -245,7 +245,7 @@ def coords_by_addr(address):
 def coords_by_addr_v6(address):
     """
     Returns the coordinates (long, lat) associated with the address. You should
-    use the :attr:`~www2csv.datatypes.IPv6Address.coords` attribute instead of
+    use the :attr:`~lars.datatypes.IPv6Address.coords` attribute instead of
     this function.
 
     Given an address, this function returns a tuple with the attributes

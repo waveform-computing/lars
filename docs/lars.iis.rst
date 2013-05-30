@@ -1,8 +1,8 @@
 .. _www2csv.iis:
 
 ==============================
-www2csv.iis - Reading IIS Logs
+lars.iis - Reading IIS Logs
 ==============================
 
 
-.. automodule:: www2csv.iis
+.. automodule:: lars.iis

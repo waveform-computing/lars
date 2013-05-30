@@ -1,9 +1,9 @@
 .. _www2csv:
 
 ======================
-www2csv - Introduction
+lars - Introduction
 ======================
 
 
-.. automodule:: www2csv
+.. automodule:: lars
    :members:

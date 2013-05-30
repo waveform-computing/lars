@@ -33,7 +33,7 @@ from __future__ import (
     division,
     )
 
-from www2csv import datatypes as dt
+from lars import datatypes as dt
 
 
 # Make Py2 str same as Py3
@@ -133,7 +133,7 @@ def request_parse(s):
     OPTIONS), the middle element of the returned tuple will be None.
 
     :param str s: The string containing the request line to parse
-    :returns: A :class:`~www2csv.datatypes.Request` tuple representing the
+    :returns: A :class:`~lars.datatypes.Request` tuple representing the
               request line
     """
     return dt.request(s)
@@ -145,12 +145,12 @@ def url_parse(s):
 
     This is a variant on the standard Python urlparse.urlparse function. The
     result type has been extended to include a
-    :meth:`~www2csv.datatypes.Url.__str__` method which outputs the
+    :meth:`~lars.datatypes.Url.__str__` method which outputs the
     reconstructed URL, and to have specialized hostname and path properties
     which return enhanced objects instead of simple strings.
 
     :param str s: The string containing the URI to parse
-    :returns: A :class:`~www2csv.datatypes.Url` tuple representing the URL
+    :returns: A :class:`~lars.datatypes.Url` tuple representing the URL
     """
     return dt.url(s) if s not in ('-', '') else None
 
@@ -160,7 +160,7 @@ def path_parse(s):
     Parse a POSIX-style (slash separated) path string in a log file.
 
     :param str s: The srting containing the POSIX-style path to parse
-    :returns: A :class:`~www2csv.datatypes.Path` object representing the path
+    :returns: A :class:`~lars.datatypes.Path` object representing the path
     """
     return dt.path(s) if s != '-' else None
 
@@ -197,7 +197,7 @@ def date_parse(s, format='%Y-%m-%d'):
 
     :param str s: The string containing the date to parse
     :param str format: The optional strftime(3) format string
-    :returns: A :class:`~www2csv.datatypes.Date` object representing the date
+    :returns: A :class:`~lars.datatypes.Date` object representing the date
     """
     return dt.date(s, format) if s != '-' else None
 
@@ -208,7 +208,7 @@ def time_parse(s, format='%H:%M:%S'):
 
     :param str s: The string containing the time to parse (HH:MM:SS format)
     :param str format: The optional strftime(3) format string
-    :returns: A :class:`~www2csv.datatypes.Time` object representing the time
+    :returns: A :class:`~lars.datatypes.Time` object representing the time
     """
     return dt.time(s) if s != '-' else None
 
@@ -218,7 +218,7 @@ def hostname_parse(s):
     Parse a DNS name in a log format.
 
     :param str s: The string containing the DNS name to parse
-    :returns: A :class:`~www2csv.datatypes.Hostname` value
+    :returns: A :class:`~lars.datatypes.Hostname` value
     """
     return dt.hostname(s) if s != '-' else None
 
@@ -228,7 +228,7 @@ def address_parse(s):
     Parse an IPv4 or IPv6 address (and optional port) in a log file.
 
     :param str s: The string containing the address to parse
-    :returns: A :class:`~www2csv.datatypes.IPv4Address` value
+    :returns: A :class:`~lars.datatypes.IPv4Address` value
     """
     return dt.address(s) if s != '-' else None
 

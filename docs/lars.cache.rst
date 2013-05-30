@@ -1,9 +1,9 @@
 .. _www2csv.cache:
 
 ================================
-www2csv.cache - Cache Decorators
+lars.cache - Cache Decorators
 ================================
 
 
-.. automodule:: www2csv.cache
+.. automodule:: lars.cache
    :members:

@@ -17,14 +17,14 @@ modifying them to suit your purposes.
 .. toctree::
    :maxdepth: 3
 
-   www2csv
-   www2csv.apache
-   www2csv.iis
-   www2csv.csv
-   www2csv.sql
-   www2csv.geoip
-   www2csv.datatypes
-   www2csv.progress
-   www2csv.dns
-   www2csv.cache
+   lars
+   lars.apache
+   lars.iis
+   lars.csv
+   lars.sql
+   lars.geoip
+   lars.datatypes
+   lars.progress
+   lars.dns
+   lars.cache
 

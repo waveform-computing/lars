@@ -82,7 +82,7 @@ else:
     from re import escape as re_escape
     from datetime import (date as datetime_date,
                           timedelta as datetime_timedelta)
-    from www2csv.timezone import timezone as datetime_timezone
+    from lars.timezone import timezone as datetime_timezone
     try:
         from thread import allocate_lock as _thread_allocate_lock
     except:

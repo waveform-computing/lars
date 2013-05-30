@@ -1,10 +1,10 @@
 .. _root:
 
 =========================
-Documentation for www2csv
+Documentation for lars
 =========================
 
-www2csv is a small suite of tools for converting httpd logs (from a variety of
+lars is a small suite of tools for converting httpd logs (from a variety of
 common servers like `Apache`_, `nginx`_, and IIS) into a format more conducive
 for loading into databases, the default being CSV.
 
@@ -36,5 +36,5 @@ Indices and tables
 .. _Apache: http://httpd.apache.org/
 .. _nginx: http://wiki.nginx.org/
 .. _Python: http://python.org/
-.. _source code: https://bitbucket.org/waveform/www2csv
+.. _source code: https://bitbucket.org/waveform/lars
 

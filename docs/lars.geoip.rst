@@ -1,8 +1,8 @@
 .. _www2csv.geoip:
 
 =====================================
-www2csv.geoip - GeoIP Database Access
+lars.geoip - GeoIP Database Access
 =====================================
 
 
-.. automodule:: www2csv.geoip
+.. automodule:: lars.geoip

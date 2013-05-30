@@ -42,7 +42,7 @@ Classes
     .. attribute:: date
 
         The timestamp specified by the last encountered ``#Date`` directive (if
-        any), as a :class:`~www2csv.datatypes.DateTime` instance
+        any), as a :class:`~lars.datatypes.DateTime` instance
 
     .. attribute:: fields
 
@@ -52,7 +52,7 @@ Classes
     .. attribute:: finish
 
         The timestamp found in the ``#End-Date`` directive (if any, as a
-        :class:`~www2csv.datatypes.DateTime` instance)
+        :class:`~lars.datatypes.DateTime` instance)
 
     .. attribute:: remark
 
@@ -66,7 +66,7 @@ Classes
     .. attribute:: start
 
         The timestamp found in the ``#Start-Date`` directive (if any), as a
-        :class:`~www2csv.datatypes.DateTime` instance
+        :class:`~lars.datatypes.DateTime` instance
 
     .. attribute:: version
 
@@ -95,7 +95,7 @@ Examples
 A typical usage of this class is as follows::
 
     import io
-    from www2csv import iis, csv
+    from lars import iis, csv
 
     with io.open('logs\\iis.txt', 'rb') as infile:
         with io.open('iis.csv', 'wb') as outfile:
@@ -137,7 +137,7 @@ import warnings
 import logging
 from urllib import unquote_plus
 
-from www2csv import parsers, datatypes as dt
+from lars import parsers, datatypes as dt
 
 
 # Make Py2 str same as Py3

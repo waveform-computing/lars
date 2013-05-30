@@ -50,7 +50,7 @@ Examples
 The most basic usage of this class is as follows::
 
     import io
-    from www2csv import iis, csv, progress
+    from lars import iis, csv, progress
 
     with io.open('logs\\iis.txt', 'rb') as infile, \\
             io.open('iis.csv', 'wb') as outfile, \\
@@ -73,7 +73,7 @@ filename)::
 
     import os
     import io
-    from www2csv import iis, csv, progress
+    from lars import iis, csv, progress
 
     files = os.listdir('.')
     with progress.ProgressMeter(total=len(files), style=progress.BarStyle) as meter:

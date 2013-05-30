@@ -98,7 +98,7 @@ Examples
 A typical usage of this class is as follows::
 
     import io
-    from www2csv import apache, csv
+    from lars import apache, csv
 
     with io.open('/var/log/apache2/access.log', 'rb') as infile:
         with io.open('access.csv', 'wb') as outfile:
@@ -122,9 +122,9 @@ import warnings
 import logging
 import functools
 
-from www2csv import parsers, datatypes as dt
-from www2csv.strptime import TimeRE, _strptime_datetime
-from www2csv.timezone import timedelta, timezone
+from lars import parsers, datatypes as dt
+from lars.strptime import TimeRE, _strptime_datetime
+from lars.timezone import timedelta, timezone
 
 
 # Make Py2 str same as Py3
@@ -224,7 +224,7 @@ def time_parse_format(s, fmt):
 
     :param str s: The string containing the time to parse
     :param str fmt: The strptime format the string must conform to
-    :returns: A naive :class:`~www2csv.datatypes.DateTime` object
+    :returns: A naive :class:`~lars.datatypes.DateTime` object
     """
     d = _strptime_datetime(dt.DateTime, s, fmt)
     return dt.DateTime(*(d.utctimetuple()[:6] + (d.microsecond,)))
@@ -238,7 +238,7 @@ def time_parse_common(s):
     the default Apache format of ``[%d/%b/%Y:%H:%M:%S %z]`` is in use.
 
     :param str s: The string containing the time to parse
-    :returns: A naive :class:`~www2csv.datatypes.DateTime` object
+    :returns: A naive :class:`~lars.datatypes.DateTime` object
     """
     if not (24 <= len(s) <= 28):
         raise ValueError('Invalid length')

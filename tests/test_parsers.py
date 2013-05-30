@@ -31,7 +31,7 @@ from datetime import datetime, date, time
 
 import pytest
 
-from www2csv import parsers, datatypes
+from lars import parsers, datatypes
 
 
 # Make Py2 str same as Py3

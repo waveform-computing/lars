@@ -1,9 +1,9 @@
 .. _www2csv.dns:
 
 ============================
-www2csv.dns - DNS Resolution
+lars.dns - DNS Resolution
 ============================
 
 
-.. automodule:: www2csv.dns
+.. automodule:: lars.dns
    :members:

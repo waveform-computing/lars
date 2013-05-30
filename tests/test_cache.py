@@ -29,7 +29,7 @@ from __future__ import (
 
 import pytest
 
-from www2csv import cache
+from lars import cache
 
 
 @cache.lru_cache(maxsize=5)

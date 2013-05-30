@@ -32,7 +32,7 @@ from collections import namedtuple
 
 import pytest
 
-from www2csv import csv, datatypes
+from lars import csv, datatypes
 
 
 # XXX Make Py2 str same as Py3

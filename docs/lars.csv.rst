@@ -1,8 +1,8 @@
 .. _www2csv.csv:
 
 ===============================
-www2csv.csv - Writing CSV Files
+lars.csv - Writing CSV Files
 ===============================
 
 
-.. automodule:: www2csv.csv
+.. automodule:: lars.csv

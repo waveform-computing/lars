@@ -37,7 +37,7 @@ from ipaddress import ip_address, IPv4Address, IPv6Address
 import pytest
 import mock
 
-from www2csv import datatypes as dt, geoip
+from lars import datatypes as dt, geoip
 
 
 INTRANET_EXAMPLE = """\

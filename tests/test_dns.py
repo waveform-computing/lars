@@ -32,7 +32,7 @@ import socket
 import pytest
 import mock
 
-from www2csv import dns
+from lars import dns
 
 
 def test_from_address():

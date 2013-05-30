@@ -1,15 +1,17 @@
 .. -*- rst -*-
 
-=======
-www2csv
-=======
+====
+lars
+====
 
-www2csv is a small suite of tools for converting httpd logs (from a variety of
-common servers like `Apache`_, `nginx`_, and IIS) into a format more conducive
-for loading into databases, the default being CSV.
+lars is a small `Python`_ framework for working with httpd logs (from a variety
+of common servers like `Apache`_, `nginx`_, and IIS). The primary purpose is to
+provide a set of conversions to ease loading such logs into relational
+databases, but numerous other possiblities can be realized with a little
+imagination.
 
 The project is written in `Python`_ and is open-sourced under the MIT license.
-The `source code`_ can be obtained from Bitbucket.
+The `source code`_ can be obtained from GitHub.
 
 
 License
@@ -39,6 +41,6 @@ SOFTWARE.
 .. _Apache: http://httpd.apache.org/
 .. _nginx: http://wiki.nginx.org/
 .. _Python: http://python.org/
-.. _source code: https://bitbucket.org/waveform/www2csv
+.. _source code: https://github.com/waveform80/lars.git
 .. _Dave Hughes: mailto:dave@waveform.org.uk
 

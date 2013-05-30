@@ -88,7 +88,7 @@ A typical example of working with the class is shown below::
 
     import io
     import sqlite3
-    from www2csv import apache, sql
+    from lars import apache, sql
 
     connection = sqlite3.connect('apache.db', detect_types=sqlite3.PARSE_DECLTYPES)
 
@@ -116,7 +116,7 @@ import ipaddress
 import sqlite3
 from datetime import date, time, datetime
 
-from www2csv import datatypes
+from lars import datatypes
 
 
 # Make Py2 str same as Py3
@@ -266,7 +266,7 @@ class SQLTarget(object):
             datetime:              datetime_type,
             ipaddress.IPv4Address: ip_type,
             ipaddress.IPv6Address: ip_type,
-            # www2csv types
+            # lars types
             datatypes.Date:        date_type,
             datatypes.Time:        time_type,
             datatypes.DateTime:    datetime_type,

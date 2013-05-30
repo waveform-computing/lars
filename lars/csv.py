@@ -27,7 +27,7 @@ bulk loading databases.
 
 The :class:`CSVTarget` class is the major element that this module provides; it
 is a standard target class (a context manager with a
-:meth:`~www2csv.csv.CSVTarget.write` method that accepts row tuples).
+:meth:`~lars.csv.CSVTarget.write` method that accepts row tuples).
 
 
 Classes
@@ -109,7 +109,7 @@ Examples
 A typical example of working with the class is shown below::
 
     import io
-    from www2csv import apache, csv
+    from lars import apache, csv
 
     with io.open('/var/log/apache2/access.log', 'rb') as infile:
         with io.open('apache.csv', 'wb') as outfile:

@@ -29,7 +29,7 @@ from __future__ import (
 
 import pytest
 
-from www2csv import iis, datatypes as dt
+from lars import iis, datatypes as dt
 
 
 # Make Py2 str same as Py3

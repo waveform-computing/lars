@@ -21,14 +21,14 @@
 # SOFTWARE.
 
 """
-A typical www2csv script opens some log source, typically a file, and uses the
-source and target wrappers provided by www2csv to convert the log entries into
+A typical lars script opens some log source, typically a file, and uses the
+source and target wrappers provided by lars to convert the log entries into
 some other format (potentially filtering and/or modifying the entries along the
 way). A trivial script to convert IIS W3C style log entries into a CSV file is
 shown below::
 
     import io
-    from www2csv import iis, csv
+    from lars import iis, csv
 
     with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'wb') as outfile:
         with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
@@ -39,21 +39,21 @@ Going through this section by section we can see the following:
 
 #. The first couple of lines import the necessary modules that we'll need; the
    standard Python `io`_ module for opening files, and the :mod:`iis` and
-   :mod:`csv` modules from www2csv for converting the data.
+   :mod:`csv` modules from lars for converting the data.
 
 #. Using ``io.open`` we open the input file (with mode ``'r'`` for reading) and
    the output file (with mode ``'wb'`` for creating a new file and writing 
    (binary mode) to it)
 
-#. We wrap ``infile`` (the input file) with :class:`~www2csv.iis.IISSource` to
+#. We wrap ``infile`` (the input file) with :class:`~lars.iis.IISSource` to
    parse the input file, and ``outfile`` (the output file) with
-   :class:`~www2csv.csv.CSVTarget` to format the output file.
+   :class:`~lars.csv.CSVTarget` to format the output file.
 
 #. Finally, we use a simple loop to iterate over the rows in the source file,
-   and the :meth:`~www2csv.csv.CSVTarget.write` method to write them to the
+   and the :meth:`~lars.csv.CSVTarget.write` method to write them to the
    target.
 
-This is the basic structure of most www2csv scripts. Most extra lines for
+This is the basic structure of most lars scripts. Most extra lines for
 filtering and manipulating rows appear within the loop at the end of the file,
 although sometimes extra module configuration lines are required at the top.
 
@@ -67,7 +67,7 @@ with underscores). To see the structure of a row you can simply print one and
 then terminate the loop::
 
     import io
-    from www2csv import iis, csv
+    from lars import iis, csv
 
     with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'wb') as outfile:
         with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
@@ -104,8 +104,8 @@ From this one can see that field names like ``c-ip`` have been converted into
 ``c_ip`` (``-`` is an illegal character in Python identifiers). Furthermore it
 is apparent that instead of simple strings being extracted, the data has been
 converted into a variety of appropriate datatypes
-(:class:`~www2csv.datatypes.Date` for the ``date`` field,
-:class:`~www2csv.datatypes.Url` for the ``cs-uri-stem`` field, and so on). This
+(:class:`~lars.datatypes.Date` for the ``date`` field,
+:class:`~lars.datatypes.Url` for the ``cs-uri-stem`` field, and so on). This
 significantly aids in filtering rows based upon sub-attributes of the extracted
 data.
 
@@ -136,11 +136,11 @@ Manipulating row content
 
 If you wish to modify the output structure,the simplest method is to declare
 the row structure you want at the top of the file (using the
-:func:`~www2csv.datatypes.row` function) and then construct rows with the new
+:func:`~lars.datatypes.row` function) and then construct rows with the new
 structure in the loop (using the result of the function)::
 
     import io
-    from www2csv import datatypes, iis, csv
+    from lars import datatypes, iis, csv
 
     NewRow = datatypes.row('date', 'time', 'client', 'url')
 
@@ -151,7 +151,7 @@ structure in the loop (using the result of the function)::
                 target.write(new_row)
 
 There is no need to convert column data to strings for output; all datatypes
-produced by www2csv source adapters have built-in string conversions which all
+produced by lars source adapters have built-in string conversions which all
 target adapters know to use.
 
 .. _io: http://docs.python.org/2/library/io.html

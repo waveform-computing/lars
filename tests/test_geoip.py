@@ -37,7 +37,7 @@ import pygeoip
 import pytest
 import mock
 
-from www2csv import geoip
+from lars import geoip
 
 
 def test_init_db():

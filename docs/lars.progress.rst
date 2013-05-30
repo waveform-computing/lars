@@ -1,8 +1,8 @@
 .. _www2csv.progress:
 
 =====================================
-www2csv.progress - Rendering Progress
+lars.progress - Rendering Progress
 =====================================
 
 
-.. automodule:: www2csv.progress
+.. automodule:: lars.progress

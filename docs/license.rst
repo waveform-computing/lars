@@ -28,8 +28,8 @@ SOFTWARE.
 DateTime, Date, and Time documentation license
 ==============================================
 
-The documentation for the :class:`~www2csv.dataypes.DateTime`,
-:class:`~www2csv.datatypes.Date`, and :class:`~www2csv.datatypes.Time` classes
+The documentation for the :class:`~lars.dataypes.DateTime`,
+:class:`~lars.datatypes.Date`, and :class:`~lars.datatypes.Time` classes
 in this module are derived from the documentation sources for the datetime,
 date, and time classes in Python 2.7.4 and thus are subject to the following
 copyright and license:
@@ -86,7 +86,7 @@ PSF LICENSE AGREEMENT FOR PYTHON 2.7.4
 _strptime license
 =================
 
-The :mod:`~www2csv.strptime` and :mod:`~www2csv.timezone` modules are derived
+The :mod:`~lars.strptime` and :mod:`~lars.timezone` modules are derived
 from the _strptime and datetime modules in Python 3.2 respectively, and
 therefore are subject to the following license:
 
@@ -142,10 +142,10 @@ PSF LICENSE AGREEMENT FOR PYTHON 3.2.3
 IPNetwork & IPAddress documentation license
 ===========================================
 
-The documentation for the :class:`~www2csv.datatypes.IPv4Address`,
-:class:`~www2csv.datatypes.IPv4Network`,
-:class:`~www2csv.datatypes.IPv6Address`, and
-:class:`~www2csv.datatypes.IPv6Network` classes in www2csv are derived from the
+The documentation for the :class:`~lars.datatypes.IPv4Address`,
+:class:`~lars.datatypes.IPv4Network`,
+:class:`~lars.datatypes.IPv6Address`, and
+:class:`~lars.datatypes.IPv6Network` classes in lars are derived from the
 `ipaddress`_ documentation sources which are subject to the following copyright
 and are licensed to the PSF under the contributor agreement which makes them
 subject to the PSF 3.2.3 license from the section above:

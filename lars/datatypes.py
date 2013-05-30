@@ -187,7 +187,7 @@ import sqlite3
 from collections import namedtuple
 from functools import total_ordering
 
-from www2csv import geoip, dns
+from lars import geoip, dns
 
 
 # Make Py2 str same as Py3
@@ -1326,7 +1326,7 @@ class IPv4Address(ipaddress.IPv4Address):
     @property
     def country(self):
         """
-        If :func:`~www2csv.geoip.init_database` has been called to initialize
+        If :func:`~lars.geoip.init_database` has been called to initialize
         a GeoIP database, returns the country of the address.
         """
         return geoip.country_code_by_addr(self.compressed)
@@ -1334,7 +1334,7 @@ class IPv4Address(ipaddress.IPv4Address):
     @property
     def region(self):
         """
-        If :func:`~www2csv.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_database` has been called with a
         region-level (or lower) GeoIP database, returns the region of the
         address.
         """
@@ -1343,7 +1343,7 @@ class IPv4Address(ipaddress.IPv4Address):
     @property
     def city(self):
         """
-        If :func:`~www2csv.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_database` has been called with a
         city-level GeoIP database, returns the city of the address.
         """
         return geoip.city_by_addr(self.compressed)
@@ -1351,7 +1351,7 @@ class IPv4Address(ipaddress.IPv4Address):
     @property
     def coords(self):
         """
-        If :func:`~www2csv.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_database` has been called with a
         city-level GeoIP database, returns a (longitude, latitude) tuple
         describing the approximate location of the address.
         """
@@ -1467,7 +1467,7 @@ class IPv6Address(ipaddress.IPv6Address):
     @property
     def country(self):
         """
-        If :func:`~www2csv.geoip.init_database` has been called to initialize
+        If :func:`~lars.geoip.init_database` has been called to initialize
         a GeoIP IPv6 database, returns the country of the address.
         """
         return geoip.country_code_by_addr_v6(self.__str__())
@@ -1475,7 +1475,7 @@ class IPv6Address(ipaddress.IPv6Address):
     @property
     def region(self):
         """
-        If :func:`~www2csv.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_database` has been called with a
         region-level (or lower) GeoIP IPv6 database, returns the region of the
         address.
         """
@@ -1484,7 +1484,7 @@ class IPv6Address(ipaddress.IPv6Address):
     @property
     def city(self):
         """
-        If :func:`~www2csv.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_database` has been called with a
         city-level GeoIP IPv6 database, returns the city of the address.
         """
         return geoip.city_by_addr_v6(self.__str__())
@@ -1492,7 +1492,7 @@ class IPv6Address(ipaddress.IPv6Address):
     @property
     def coords(self):
         """
-        If :func:`~www2csv.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_database` has been called with a
         city-level GeoIP IPv6 database, returns a (longitude, latitude) tuple
         describing the approximate location of the address.
         """

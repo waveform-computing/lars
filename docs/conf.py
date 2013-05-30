@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# www2csv documentation build configuration file, created by
+# lars documentation build configuration file, created by
 # sphinx-quickstart on Mon Apr 22 04:09:52 2013.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -17,7 +17,7 @@ import sys, os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from www2csv import __version__
+from lars import __version__
 
 # XXX Import this from setup.py?
 YEAR = 2013
@@ -45,7 +45,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'www2csv'
+project = u'lars'
 copyright = u'%d, %s' % (YEAR, ', '.join(AUTHORS))
 
 # The version info for the project you're documenting, acts as replacement for
@@ -188,7 +188,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'www2csv.tex', u'www2csv Documentation', AUTHORS[0], 'manual'),
+  ('index', 'lars.tex', u'lars Documentation', AUTHORS[0], 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -217,7 +217,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'www2csv', u'www2csv Documentation', AUTHORS, 1)
+    ('index', 'lars', u'lars Documentation', AUTHORS, 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -230,7 +230,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'www2csv', u'www2csv Documentation', AUTHORS[0], 'www2csv', 'One line description of project.', 'Miscellaneous'),
+  ('index', 'lars', u'lars Documentation', AUTHORS[0], 'lars', 'One line description of project.', 'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.

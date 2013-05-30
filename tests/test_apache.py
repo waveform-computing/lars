@@ -29,7 +29,7 @@ from __future__ import (
 
 import pytest
 
-from www2csv import apache, datatypes as dt
+from lars import apache, datatypes as dt
 
 
 # Make Py2 str same as Py3
