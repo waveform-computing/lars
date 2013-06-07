@@ -1,6 +1,8 @@
 # vim: set et sw=4 sts=4 fileencoding=utf-8:
 #
-# Copyright (c) 2013 Dave Hughes
+# Copyright (c) 2013 Dave Hughes <dave@waveform.org.uk>
+# Copyright (c) 2013 Mime Consulting Ltd. <info@mimeconsulting.co.uk>
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -74,11 +76,11 @@
 #    be bound by the terms and conditions of this License Agreement.
 #
 #
-# The documentation for the IPv4Address, IPv4Network, IPv6Address, and IPv6Network
-# classes in this module are derived from the ipaddress documentation sources
-# which are subject to the following copyright and are licensed to the PSF
-# under the contributor agreement which makes them subject to the PSF license
-# stated above.
+# The documentation for the IPv4Address, IPv4Network, IPv6Address, and
+# IPv6Network classes in this module are derived from the ipaddress
+# documentation sources which are subject to the following copyright and are
+# licensed to the PSF under the contributor agreement which makes them subject
+# to the PSF license stated above.
 #
 # Copyright (c) 2007 Google Inc.
 

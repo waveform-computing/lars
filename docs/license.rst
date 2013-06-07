@@ -5,6 +5,8 @@ License
 =======
 
 Copyright (c) 2013, `Dave Hughes`_
+Copyright (c) 2013, `Mime Consulting Ltd.`_
+All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -154,4 +156,5 @@ Copyright (c) 2007 Google Inc.
 
 
 .. _Dave Hughes: mailto:dave@waveform.org.uk
+.. _Mime Consulting Ltd.: mailto:info@mimeconsulting.co.uk
 .. _ipaddress: http://code.google.com/p/ipaddr-py/

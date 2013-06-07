@@ -1,6 +1,8 @@
 # vim: set et sw=4 sts=4 fileencoding=utf-8:
 #
-# Copyright (c) 2013 Dave Hughes
+# Copyright (c) 2013 Dave Hughes <dave@waveform.org.uk>
+# Copyright (c) 2013 Mime Consulting Ltd. <info@mimeconsulting.co.uk>
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
