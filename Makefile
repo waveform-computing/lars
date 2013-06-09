@@ -66,7 +66,7 @@ all:
 	@echo "make release - Create and tag a new release"
 	@echo "make upload - Upload the new release to repositories"
 
-install: $(SUBDIRS)
+install:
 	$(PYTHON) $(PYFLAGS) setup.py install --root $(DEST_DIR)
 
 doc: $(DOC_SOURCES)
@@ -94,30 +94,27 @@ clean:
 	$(PYTHON) $(PYFLAGS) setup.py clean
 	$(MAKE) -f $(CURDIR)/debian/rules clean
 	rm -fr build/ dist/ $(NAME).egg-info/ tags
-	for dir in $(SUBDIRS); do \
-		$(MAKE) -C $$dir clean; \
-	done
 	find $(CURDIR) -name "*.pyc" -delete
 
 tags: $(PY_SOURCES)
 	ctags -R --exclude="build/*" --exclude="debian/*" --exclude="windows/*" --exclude="docs/*" --languages="Python"
 
-$(DIST_TAR): $(PY_SOURCES) $(SUBDIRS) $(LICENSES)
+$(DIST_TAR): $(PY_SOURCES) $(LICENSES)
 	$(PYTHON) $(PYFLAGS) setup.py sdist --formats gztar
 
-$(DIST_ZIP): $(PY_SOURCES) $(SUBDIRS) $(LICENSES)
+$(DIST_ZIP): $(PY_SOURCES) $(LICENSES)
 	$(PYTHON) $(PYFLAGS) setup.py sdist --formats zip
 
-$(DIST_EGG): $(PY_SOURCES) $(SUBDIRS) $(LICENSES)
+$(DIST_EGG): $(PY_SOURCES) $(LICENSES)
 	$(PYTHON) $(PYFLAGS) setup.py bdist_egg
 
-$(DIST_RPM): $(PY_SOURCES) $(SUBDIRS) $(LICENSES)
+$(DIST_RPM): $(PY_SOURCES) $(LICENSES)
 	$(PYTHON) $(PYFLAGS) setup.py bdist_rpm \
 		--source-only \
 		--doc-files README.rst,LICENSE.txt \
 		--requires python
 
-$(DIST_DEB): $(PY_SOURCES) $(DEB_SOURCES) $(SUBDIRS) $(LICENSES)
+$(DIST_DEB): $(PY_SOURCES) $(DEB_SOURCES) $(LICENSES)
 	# build the source package in the parent directory then rename it to
 	# project_version.orig.tar.gz
 	$(PYTHON) $(PYFLAGS) setup.py sdist --dist-dir=../
@@ -136,11 +133,11 @@ release: $(PY_SOURCES) $(DOC_SOURCES) $(DEB_SOURCES)
 	git commit debian/changelog -m "Updated changelog for release $(VER)"
 	git tag -s release-$(VER) -m "Release $(VER)"
 
-upload: $(PY_SOURCES) $(DOC_SOURCES) $(DEB_SOURCES) $(SUBDIRS) $(LICENSES)
+upload: $(PY_SOURCES) $(DOC_SOURCES) $(DEB_SOURCES) $(LICENSES)
 	# build a source archive and upload to PyPI
 	$(PYTHON) $(PYFLAGS) setup.py sdist upload
 	# build the deb source archive and upload to the PPA
-	$(PYTHON) $(PYFLAGS) setup.py build_sphinx -b man
+	#$(PYTHON) $(PYFLAGS) setup.py build_sphinx -b man
 	$(PYTHON) $(PYFLAGS) setup.py sdist --dist-dir=../
 	rename -f 's/$(NAME)-(.*)\.tar\.gz/$(NAME)_$$1\.orig\.tar\.gz/' ../*
 	debuild -S -i -I -Idist -Idocs -Ibuild/sphinx/doctrees -rfakeroot
