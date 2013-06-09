@@ -64,7 +64,7 @@ KEYWORDS     = ['web', 'www', 'logs', 'database']
 AUTHOR       = 'Dave Hughes'
 AUTHOR_EMAIL = 'dave@waveform.org.uk'
 MANUFACTURER = 'waveform'
-URL          = 'http://bitbucket.org/waveform/lars'
+URL          = 'http://github.com/waveform80/lars'
 
 REQUIRES = [
     'ipaddress', # Google's IPv4/IPv6 parsing library (part of stdlib in py3k)
