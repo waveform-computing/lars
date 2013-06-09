@@ -160,4 +160,4 @@ which all target adapters know to use.
 .. _string methods: http://docs.python.org/2/library/stdtypes.html#string-methods
 """
 
-__version__ = '0.1'
+__version__ = '0.2'
