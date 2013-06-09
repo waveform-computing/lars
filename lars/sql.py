@@ -243,11 +243,10 @@ class SQLTarget(object):
     def __init__(
             self, db_module, connection, table, commit=1000,
             create_table=False, drop_table=False, ignore_drop_errors=True,
-            ignore_insert_errors=False, str_type='VARCHAR(1000)',
-            int_type='INTEGER', fixed_type='DOUBLE', bool_type='SMALLINT',
-            date_type='DATE', time_type='TIME', datetime_type='TIMESTAMP',
-            ip_type='VARCHAR(53)', hostname_type='VARCHAR(255)',
-            path_type='VARCHAR(260)'):
+            str_type='VARCHAR(1000)', int_type='INTEGER', fixed_type='DOUBLE',
+            bool_type='SMALLINT', date_type='DATE', time_type='TIME',
+            datetime_type='TIMESTAMP', ip_type='VARCHAR(53)',
+            hostname_type='VARCHAR(255)', path_type='VARCHAR(260)'):
         if not hasattr(db_module, 'paramstyle'):
             raise NameError('The database module has no "paramstyle" global')
         if not hasattr(db_module, 'Error'):
