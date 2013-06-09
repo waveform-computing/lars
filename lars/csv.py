@@ -35,7 +35,7 @@ is a standard target class (a context manager with a
 Classes
 =======
 
-.. autoclass:: CSVTarget
+.. autoclass:: CSVTarget(fileobj, header=False, dialect=CSV_DIALECT, encoding='utf-8', **kwargs)
    :members:
 
 .. class:: CSV_DIALECT

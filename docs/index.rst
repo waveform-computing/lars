@@ -9,7 +9,7 @@ common servers like `Apache`_, `nginx`_, and IIS) into a format more conducive
 for loading into databases, the default being CSV.
 
 The project is written in `Python`_ and is open-sourced under the MIT license.
-The `source code`_ can be obtained from Bitbucket.
+The `source code`_ can be obtained from GitHub.
 
 
 Table of Contents
@@ -36,5 +36,5 @@ Indices and tables
 .. _Apache: http://httpd.apache.org/
 .. _nginx: http://wiki.nginx.org/
 .. _Python: http://python.org/
-.. _source code: https://bitbucket.org/waveform/lars
+.. _source code: https://github.com/waveform80/lars
 

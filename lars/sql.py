@@ -162,8 +162,9 @@ class SQLTarget(object):
     DB-API (version 2.0) as defined by `PEP-249`_.
 
     The *db_module* parameter must be passed the module that defines the
-    database interface (this odd requirement is simply so that the wrapper
-    can look up the parameter style that the interface uses).
+    database interface (this odd requirement is so that the wrapper can look up
+    the parameter style that the interface uses, and the exceptions that it
+    declares).
 
     The *connection* parameter must be given an active database connection
     object (presumably belonging to the module passed to *db_module*).

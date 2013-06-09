@@ -152,9 +152,9 @@ structure in the loop (using the result of the function)::
                 new_row = NewRow(row.date, row.time, row.c_ip, row.cs_uri_stem)
                 target.write(new_row)
 
-There is no need to convert column data to strings for output; all datatypes
-produced by lars source adapters have built-in string conversions which all
-target adapters know to use.
+There is no need to convert column data back to strings for output; all
+datatypes produced by lars source adapters have built-in string conversions
+which all target adapters know to use.
 
 .. _io: http://docs.python.org/2/library/io.html
 .. _string methods: http://docs.python.org/2/library/stdtypes.html#string-methods
