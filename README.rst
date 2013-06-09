@@ -11,7 +11,8 @@ databases, but numerous other possiblities can be realized with a little
 imagination.
 
 The project is written in `Python`_ and is open-sourced under the MIT license.
-The `source code`_ can be obtained from GitHub.
+The `source code`_ can be obtained from GitHub. The `documentation`_ can be
+read on ReadTheDocs.
 
 
 License
@@ -44,6 +45,7 @@ SOFTWARE.
 .. _nginx: http://wiki.nginx.org/
 .. _Python: http://python.org/
 .. _source code: https://github.com/waveform80/lars.git
+.. _documentation: http://lars.readthedocs.org/
 .. _Dave Hughes: mailto:dave@waveform.org.uk
 .. _Mime Consulting Ltd.: mailto:info@mimeconsulting.co.uk
 
