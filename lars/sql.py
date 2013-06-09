@@ -178,11 +178,30 @@ class SQLTarget(object):
     you are connecting to and thus has no idea about non-standard quoting
     styles like ```MySQL``` or ``[MS-SQL]``).
 
+    The *insert* parameter controls how many rows are inserted in a single
+    ``INSERT`` statement. If this is set to a value greater than 1 (the
+    default), then the :meth:`write` method will buffer rows until the count
+    is reached and attempt to insert all rows at once.
+
+    .. warning::
+
+        This is a relatively risky option. If an error occurs while inserting
+        one of the rows in a multi-row insert, then normally _all_ rows in the
+        buffer will fail to be inserted, but you will not be able to determine
+        (in your script) which row caused the failure, or which rows should be
+        re-attempted.
+
+        In other words, only use this if you are certain that failures cannot
+        occur during insertion (e.g. if the target table has no constraints,
+        no primary/unique keys, and no triggers which might signal failure.
+
     The *commit* parameter controls how often a ``COMMIT`` statement is
     executed when inserting rows. By default, this is 1000 which is usually
     sufficient to provide decent performance but may (in certain database
     engines with fixed size transaction logs) cause errors, in which case you
-    may wish to specify a lower value.
+    may wish to specify a lower value. This parameter _must_ be a multiple of
+    the value of the *insert* parameter (otherwise, the ``COMMIT`` statement
+    will not be run reliably).
 
     If the *create_table* parameter is set to True (it defaults to False), when
     the :meth:`write` method is first called, the class will determine column
@@ -241,7 +260,7 @@ class SQLTarget(object):
     """
 
     def __init__(
-            self, db_module, connection, table, commit=1000,
+            self, db_module, connection, table, insert=1, commit=1000,
             create_table=False, drop_table=False, ignore_drop_errors=True,
             str_type='VARCHAR(1000)', int_type='INTEGER', fixed_type='DOUBLE',
             bool_type='SMALLINT', date_type='DATE', time_type='TIME',
@@ -254,8 +273,13 @@ class SQLTarget(object):
         self.db_module = db_module
         self.connection = connection
         self.table = table
+        if insert < 1:
+            raise ValueError('insert must be 1 or more')
+        self.insert = insert
         if commit < 1:
             raise ValueError('commit must be 1 or more')
+        if (commit % insert) != 0:
+            raise ValueError('commit must be a multiple of %d' % insert)
         self.commit = commit
         self.create_table = create_table
         self.drop_table = drop_table
@@ -284,10 +308,11 @@ class SQLTarget(object):
             datatypes.Path:        path_type,
             }
         self.count = 0
+        self._buffer = []
         self._first_row = None
         self._row_casts = None
         self._cursor = None
-        self._insert = None
+        self._statement = None
 
     def __enter__(self):
         logging.debug('Entering SQL context')
@@ -298,12 +323,18 @@ class SQLTarget(object):
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         logging.debug('Exiting SQL context')
+        if self._buffer:
+            logging.debug('Clearing %d rows in buffer', len(self._buffer))
+            self._statement = self._generate_statement(
+                self._first_row, len(self._buffer)
+                )
+            self._insert_buffer()
         logging.debug('Closing cursor')
         self._cursor.close()
         self._cursor = None
         self._first_row = None
         self._row_casts = None
-        self._insert = None
+        self._statement = None
         logging.debug('COMMIT')
         self.connection.commit()
 
@@ -335,7 +366,21 @@ class SQLTarget(object):
         logging.debug('COMMIT')
         self.connection.commit()
 
-    def _generate_statement(self, row):
+    def _insert_buffer(self):
+        try:
+            self._cursor.execute(self._statement, [
+                value
+                for params in self._buffer
+                for value in params
+                ])
+            self.count += len(self._buffer)
+        finally:
+            # The buffer must be cleared, even in the event of an exception
+            # occurring, to ensure that the __exit__ handler does not
+            # re-attempt insertions which result in error
+            del self._buffer[:]
+
+    def _generate_statement(self, row, count=1):
         # Technically we ought to quote the table substitution below in the
         # case that self.table contains a keyword, or "unsafe" characters
         # in SQL. However, that means getting into what constitutes a
@@ -354,22 +399,30 @@ class SQLTarget(object):
         # to the constructor - why isn't it at least an attribute on the
         # connection object?! Eurgh - PEP-249 is garbage...
         logging.debug('Constructing INSERT statement')
-        self._insert = 'INSERT INTO %(table)s VALUES (%(values)s)' % {
-            'table':  self.table,
-            'values': ', '.join([{
-                'qmark':    '?',
-                'numeric':  ':%d' % i,
-                'named':    ':%s' % name,
-                'format':   '%s',
-                'pyformat': '%%(%s)s' % name,
-                }[self.db_module.paramstyle]
-                for (i, name) in enumerate(
-                    row._fields if hasattr(row, '_fields') else
-                    ['field%d' % (j + 1) for j in range(len(row))]
-                    )
-                ]),
-            }
-        logging.debug(self._insert)
+        values_row = '(%s)' % ', '.join([{
+            'qmark':    '?',
+            'numeric':  ':%d' % i,
+            'named':    ':%s' % name,
+            'format':   '%s',
+            'pyformat': '%%(%s)s' % name,
+            }[self.db_module.paramstyle]
+            for (i, name) in enumerate(
+                row._fields if hasattr(row, '_fields') else
+                ['field%d' % (j + 1) for j in range(len(row))]
+                )
+            ])
+        statement = 'INSERT INTO %s VALUES %s%s' % (
+            self.table,
+            values_row,
+            (', ' + values_row) * (count - 1)
+            )
+        logging.debug(
+            statement[:120] + ('...' if len(statement) > 120 else '')
+            )
+        print(statement)
+        return statement
+
+    def _generate_row_casts(self, row):
         logging.debug('Constructing row casts')
         # Bit of a dirty hack, but it seems the most user-friendly way of
         # dealing with IP addresses depending on the type selected for the
@@ -379,7 +432,7 @@ class SQLTarget(object):
             ip_cast = int
         else:
             ip_cast = str
-        self._row_casts = [
+        return [
             ip_cast if isinstance(value, ip_bases) else
             str if isinstance(value, datatypes.Url) else
             None
@@ -393,7 +446,8 @@ class SQLTarget(object):
         else:
             logging.debug('First row')
             self._first_row = row
-            self._generate_statement(row)
+            self._statement = self._generate_statement(row, self.insert)
+            self._row_casts = self._generate_row_casts(row)
             if self.drop_table:
                 try:
                     self._drop_table()
@@ -404,19 +458,21 @@ class SQLTarget(object):
             if self.create_table:
                 self._create_table(row)
         # XXX What about paramstyles pyformat and named? Eurgh...
-        cast_to_str = (datatypes.IPv4Address, datatypes.IPv6Address)
-        params = [
+        self._buffer.append([
             None if value is None else
             cast(value) if cast else
             value
             for (cast, value) in zip(self._row_casts, row)
-            ]
-        try:
-            self._cursor.execute(self._insert, params)
-        except self.db_module.Error as exc:
-            raise SQLError(str(exc), row)
-        self.count += 1
-        if self.count % self.commit == 0:
-            logging.debug('COMMIT')
-            self.connection.commit()
-
+            ])
+        if len(self._buffer) >= self.insert:
+            try:
+                self._insert_buffer()
+            except self.db_module.Error as exc:
+                if self.insert == 1:
+                    raise SQLError(str(exc), row)
+                # The row is meaningless if we're inserting multiple rows and
+                # something goes wrong
+                raise SQLError(str(exc))
+            if (self.count % self.commit) == 0:
+                logging.debug('COMMIT')
+                self.connection.commit()

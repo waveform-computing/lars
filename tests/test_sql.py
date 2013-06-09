@@ -107,6 +107,12 @@ def test_target_init():
     with pytest.raises(ValueError):
         db_module = FakeDbModule()
         sql.SQLTarget(db_module, None, 'foo', commit=0)
+    with pytest.raises(ValueError):
+        db_module = FakeDbModule()
+        sql.SQLTarget(db_module, None, 'foo', insert=0)
+    with pytest.raises(ValueError):
+        db_module = FakeDbModule()
+        sql.SQLTarget(db_module, None, 'foo', commit=100, insert=13)
 
 def test_target_01(db, rows):
     # Construct some test rows with appropriate namedtuples
@@ -210,3 +216,16 @@ def test_target_05(db, rows):
     with pytest.raises(sql.SQLError):
         with sql.SQLTarget(sqlite3, db, 'foo', create_table=False) as target:
             target.write(rows[0])
+
+def test_target_06(db, rows):
+    if sqlite3.sqlite_version_info >= (3, 7, 11):
+        # Test multi-row INSERT if sqlite3 version supports it
+        cursor = db.cursor()
+        with sql.SQLTarget(
+                sqlite3, db, 'foo', create_table=True, insert=2) as target:
+            target.write(rows[0])
+            cursor.execute('SELECT COUNT(*) FROM foo')
+            assert cursor.fetchall()[0][0] == 0
+            target.write(rows[1])
+        cursor.execute('SELECT COUNT(*) FROM foo')
+        assert cursor.fetchall()[0][0] == 2
