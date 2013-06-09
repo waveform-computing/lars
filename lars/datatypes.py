@@ -184,12 +184,21 @@ import os
 import re
 import datetime as dt
 import urlparse
-import ipaddress
+try:
+    import ipaddress
+except ImportError: # pragma: no cover
+    # XXX Support old versions of ipaddress package
+    import ipaddr as ipaddress # pragma: no cover
 import sqlite3
 from collections import namedtuple
 from functools import total_ordering
 
-from lars import geoip, dns
+from lars import dns
+try:
+    from lars import geoip
+except ImportError: # pragma: no cover
+    # Ignore import errors for geoip
+    geoip = None # pragma: no cover
 
 
 # Make Py2 str same as Py3
@@ -1331,6 +1340,8 @@ class IPv4Address(ipaddress.IPv4Address):
         If :func:`~lars.geoip.init_database` has been called to initialize
         a GeoIP database, returns the country of the address.
         """
+        if not geoip:
+            raise ImportError('Could not import pygeoip module') # pragma: no cover
         return geoip.country_code_by_addr(self.compressed)
 
     @property
@@ -1340,6 +1351,8 @@ class IPv4Address(ipaddress.IPv4Address):
         region-level (or lower) GeoIP database, returns the region of the
         address.
         """
+        if not geoip:
+            raise ImportError('Could not import pygeoip module') # pragma: no cover
         return geoip.region_by_addr(self.compressed)
 
     @property
@@ -1348,6 +1361,8 @@ class IPv4Address(ipaddress.IPv4Address):
         If :func:`~lars.geoip.init_database` has been called with a
         city-level GeoIP database, returns the city of the address.
         """
+        if not geoip:
+            raise ImportError('Could not import pygeoip module') # pragma: no cover
         return geoip.city_by_addr(self.compressed)
 
     @property
@@ -1357,6 +1372,8 @@ class IPv4Address(ipaddress.IPv4Address):
         city-level GeoIP database, returns a (longitude, latitude) tuple
         describing the approximate location of the address.
         """
+        if not geoip:
+            raise ImportError('Could not import pygeoip module') # pragma: no cover
         return geoip.coords_by_addr(self.compressed)
 
     @property
@@ -1472,6 +1489,8 @@ class IPv6Address(ipaddress.IPv6Address):
         If :func:`~lars.geoip.init_database` has been called to initialize
         a GeoIP IPv6 database, returns the country of the address.
         """
+        if not geoip:
+            raise ImportError('Could not import pygeoip module') # pragma: no cover
         return geoip.country_code_by_addr_v6(self.__str__())
 
     @property
@@ -1481,6 +1500,8 @@ class IPv6Address(ipaddress.IPv6Address):
         region-level (or lower) GeoIP IPv6 database, returns the region of the
         address.
         """
+        if not geoip:
+            raise ImportError('Could not import pygeoip module') # pragma: no cover
         return geoip.region_by_addr_v6(self.__str__())
 
     @property
@@ -1489,6 +1510,8 @@ class IPv6Address(ipaddress.IPv6Address):
         If :func:`~lars.geoip.init_database` has been called with a
         city-level GeoIP IPv6 database, returns the city of the address.
         """
+        if not geoip:
+            raise ImportError('Could not import pygeoip module') # pragma: no cover
         return geoip.city_by_addr_v6(self.__str__())
 
     @property
@@ -1498,6 +1521,8 @@ class IPv6Address(ipaddress.IPv6Address):
         city-level GeoIP IPv6 database, returns a (longitude, latitude) tuple
         describing the approximate location of the address.
         """
+        if not geoip:
+            raise ImportError('Could not import pygeoip module') # pragma: no cover
         return geoip.coords_by_addr_v6(self.__str__())
 
     @property

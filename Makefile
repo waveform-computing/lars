@@ -39,17 +39,10 @@ DOC_SOURCES:=$(wildcard docs/*.rst)
 DEB_SOURCES:=debian/changelog \
 	debian/control \
 	debian/copyright \
-	debian/install \
-	debian/rules \
-	debian/source/include-binaries \
-	debian/$(NAME).manpages \
-	$(wildcard debian/*.desktop)
+	debian/docs \
+	debian/compat \
+	debian/rules
 LICENSES:=LICENSE.txt
-SUBDIRS:=icons $(NAME)/windows/fallback-theme
-
-# Calculate path names for remote builds
-ROOT_SOURCE:=$(CURDIR)
-ROOT_TARGET:=$(notdir $(ROOT_SOURCE))
 
 # Calculate the name of all outputs
 DIST_EGG=dist/$(NAME)-$(VER)-$(PYVER).egg
@@ -109,9 +102,6 @@ clean:
 tags: $(PY_SOURCES)
 	ctags -R --exclude="build/*" --exclude="debian/*" --exclude="windows/*" --exclude="docs/*" --languages="Python"
 
-$(SUBDIRS):
-	$(MAKE) -C $@
-
 $(DIST_TAR): $(PY_SOURCES) $(SUBDIRS) $(LICENSES)
 	$(PYTHON) $(PYFLAGS) setup.py sdist --formats gztar
 
@@ -156,5 +146,5 @@ upload: $(PY_SOURCES) $(DOC_SOURCES) $(DEB_SOURCES) $(SUBDIRS) $(LICENSES)
 	debuild -S -i -I -Idist -Idocs -Ibuild/sphinx/doctrees -rfakeroot
 	dput waveform-ppa ../$(NAME)_$(VER)-1~ppa1_source.changes
 
-.PHONY: all install develop test doc source egg rpm deb dist clean tags release upload $(SUBDIRS)
+.PHONY: all install develop test doc source egg rpm deb dist clean tags release upload
 
