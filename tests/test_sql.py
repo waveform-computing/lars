@@ -88,6 +88,12 @@ class FakeDbModule(object):
         self.paramstyle = 'qmark'
         self.Error = StandardError
 
+def test_exceptions():
+    exc = sql.SQLError('Something went wrong!', 1)
+    assert str(exc) == 'Something went wrong! while processing row 1'
+    exc = sql.SQLError('Something else went wrong!')
+    assert str(exc) == 'Something else went wrong!'
+
 def test_target_init():
     # Test passing in deficient database modules
     with pytest.raises(NameError):
@@ -199,8 +205,8 @@ def test_target_04(db, rows):
     cursor.execute('SELECT COUNT(*) FROM foo')
     assert cursor.fetchall()[0][0] == 2
 
-def test_target_05(recwarn, db, rows):
+def test_target_05(db, rows):
     # Generate an error while inserting a row and check we get a warning
-    with sql.SQLTarget(sqlite3, db, 'foo', create_table=False) as target:
-        target.write(rows[0])
-    assert recwarn.pop(sql.SQLWarning)
+    with pytest.raises(sql.SQLError):
+        with sql.SQLTarget(sqlite3, db, 'foo', create_table=False) as target:
+            target.write(rows[0])
