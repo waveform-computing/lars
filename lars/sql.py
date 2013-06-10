@@ -398,7 +398,6 @@ class SQLTarget(object):
         # for that matter do I have to get the user to pass in paramstyle
         # to the constructor - why isn't it at least an attribute on the
         # connection object?! Eurgh - PEP-249 is garbage...
-        logging.debug('Constructing INSERT statement')
         values_row = '(%s)' % ', '.join([{
             'qmark':    '?',
             'numeric':  ':%d' % i,
@@ -416,19 +415,14 @@ class SQLTarget(object):
             values_row,
             (', ' + values_row) * (count - 1)
             )
-        logging.debug(
-            statement[:120] + ('...' if len(statement) > 120 else '')
-            )
-        print(statement)
         return statement
 
     def _generate_row_casts(self, row):
-        logging.debug('Constructing row casts')
         # Bit of a dirty hack, but it seems the most user-friendly way of
         # dealing with IP addresses depending on the type selected for the
         # target table
         ip_bases = (ipaddress.IPv4Address, ipaddress.IPv6Address)
-        if self.type_map[datatypes.IPv4Address].upper().startswith('INT'):
+        if self.type_map[datatypes.IPv4Address].upper().startswith(('INT', 'NUM')):
             ip_cast = int
         else:
             ip_cast = str
@@ -446,7 +440,12 @@ class SQLTarget(object):
         else:
             logging.debug('First row')
             self._first_row = row
+            logging.debug('Constructing INSERT statement')
             self._statement = self._generate_statement(row, self.insert)
+            logging.debug(
+                self._statement[:120] + ('...' if len(self._statement) > 120 else '')
+                )
+            logging.debug('Constructing row casts')
             self._row_casts = self._generate_row_casts(row)
             if self.drop_table:
                 try:
@@ -476,3 +475,52 @@ class SQLTarget(object):
             if (self.count % self.commit) == 0:
                 logging.debug('COMMIT')
                 self.connection.commit()
+
+
+class OracleTarget(SQLTarget):
+    """
+    The Oracle database is sufficiently peculiar (particularly in its
+    non-standard syntax for multi-row INSERTs, and odd datatypes) to require
+    its own sub-class of :class:`SQLTarget`. This sub-class takes all the same
+    parameters as :class:`SQLTarget`, but customizes them specifically for
+    Oracle, and overrides the SQL generation methods to copy with Oracle's
+    strange syntax.
+    """
+
+    def __init__(
+            self, db_module, connection, table, insert=1, commit=1000,
+            create_table=False, drop_table=False, ignore_drop_errors=True,
+            str_type='VARCHAR2(1000)', int_type='NUMBER(10)',
+            fixed_type='NUMBER', bool_type='NUMBER(1)', date_type='DATE',
+            time_type='DATE', datetime_type='DATE', ip_type='VARCHAR2(53)',
+            hostname_type='VARCHAR2(255)', path_type='VARCHAR2(260)'):
+        super(OracleTarget, self).__init__(
+                db_module, connection, table, insert, commit, create_table,
+                drop_table, ignore_drop_errors, str_type, bool_type, date_type,
+                time_type, datetime_type, ip_type, hostname_type, path_type)
+
+    def _generate_statement(self, row, count=1):
+        if count == 1:
+            return super(OracleTarget, self)._generate_statement(row, count)
+        values_row = 'INTO %s VALUES (%s)' % (
+            self.table,
+            ', '.join([{
+                'qmark':    '?',
+                'numeric':  ':%d' % i,
+                'named':    ':%s' % name,
+                'format':   '%s',
+                'pyformat': '%%(%s)s' % name,
+                }[self.db_module.paramstyle]
+                for (i, name) in enumerate(
+                    row._fields if hasattr(row, '_fields') else
+                    ['field%d' % (j + 1) for j in range(len(row))]
+                    )
+                ])
+            )
+        statement = 'INSERT ALL %s%s SELECT * FROM DUAL' % (
+            self.table,
+            values_row,
+            (' ' + values_row) * (count - 1)
+            )
+        return statement
+
