@@ -48,6 +48,14 @@ Classes
         performing a COMMIT. It is strongly recommended to set this to a
         reasonably large number (e.g. 1000) to ensure decent INSERT performance
 
+    .. attribute:: insert
+
+        The number of rows which the class will attempt to insert with each
+        INSERT statement. The :attr:`commit` parameter must be a multiple of
+        this value.
+
+        .. versionadded:: 0.2
+
     .. attribute:: count
 
         Returns the number of rows successfully written to the database so far
@@ -72,6 +80,10 @@ Classes
 
         The name of the target table in the database, including any required
         escaping or quotation
+
+
+.. autoclass:: OracleTarget
+    :members:
 
 
 Exceptions
@@ -182,6 +194,8 @@ class SQLTarget(object):
     ``INSERT`` statement. If this is set to a value greater than 1 (the
     default), then the :meth:`write` method will buffer rows until the count
     is reached and attempt to insert all rows at once.
+
+    .. versionadded:: 0.2
 
     .. warning::
 
@@ -485,6 +499,8 @@ class OracleTarget(SQLTarget):
     parameters as :class:`SQLTarget`, but customizes them specifically for
     Oracle, and overrides the SQL generation methods to copy with Oracle's
     strange syntax.
+
+    .. versionadded:: 0.2
     """
 
     def __init__(
