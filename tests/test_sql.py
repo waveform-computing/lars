@@ -213,9 +213,11 @@ def test_target_04(db, rows):
 
 def test_target_05(db, rows):
     # Generate an error while inserting a row and check we get a warning
-    with pytest.raises(sql.SQLError):
+    with pytest.raises(sql.SQLError) as exc:
         with sql.SQLTarget(sqlite3, db, 'foo', create_table=False) as target:
             target.write(rows[0])
+        # Check that the exception includes the row that generated the error
+        assert exc.row == rows[0]
 
 def test_target_06(db, rows):
     if sqlite3.sqlite_version_info >= (3, 7, 11):
@@ -227,5 +229,18 @@ def test_target_06(db, rows):
             cursor.execute('SELECT COUNT(*) FROM foo')
             assert cursor.fetchall()[0][0] == 0
             target.write(rows[1])
+            cursor.execute('SELECT COUNT(*) FROM foo')
+            assert cursor.fetchall()[0][0] == 2
+            target.write(rows[2])
+            cursor.execute('SELECT COUNT(*) FROM foo')
+            assert cursor.fetchall()[0][0] == 2
         cursor.execute('SELECT COUNT(*) FROM foo')
-        assert cursor.fetchall()[0][0] == 2
+        assert cursor.fetchall()[0][0] == 3
+        cursor.execute('DROP TABLE foo')
+        with pytest.raises(sql.SQLError) as row:
+            with sql.SQLTarget(
+                    sqlite3, db, 'foo', create_table=False, insert=2) as target:
+                target.write(rows[0])
+            # Check that when inserting multiple rows we don't bother to
+            # include a specific row in exceptions that occur
+            assert exc.row is None

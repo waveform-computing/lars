@@ -342,7 +342,10 @@ class SQLTarget(object):
             self._statement = self._generate_statement(
                 self._first_row, len(self._buffer)
                 )
-            self._insert_buffer()
+            try:
+                self._insert_buffer()
+            except self.db_module.Error as exc:
+                raise SQLError(str(exc))
         logging.debug('Closing cursor')
         self._cursor.close()
         self._cursor = None
