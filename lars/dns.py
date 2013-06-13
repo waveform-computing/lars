@@ -92,7 +92,9 @@ def to_address(hostname, family=socket.AF_UNSPEC, socktype=socket.SOCK_STREAM):
                 break
             elif family == socket.AF_INET6 and not result:
                 result = sockaddr[0]
-    except socket.gaierror:
+    # XXX Workaround LP #1154599
+    # This should be socket.gaierror instead of socket.error
+    except socket.error:
         pass
     return result
 
