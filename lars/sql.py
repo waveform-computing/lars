@@ -200,20 +200,20 @@ class SQLTarget(object):
     .. warning::
 
         This is a relatively risky option. If an error occurs while inserting
-        one of the rows in a multi-row insert, then normally _all_ rows in the
+        one of the rows in a multi-row insert, then normally *all* rows in the
         buffer will fail to be inserted, but you will not be able to determine
         (in your script) which row caused the failure, or which rows should be
         re-attempted.
 
         In other words, only use this if you are certain that failures cannot
         occur during insertion (e.g. if the target table has no constraints,
-        no primary/unique keys, and no triggers which might signal failure.
+        no primary/unique keys, and no triggers which might signal failure).
 
     The *commit* parameter controls how often a ``COMMIT`` statement is
     executed when inserting rows. By default, this is 1000 which is usually
     sufficient to provide decent performance but may (in certain database
     engines with fixed size transaction logs) cause errors, in which case you
-    may wish to specify a lower value. This parameter _must_ be a multiple of
+    may wish to specify a lower value. This parameter *must* be a multiple of
     the value of the *insert* parameter (otherwise, the ``COMMIT`` statement
     will not be run reliably).
 
@@ -500,7 +500,7 @@ class OracleTarget(SQLTarget):
     non-standard syntax for multi-row INSERTs, and odd datatypes) to require
     its own sub-class of :class:`SQLTarget`. This sub-class takes all the same
     parameters as :class:`SQLTarget`, but customizes them specifically for
-    Oracle, and overrides the SQL generation methods to copy with Oracle's
+    Oracle, and overrides the SQL generation methods to cope with Oracle's
     strange syntax.
 
     .. versionadded:: 0.2
