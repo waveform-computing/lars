@@ -7,7 +7,7 @@ Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.7), debhelper (>= 
 Standards-Version: 3.9.3
 X-Python-Version: >= 2.7
 
-Package: lars
+Package: python-lars
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-ipaddr, python-pip
 Description: 
