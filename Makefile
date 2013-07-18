@@ -150,5 +150,5 @@ upload: $(PY_SOURCES) $(DOC_SOURCES) $(DEB_SOURCES) $(LICENSES)
 	debuild -S -i -I -Idist -Idocs -Ibuild/sphinx/doctrees -rfakeroot
 	dput waveform-ppa ../$(NAME)_$(VER)-1~ppa1_source.changes
 
-.PHONY: all install develop test doc source egg rpm deb dist clean tags release upload
+.PHONY: all install develop test doc source egg rpm deb zip tar dist clean tags release upload
 
