@@ -4,11 +4,10 @@
 lars
 ====
 
-lars is a small `Python`_ framework for working with httpd logs (from a variety
-of common servers like `Apache`_, `nginx`_, and IIS). The primary purpose is to
-provide a set of conversions to ease loading such logs into relational
-databases, but numerous other possiblities can be realized with a little
-imagination.
+lars is a small Python framework for working with httpd logs (from a variety of
+common servers like Apache, nginx, and IIS). The primary purpose is to provide
+a set of conversions to ease loading such logs into relational databases, but
+numerous other possiblities can be realized with a little imagination.
 
 The project is written in `Python`_ and is open-sourced under the MIT license.
 The `source code`_ can be obtained from GitHub. The `documentation`_ can be
@@ -41,8 +40,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-.. _Apache: http://httpd.apache.org/
-.. _nginx: http://wiki.nginx.org/
 .. _Python: http://python.org/
 .. _source code: https://github.com/waveform80/lars.git
 .. _documentation: http://lars.readthedocs.org/

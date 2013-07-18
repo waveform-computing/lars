@@ -48,6 +48,7 @@ LICENSES:=LICENSE.txt
 DIST_EGG=dist/$(NAME)-$(VER)-$(PYVER).egg
 DIST_RPM=dist/$(NAME)-$(VER)-1.src.rpm
 DIST_TAR=dist/$(NAME)-$(VER).tar.gz
+DIST_ZIP=dist/$(NAME)-$(VER).zip
 DIST_DEB=dist/$(NAME)_$(VER)-1~ppa1_all.deb
 
 
@@ -61,6 +62,8 @@ all:
 	@echo "make egg - Generate a PyPI egg package"
 	@echo "make rpm - Generate an RedHat package"
 	@echo "make deb - Generate a Debian package"
+	@echo "make zip - Generate a source zip package"
+	@echo "make tar - Generate a source tar package"
 	@echo "make dist - Generate all packages"
 	@echo "make clean - Get rid of all generated files"
 	@echo "make release - Create and tag a new release"
@@ -81,6 +84,10 @@ egg: $(DIST_EGG)
 rpm: $(DIST_RPM)
 
 deb: $(DIST_DEB)
+
+zip: $(DIST_ZIP)
+
+tar: $(DIST_TAR)
 
 dist: $(DIST_EGG) $(DIST_RPM) $(DIST_DEB) $(DIST_TAR) $(DIST_ZIP)
 
