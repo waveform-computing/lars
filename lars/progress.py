@@ -133,6 +133,7 @@ class SpinnerStyle(ProgressStyle):
     A :class:`ProgressMeter` style that renders a simple spinning line.
     """
     def __init__(self, meter):
+        super(SpinnerStyle, self).__init__(meter)
         self.index = 0
 
     def render(self, value, total):
@@ -145,6 +146,7 @@ class EllipsisStyle(ProgressStyle):
     A :class:`ProgressMeter` style that renders an looping series of dots.
     """
     def __init__(self, meter):
+        super(EllipsisStyle, self).__init__(meter)
         self.count = 0
         self.max = 8
 
@@ -168,15 +170,16 @@ class BarStyle(ProgressStyle):
     percentage.
     """
     def __init__(self, meter):
+        super(BarStyle, self).__init__(meter)
         self.width = 60
         self.fill_char = '='
         self.back_char = ' '
 
     def render(self, value, total):
-        x = (self.width - 5) * value // total
+        x = (self.width - 8) * value // total
         return '[%s>%s] %3d%%' % (
             self.fill_char * x,
-            self.back_char * (self.width - 5 - x),
+            self.back_char * (self.width - 8 - x),
             100 * value // total,
             )
 
@@ -187,6 +190,7 @@ class HashStyle(ProgressStyle):
     command!
     """
     def __init__(self, meter):
+        super(HashStyle, self).__init__(meter)
         self.count = 0
         self.char = '#'
 
@@ -264,6 +268,7 @@ class ProgressMeter(object):
 
     def show(self):
         self._render()
+        self._last_update = time.time()
 
     def update(self, value=None):
         if value is None:
