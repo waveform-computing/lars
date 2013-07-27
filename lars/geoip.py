@@ -69,39 +69,55 @@ from __future__ import (
     division,
     )
 
+try:
+    import ipaddress
+except ImportError: # pragma: no cover
+    # XXX Support old versions of ipaddress package
+    import ipaddr as ipaddress # pragma: no cover
 from collections import namedtuple
 
 import pygeoip
 
 
-_GEOIP_IPV4_DATABASE = None
-_GEOIP_IPV6_DATABASE = None
+_MAXMIND_ENCODING = 'latin1'
+_GEOIP_IPV4_GEO = None
+_GEOIP_IPV4_ISP = None
+_GEOIP_IPV4_ORG = None
+_GEOIP_IPV6_GEO = None
+_GEOIP_IPV6_ISP = None
+_GEOIP_IPV6_ORG = None
 
 
 GeoCoord = namedtuple('GeoCoord', ('longitude', 'latitude'))
 
 
-def init_database(v4_filename, v6_filename=None, memcache=True):
+def init_databases(
+        v4_geo_filename=None, v4_isp_filename=None, v4_org_filename=None,
+        v6_geo_filename=None, v6_isp_filename=None, v6_org_filename=None,
+        memcache=True):
     """
-    Initializes the global GeoIP database instance in a thread-safe manner.
+    Initializes the global GeoIP database instances in a thread-safe manner.
 
     This function opens GeoIP databases for use by the
     :class:`~lars.datatypes.IPv4Address` and
-    :class:`~lars.datatypes.IPv6Address` classes. GeoIP databases are
-    hierarchical: if you open a country-only database, you will only be able to
-    use country-level lookups. However, city-level databases enable all
-    supported lookups (country, region, city, and coordinates).
+    :class:`~lars.datatypes.IPv6Address` classes. There are several types of
+    GeoIP databases. The country, region, and city databases are considered
+    "geographical" databases and should be specified for the *v4_geo_filename*
+    and/or *v6_geo_filename* databases (for IPv4 and IPv6 databases
+    respectively). The ISP and organisational databases are treated separately
+    as they contain no geographical information. If you have such databases,
+    specify them as the values of the *v4_isp_filename*, *v6_isp_filename*,
+    *v4_org_filename*, and *v6_org_filename* parameters (all optional).
 
-    By default, the function caches the entire content of (both) the
-    database(s) in memory (on the assumption that just about any machine has
-    more than sufficient RAM for this), but this behaviour can be overridden
-    with the *memcache* parameter.
+    GeoIP geographical databases are hierarchical: if you open a country
+    database, you will only be able to use country-level lookups. However,
+    city-level databases enable all geographical lookups (country, region,
+    city, and coordinates).
 
-    The optional *v6_filename* parameter specifies the location of the
-    IPv6 database which will be used for IPv6 addresses. The GeoIP IPv6
-    databases are orthogonal to the IPv4 databases (you cannot lookup IPv4
-    addresses using an IPv6 database) - hence why the two databases are
-    stored and specified separately.
+    By default, the function caches the entire content of database(s) in memory
+    (on the assumption that just about any modern machine has more than
+    sufficient RAM for this), but this behaviour can be overridden with the
+    *memcache* parameter.
 
     .. warning::
 
@@ -110,70 +126,76 @@ def init_database(v4_filename, v6_filename=None, memcache=True):
         pygeoip API does not yet know). This does not affect the IPv4
         city-level database.
 
-    :param str v4_filename: The filename of the IPv4 database
-    :param str v6_filename: The filename of the IPv6 database (optional)
+    :param str v4_geo_filename: The filename of the IPv4 geographic database (optional)
+    :param str v4_isp_filename: The filename of the IPv4 ISP database (optional)
+    :param str v4_org_filename: The filename of the IPv4 organisation database (optional)
+    :param str v6_geo_filename: The filename of the IPv6 geographic database (optional)
+    :param str v6_isp_filename: The filename of the IPv6 ISP database (optional)
+    :param str v6_org_filename: The filename of the IPv6 organisation database (optional)
     :param bool memcache: Set to False if you don't wish to cache the db in RAM (optional)
     """
-    global _GEOIP_IPV4_DATABASE
-    global _GEOIP_IPV6_DATABASE
-    _GEOIP_IPV4_DATABASE = pygeoip.GeoIP(
-        v4_filename, pygeoip.MEMORY_CACHE if memcache else 0)
-    if v6_filename:
-        _GEOIP_IPV6_DATABASE = pygeoip.GeoIP(
-            v6_filename, pygeoip.MEMORY_CACHE if memcache else 0)
-    else:
-        _GEOIP_IPV6_DATABASE = None
+    global \
+        _GEOIP_IPV4_GEO, _GEOIP_IPV4_ISP, _GEOIP_IPV4_ORG, \
+        _GEOIP_IPV6_GEO, _GEOIP_IPV6_ISP, _GEOIP_IPV6_ORG
+    if not (
+            v4_geo_filename or
+            v4_isp_filename or
+            v4_org_filename or
+            v6_geo_filename or
+            v6_isp_filename or
+            v6_org_filename
+            ):
+        raise ValueError('You must call init_database with a database to load')
+    if v4_geo_filename:
+        _GEOIP_IPV4_GEO = pygeoip.GeoIP(
+            v4_geo_filename, pygeoip.MEMORY_CACHE if memcache else 0)
+    if v4_isp_filename:
+        _GEOIP_IPV4_ISP = pygeoip.GeoIP(
+            v4_isp_filename, pygeoip.MEMORY_CACHE if memcache else 0)
+    if v4_org_filename:
+        _GEOIP_IPV4_ORG = pygeoip.GeoIP(
+            v4_org_filename, pygeoip.MEMORY_CACHE if memcache else 0)
+    if v6_geo_filename:
+        _GEOIP_IPV6_GEO = pygeoip.GeoIP(
+            v6_geo_filename, pygeoip.MEMORY_CACHE if memcache else 0)
+    if v6_isp_filename:
+        _GEOIP_IPV6_ISP = pygeoip.GeoIP(
+            v6_isp_filename, pygeoip.MEMORY_CACHE if memcache else 0)
+    if v6_org_filename:
+        _GEOIP_IPV6_ORG = pygeoip.GeoIP(
+            v6_org_filename, pygeoip.MEMORY_CACHE if memcache else 0)
 
 def country_code_by_addr(address):
     """
-    Returns the country code associated with the specified address. You should
-    use the :attr:`~lars.datatypes.IPv4Address.country` attribute instead of
-    this function.
+    Returns the country code associated with the specified address, or None if
+    the address is not found in the GeoIP geographical database. You should
+    use the :attr:`~lars.datatypes.IPv4Address.country` or
+    :attr:`~lars.datatypes.IPv6Address.country` attributes instead of this
+    function.
+
+    If the geographical database for the address type has not been initialized,
+    the function raises a ValueError.
 
     :param str address: The address to lookup the country for
-    :returns str: The country code associated with the address, or None
+    :returns str: The country code associated with the address
     """
     # pygeoip returns '' instead of None in case a match isn't found. For
     # consistency with the GeoIP API, we convert this to None
-    return _GEOIP_IPV4_DATABASE.country_code_by_addr(address) or None
-
-def country_code_by_addr_v6(address):
-    """
-    Returns the country code associated with the specified address. You should
-    use the :attr:`~lars.datatypes.IPv6Address.country` attribute instead of
-    this function.
-
-    :param str address: The address to lookup the country for
-    :returns str: The country code associated with the address, or None
-    """
-    # pygeoip returns '' instead of None in case a match isn't found. For
-    # consistency with the GeoIP API, we convert this to None
-    if _GEOIP_IPV6_DATABASE:
-        return _GEOIP_IPV6_DATABASE.country_code_by_addr(address) or None
+    try:
+        if isinstance(address, ipaddress.IPv4Address):
+            return _GEOIP_IPV4_GEO.country_code_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+        else:
+            return _GEOIP_IPV6_GEO.country_code_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+    except AttributeError:
+        raise ValueError(
+            'Uninitialized geo database while looking up country '
+            'for address %s' % address)
 
 def region_by_addr(address):
     """
-    Returns the region (e.g. state) associated with the address. You should
-    use the :attr:`~lars.datatypes.IPv4Address.region` attribute instead of
-    this function.
-
-    Given an address, this function returns the region associated with it.
-    In the case of the US, this is the state. In the case of other
-    countries it may be a state, county, something GeoIP-specific or simply
-    undefined. Note: this function will raise an exception if the GeoIP
-    database loaded is country-level only.
-
-    :param str address: The address to lookup the region for
-    :returns str: The region associated with the address, or None
-    """
-    # This is safe as pygeoip returns a dictionary with blank values in the
-    # case of no match
-    return _GEOIP_IPV4_DATABASE.region_by_addr(address).get('region_name') or None
-
-def region_by_addr_v6(address):
-    """
     Returns the region (e.g. state) associated with the address. You should use
-    the :attr:`~lars.datatypes.IPv6Address.region` attribute instead of this
+    the :attr:`~lars.datatypes.IPv4Address.region` or
+    :attr:`~lars.datatypes.IPv6Address.region` attributes instead of this
     function.
 
     Given an address, this function returns the region associated with it.
@@ -182,54 +204,61 @@ def region_by_addr_v6(address):
     undefined. Note: this function will raise an exception if the GeoIP
     database loaded is country-level only.
 
+    If the geographical database for the address type has not been initialized,
+    the function raises a ValueError.
+
     :param str address: The address to lookup the region for
     :returns str: The region associated with the address, or None
     """
     # This is safe as pygeoip returns a dictionary with blank values in the
     # case of no match
-    if _GEOIP_IPV6_DATABASE:
-        return _GEOIP_IPV6_DATABASE.region_by_addr(address).get('region_name') or None
+    try:
+        if isinstance(address, ipaddress.IPv4Address):
+            rec = _GEOIP_IPV4_GEO.region_by_addr(address.compressed)
+        else:
+            rec = _GEOIP_IPV6_GEO.region_by_addr(address.compressed)
+    except AttributeError:
+        raise ValueError(
+            'Uninitialized geo database while looking up country '
+            'for address %s' % address)
+    if rec and 'region_name' in rec:
+        return rec['region_name'].decode(_MAXMIND_ENCODING)
 
 def city_by_addr(address):
     """
     Returns the city associated with the address. You should use the
-    :attr:`~lars.datatypes.IPv4Address.city` attribute instead of this
+    :attr:`~lars.datatypes.IPv4Address.city` or
+    :attr:`~lars.datatypes.IPv6Address.city` attributes instead of this
     function.
 
     Given an address, this function returns the city associated with it.
     Note: this function will raise an exception if the GeoIP database
     loaded is above city level.
 
-    :param str address: The address to lookup the city for
-    :returns str: The city associated with the address, or None
-    """
-    rec = _GEOIP_IPV4_DATABASE.record_by_addr(address)
-    if rec:
-        return rec.get('city')
-
-def city_by_addr_v6(address):
-    """
-    Returns the city associated with the address. You should use the
-    :attr:`~lars.datatypes.IPv6Address.city` attribute instead of this
-    function.
-
-    Given an address, this function returns the city associated with it.
-    Note: this function will raise an exception if the GeoIP database
-    loaded is above city level.
+    If the geographical database for the address type has not been initialized,
+    the function raises a ValueError.
 
     :param str address: The address to lookup the city for
     :returns str: The city associated with the address, or None
     """
-    if _GEOIP_IPV6_DATABASE:
-        rec = _GEOIP_IPV6_DATABASE.record_by_addr(address)
-        if rec:
-            return rec.get('city')
+    try:
+        if isinstance(address, ipaddress.IPv4Address):
+            rec = _GEOIP_IPV4_GEO.record_by_addr(address.compressed)
+        else:
+            rec = _GEOIP_IPV6_GEO.record_by_addr(address.compressed)
+    except AttributeError:
+        raise ValueError(
+            'Uninitialized geo database while looking up country '
+            'for address %s' % address)
+    if rec and 'city' in rec:
+        return rec['city'].decode(_MAXMIND_ENCODING)
 
 def coords_by_addr(address):
     """
     Returns the coordinates (long, lat) associated with the address. You should
-    use the :attr:`~lars.datatypes.IPv4Address.coords` attribute instead of
-    this function.
+    use the :attr:`~lars.datatypes.IPv4Address.coords` or
+    :attr:`~lars.datatypes.IPv4Address.coords` attributes instead of this
+    function.
 
     Given an address, this function returns a tuple with the attributes
     longitude and latitude (in that order) representing the (very)
@@ -237,30 +266,62 @@ def coords_by_addr(address):
     function will raise an exception if the GeoIP database loaded is above
     city level.
 
+    If the geographical database for the address type has not been initialized,
+    the function raises a ValueError.
+
     :param str address: The address to locate
     :returns str: The coordinates associated with the address, or None
     """
-    rec = _GEOIP_IPV4_DATABASE.record_by_addr(address)
+    try:
+        if isinstance(address, ipaddress.IPv4Address):
+            rec = _GEOIP_IPV4_GEO.record_by_addr(address.compressed)
+        else:
+            rec = _GEOIP_IPV6_GEO.record_by_addr(address.compressed)
+    except AttributeError:
+        raise ValueError(
+            'Uninitialized geo database while looking up country '
+            'for address %s' % address)
     if rec:
         return GeoCoord(rec['longitude'], rec['latitude'])
 
-def coords_by_addr_v6(address):
+def isp_by_addr(address):
     """
-    Returns the coordinates (long, lat) associated with the address. You should
-    use the :attr:`~lars.datatypes.IPv6Address.coords` attribute instead of
-    this function.
+    Returns the ISP that services the address. You should use the
+    :attr:`~lars.datatypes.IPv4Address.isp` or
+    :attr:`~lars.datatypes.IPv4Address.isp` attributes instead of this
+    function.
 
-    Given an address, this function returns a tuple with the attributes
-    longitude and latitude (in that order) representing the (very)
-    approximate coordinates of the address on the globe.  Note: this
-    function will raise an exception if the GeoIP database loaded is above
-    city level.
+    If the ISP database for the address type has not been initialized, the
+    function raises a ValueError.
 
-    :param str address: The address to locate
-    :returns str: The coordinates associated with the address, or None
+    :param str address: The address to lookup the ISP for
+    :returns str: The ISP associated with the address, or None
     """
-    if _GEOIP_IPV6_DATABASE:
-        rec = _GEOIP_IPV6_DATABASE.record_by_addr(address)
-        if rec:
-            return GeoCoord(rec['longitude'], rec['latitude'])
+    try:
+        if isinstance(address, ipaddress.IPv4Address):
+            return _GEOIP_IPV4_ISP.org_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+        else:
+            return _GEOIP_IPV6_ISP.org_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+    except AttributeError:
+        raise ValueError(
+            'Uninitialized ISP database while looking up ISP '
+            'for address %s' % address)
+
+def org_by_addr(address):
+    """
+    Returns the organisation that owns the address, or the ISP that services
+    the address (in the case that the organisation
+    If the organisational database for the address type has not been initialized,
+    the function raises a ValueError.
+
+    """
+    try:
+        if isinstance(address, ipaddress.IPv4Address):
+            return _GEOIP_IPV4_ORG.org_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+        else:
+            return _GEOIP_IPV6_ORG.org_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+    except AttributeError:
+        raise ValueError(
+            'Uninitialized organisation database while looking up org '
+            'for address %s' % address)
 

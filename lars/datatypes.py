@@ -194,11 +194,7 @@ from collections import namedtuple
 from functools import total_ordering
 
 from lars import dns
-try:
-    from lars import geoip
-except ImportError: # pragma: no cover
-    # Ignore import errors for geoip
-    geoip = None # pragma: no cover
+from lars import geoip
 
 
 # Make Py2 str same as Py3
@@ -1340,9 +1336,7 @@ class IPv4Address(ipaddress.IPv4Address):
         If :func:`~lars.geoip.init_database` has been called to initialize
         a GeoIP database, returns the country of the address.
         """
-        if not geoip:
-            raise ImportError('Could not import pygeoip module') # pragma: no cover
-        return geoip.country_code_by_addr(self.compressed)
+        return geoip.country_code_by_addr(self)
 
     @property
     def region(self):
@@ -1351,9 +1345,7 @@ class IPv4Address(ipaddress.IPv4Address):
         region-level (or lower) GeoIP database, returns the region of the
         address.
         """
-        if not geoip:
-            raise ImportError('Could not import pygeoip module') # pragma: no cover
-        return geoip.region_by_addr(self.compressed)
+        return geoip.region_by_addr(self)
 
     @property
     def city(self):
@@ -1361,9 +1353,7 @@ class IPv4Address(ipaddress.IPv4Address):
         If :func:`~lars.geoip.init_database` has been called with a
         city-level GeoIP database, returns the city of the address.
         """
-        if not geoip:
-            raise ImportError('Could not import pygeoip module') # pragma: no cover
-        return geoip.city_by_addr(self.compressed)
+        return geoip.city_by_addr(self)
 
     @property
     def coords(self):
@@ -1372,9 +1362,24 @@ class IPv4Address(ipaddress.IPv4Address):
         city-level GeoIP database, returns a (longitude, latitude) tuple
         describing the approximate location of the address.
         """
-        if not geoip:
-            raise ImportError('Could not import pygeoip module') # pragma: no cover
-        return geoip.coords_by_addr(self.compressed)
+        return geoip.coords_by_addr(self)
+
+    @property
+    def isp(self):
+        """
+        If :func:`~lars.geoip.init_database` has been called with an ISP level
+        database, returns the ISP that provides connectivity for the address.
+        """
+        return geoip.isp_by_addr(self)
+
+    @property
+    def org(self):
+        """
+        If :func:`~lars.geoip.init_database` has been called with an
+        organisation level database, returns the name of the organisation the
+        address belongs to.
+        """
+        return geoip.org_by_addr(self)
 
     @property
     def hostname(self):
@@ -1489,9 +1494,7 @@ class IPv6Address(ipaddress.IPv6Address):
         If :func:`~lars.geoip.init_database` has been called to initialize
         a GeoIP IPv6 database, returns the country of the address.
         """
-        if not geoip:
-            raise ImportError('Could not import pygeoip module') # pragma: no cover
-        return geoip.country_code_by_addr_v6(self.__str__())
+        return geoip.country_code_by_addr(self)
 
     @property
     def region(self):
@@ -1500,9 +1503,7 @@ class IPv6Address(ipaddress.IPv6Address):
         region-level (or lower) GeoIP IPv6 database, returns the region of the
         address.
         """
-        if not geoip:
-            raise ImportError('Could not import pygeoip module') # pragma: no cover
-        return geoip.region_by_addr_v6(self.__str__())
+        return geoip.region_by_addr(self)
 
     @property
     def city(self):
@@ -1510,9 +1511,7 @@ class IPv6Address(ipaddress.IPv6Address):
         If :func:`~lars.geoip.init_database` has been called with a
         city-level GeoIP IPv6 database, returns the city of the address.
         """
-        if not geoip:
-            raise ImportError('Could not import pygeoip module') # pragma: no cover
-        return geoip.city_by_addr_v6(self.__str__())
+        return geoip.city_by_addr(self)
 
     @property
     def coords(self):
@@ -1521,9 +1520,25 @@ class IPv6Address(ipaddress.IPv6Address):
         city-level GeoIP IPv6 database, returns a (longitude, latitude) tuple
         describing the approximate location of the address.
         """
-        if not geoip:
-            raise ImportError('Could not import pygeoip module') # pragma: no cover
-        return geoip.coords_by_addr_v6(self.__str__())
+        return geoip.coords_by_addr(self)
+
+    @property
+    def isp(self):
+        """
+        If :func:`~lars.geoip.init_database` has been called with an ISP level
+        IPv6 database, returns the ISP that provides connectivity for the
+        address.
+        """
+        return geoip.isp_by_addr(self)
+
+    @property
+    def org(self):
+        """
+        If :func:`~lars.geoip.init_database` has been called with an IPv6
+        organisation level database, returns the name of the organisation the
+        address belongs to.
+        """
+        return geoip.org_by_addr(self)
 
     @property
     def hostname(self):

@@ -115,6 +115,7 @@ def test_url():
     u = dt.url('http://localhost/foo/bar#baz')
     assert u.scheme == 'http'
     assert u.netloc == 'localhost'
+    assert u.path == dt.Path('/foo', 'bar', '')
     assert u.path_str == '/foo/bar'
     assert u.fragment == 'baz'
     assert u.username is None
@@ -186,7 +187,7 @@ def test_time():
 
 def test_hostname():
     assert dt.hostname('foo') == dt.Hostname('foo')
-    assert dt.hostname('foo.bar') == dt.Hostname('foo.bar')
+    assert dt.hostname(b'foo.bar') == dt.Hostname('foo.bar')
     assert dt.hostname('localhost') == dt.Hostname('localhost')
     assert dt.hostname('f'*63 + '.o') == dt.Hostname('f'*63 + '.o')
     assert dt.hostname('f'*63 + '.oo') == dt.Hostname('f'*63 + '.oo')
@@ -244,15 +245,15 @@ def test_address_port_manipulation():
     assert str(addr) == '127.0.0.1'
 
 def test_address_geoip_countries():
-    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV4_DATABASE') as mock_db:
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV4_GEO') as mock_db:
         mock_db.country_code_by_addr.return_value = 'AA'
         assert dt.address('127.0.0.1').country == 'AA'
-    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV6_DATABASE') as mock_db:
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV6_GEO') as mock_db:
         mock_db.country_code_by_addr.return_value = 'BB'
         assert dt.address('::1').country == 'BB'
 
 def test_address_geoip_cities():
-    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV4_DATABASE') as mock_db:
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV4_GEO') as mock_db:
         mock_db.region_by_addr.return_value = {'region_name': 'AA'}
         assert dt.address('127.0.0.1').region == 'AA'
         mock_db.record_by_addr.return_value = {'city': 'Timbuktu'}
@@ -262,7 +263,7 @@ def test_address_geoip_cities():
         mock_db.record_by_addr.return_value = None
         assert dt.address('127.0.0.1').city is None
         assert dt.address('127.0.0.1').coords is None
-    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV6_DATABASE') as mock_db:
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV6_GEO') as mock_db:
         mock_db.region_by_addr.return_value = {'region_name': 'BB'}
         assert dt.address('::1').region == 'BB'
         mock_db.record_by_addr.return_value = {'city': 'Transylvania'}
@@ -272,6 +273,22 @@ def test_address_geoip_cities():
         mock_db.record_by_addr.return_value = None
         assert dt.address('::1').city is None
         assert dt.address('::1').coords is None
+
+def test_address_geoip_isp():
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV4_ISP') as mock_db:
+        mock_db.org_by_addr.return_value = 'Internet 404'
+        assert dt.address('127.0.0.1').isp == 'Internet 404'
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV6_ISP') as mock_db:
+        mock_db.org_by_addr.return_value = 'Internet 404'
+        assert dt.address('::1').isp == 'Internet 404'
+
+def test_address_geoip_org():
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV4_ORG') as mock_db:
+        mock_db.org_by_addr.return_value = 'Acme Inc.'
+        assert dt.address('127.0.0.1').org == 'Acme Inc.'
+    with mock.patch('tests.test_datatypes.geoip._GEOIP_IPV6_ORG') as mock_db:
+        mock_db.org_by_addr.return_value = 'Acme Inc.'
+        assert dt.address('::1').org == 'Acme Inc.'
 
 def test_resolving():
     assert dt.hostname('localhost').address == dt.IPv4Address('127.0.0.1')

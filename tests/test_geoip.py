@@ -34,6 +34,7 @@ import gzip
 import urlparse
 import urllib2
 import socket
+from ipaddress import IPv4Address, IPv6Address
 
 import pygeoip
 import pytest
@@ -44,48 +45,99 @@ from lars import geoip
 
 def test_init_db():
     with mock.patch('tests.test_geoip.geoip.pygeoip.GeoIP') as mock_class:
-        geoip.init_database('mock.dat')
+        geoip.init_databases('mock.dat')
         assert mock_class.called_with('mock.dat', pygeoip.MEMORY_CACHE)
-        # Ensure when the IPv6 database isn't initialized we still get back
+        # Ensure when the IPv6 database isn't initialized we get value errors
+        # when requesting geoip info on IPv6 addresses
         # None, not errors (as the IPv6 database is optional)
-        assert geoip._GEOIP_IPV6_DATABASE is None
-        assert geoip.country_code_by_addr_v6('::1') is None
-        assert geoip.region_by_addr_v6('::1') is None
-        assert geoip.city_by_addr_v6('::1') is None
-        assert geoip.coords_by_addr_v6('::1') is None
+        assert geoip._GEOIP_IPV6_GEO is None
+        assert geoip._GEOIP_IPV4_ISP is None
+        assert geoip._GEOIP_IPV6_ISP is None
+        assert geoip._GEOIP_IPV4_ORG is None
+        assert geoip._GEOIP_IPV6_ORG is None
+        with pytest.raises(ValueError):
+            geoip.country_code_by_addr(IPv6Address('::1'))
+        with pytest.raises(ValueError):
+            geoip.region_by_addr(IPv6Address('::1'))
+        with pytest.raises(ValueError):
+            geoip.city_by_addr(IPv6Address('::1'))
+        with pytest.raises(ValueError):
+            geoip.coords_by_addr(IPv6Address('::1'))
+        with pytest.raises(ValueError):
+            geoip.isp_by_addr(IPv4Address('127.0.0.1'))
+        with pytest.raises(ValueError):
+            geoip.org_by_addr(IPv4Address('127.0.0.1'))
+        # Test loading no databases
+        with pytest.raises(ValueError):
+            geoip.init_databases()
+        # Test loading every other database
         mock_class.reset_mock()
-        geoip.init_database('mock_v4.dat', 'mock_v6.dat', memcache=False)
-        assert mock_class.call_count == 2
+        geoip.init_databases(
+                None, 'isp_v4.dat', 'org_v4.dat',
+                'geo_v6.dat', 'isp_v6.dat', 'org_v6.dat',
+                memcache=False)
+        assert mock_class.call_count == 5
         assert mock_class.mock_calls == [
-            mock.call('mock_v4.dat', 0),
-            mock.call('mock_v6.dat', 0),
+            mock.call('isp_v4.dat', 0),
+            mock.call('org_v4.dat', 0),
+            mock.call('geo_v6.dat', 0),
+            mock.call('isp_v6.dat', 0),
+            mock.call('org_v6.dat', 0),
             ]
 
-def test_countries_v4():
-    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV4_DATABASE') as mock_db:
-        geoip.country_code_by_addr('127.0.0.1')
+def test_countries():
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV4_GEO') as mock_db:
+        geoip.country_code_by_addr(IPv4Address('127.0.0.1'))
         assert mock_db.country_code_by_addr.called_with('127.0.0.1')
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV6_GEO') as mock_db:
+        geoip.country_code_by_addr(IPv6Address('::1'))
+        assert mock_db.country_code_by_addr.called_with('::1')
 
-def test_countries_v6():
-    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV6_DATABASE') as mock_db:
-        geoip.country_code_by_addr_v6('::1')
-        assert mock_db.country_code_by_addr_v6.called_with('::1')
+def test_regions():
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV4_GEO') as mock_db:
+        geoip.region_by_addr(IPv4Address('127.0.0.1'))
+        assert mock_db.record_by_addr.called_with('127.0.0.1')
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV6_GEO') as mock_db:
+        geoip.region_by_addr(IPv6Address('::1'))
+        assert mock_db.record_by_addr.called_with('::1')
 
-def test_cities_v4():
-    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV4_DATABASE') as mock_db:
-        geoip.region_by_addr('127.0.0.1')
+def test_cities():
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV4_GEO') as mock_db:
+        geoip.region_by_addr(IPv4Address('127.0.0.1'))
         assert mock_db.region_by_addr.called_with('127.0.0.1')
-        geoip.city_by_addr('127.0.0.1')
+        geoip.city_by_addr(IPv4Address('127.0.0.1'))
         assert mock_db.city_by_addr.called_with('127.0.0.1')
-        geoip.coords_by_addr('127.0.0.1')
+        geoip.coords_by_addr(IPv4Address('127.0.0.1'))
         assert mock_db.rec_by_addr.called_with('127.0.0.1')
-
-def test_cities_v6():
-    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV6_DATABASE') as mock_db:
-        geoip.region_by_addr('::1')
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV6_GEO') as mock_db:
+        geoip.region_by_addr(IPv6Address('::1'))
         assert mock_db.region_by_addr.called_with('::1')
-        geoip.city_by_addr('::1')
+        geoip.city_by_addr(IPv6Address('::1'))
         assert mock_db.city_by_addr.called_with('::1')
-        geoip.coords_by_addr('::1')
+        geoip.coords_by_addr(IPv6Address('::1'))
         assert mock_db.rec_by_addr.called_with('::1')
+
+def test_coords():
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV4_GEO') as mock_db:
+        geoip.coords_by_addr(IPv4Address('127.0.0.1'))
+        assert mock_db.record_by_addr.called_with('127.0.0.1')
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV6_GEO') as mock_db:
+        geoip.coords_by_addr(IPv6Address('::1'))
+        assert mock_db.record_by_addr.called_with('::1')
+
+def test_isp():
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV4_ISP') as mock_db:
+        geoip.isp_by_addr(IPv4Address('127.0.0.1'))
+        assert mock_db.org_by_addr.called_with('127.0.0.1')
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV6_ISP') as mock_db:
+        geoip.isp_by_addr(IPv6Address('::1'))
+        assert mock_db.org_by_addr.called_with('::1')
+
+def test_org():
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV4_ORG') as mock_db:
+        geoip.org_by_addr(IPv4Address('127.0.0.1'))
+        assert mock_db.org_by_addr.called_with('127.0.0.1')
+    with mock.patch('tests.test_geoip.geoip._GEOIP_IPV6_ORG') as mock_db:
+        geoip.org_by_addr(IPv6Address('::1'))
+        assert mock_db.org_by_addr.called_with('::1')
 
