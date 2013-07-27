@@ -1,3 +1,14 @@
+python-lars (0.2-1~ppa1) precise; urgency=low
+
+  * Added ISP and organisation lookups to geoip module
+  * Added multi-row insertion support to the sql module
+  * Added Oracle specific target in the sql module
+  * Fixed the setup.py script (missing MANIFEST.in meant utils.py was excluded
+    which setup.py relies upon)
+  * Fixed test coverage for the progress module
+
+ -- Dave Hughes <dave@waveform.org.uk>  Sun, 28 Jul 2013 00:21:19 +0100
+
 python-lars (0.1-1~ppa1) precise; urgency=low
 
   * Initial release.
