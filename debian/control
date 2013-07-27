@@ -1,4 +1,4 @@
-Source: lars
+Source: python-lars
 Maintainer: Dave Hughes <dave@waveform.org.uk>
 Homepage: https://github.com/waveform80/lars
 Section: python
@@ -10,7 +10,7 @@ X-Python-Version: >= 2.7
 Package: python-lars
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-ipaddr, python-pip
-Description: 
+Description: Python framework for working with common web log formats.
  lars is a small framework for working with httpd logs (from a variety of
  common servers like Apache, nginx, and IIS). The primary purpose is to provide
  a set of conversions to ease loading such logs into relational databases, but

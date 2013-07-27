@@ -49,7 +49,7 @@ DIST_EGG=dist/$(NAME)-$(VER)-$(PYVER).egg
 DIST_RPM=dist/$(NAME)-$(VER)-1.src.rpm
 DIST_TAR=dist/$(NAME)-$(VER).tar.gz
 DIST_ZIP=dist/$(NAME)-$(VER).zip
-DIST_DEB=dist/$(NAME)_$(VER)-1~ppa1_all.deb
+DIST_DEB=dist/python-$(NAME)_$(VER)-1~ppa1_all.deb
 
 
 # Default target
@@ -128,7 +128,7 @@ $(DIST_DEB): $(PY_SOURCES) $(DEB_SOURCES) $(LICENSES)
 	rename -f 's/$(NAME)-(.*)\.tar\.gz/$(NAME)_$$1\.orig\.tar\.gz/' ../*
 	debuild -b -i -I -Idist -Idocs -Ibuild/sphinx/doctrees -rfakeroot
 	mkdir -p dist/
-	cp ../$(NAME)_$(VER)-1~ppa1_all.deb dist/
+	cp ../python-$(NAME)_$(VER)-1~ppa1_all.deb dist/
 
 release: $(PY_SOURCES) $(DOC_SOURCES) $(DEB_SOURCES)
 	$(MAKE) clean
@@ -146,9 +146,9 @@ upload: $(PY_SOURCES) $(DOC_SOURCES) $(DEB_SOURCES) $(LICENSES)
 	# build the deb source archive and upload to the PPA
 	#$(PYTHON) $(PYFLAGS) setup.py build_sphinx -b man
 	$(PYTHON) $(PYFLAGS) setup.py sdist --dist-dir=../
-	rename -f 's/$(NAME)-(.*)\.tar\.gz/$(NAME)_$$1\.orig\.tar\.gz/' ../*
+	rename -f 's/python-$(NAME)-(.*)\.tar\.gz/python-$(NAME)_$$1\.orig\.tar\.gz/' ../*
 	debuild -S -i -I -Idist -Idocs -Ibuild/sphinx/doctrees -rfakeroot
-	dput waveform-ppa ../$(NAME)_$(VER)-1~ppa1_source.changes
+	dput waveform-ppa ../python-$(NAME)_$(VER)-1~ppa1_source.changes
 
 .PHONY: all install develop test doc source egg rpm deb zip tar dist clean tags release upload
 
