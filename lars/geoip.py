@@ -38,23 +38,19 @@ be ignored; instead, users should use the
 Functions
 =========
 
-.. autofunction:: init_database
+.. autofunction:: init_databases
 
 .. autofunction:: country_code_by_addr
 
-.. autofunction:: country_code_by_addr_v6
-
 .. autofunction:: city_by_addr
-
-.. autofunction:: city_by_addr_v6
 
 .. autofunction:: region_by_addr
 
-.. autofunction:: region_by_addr_v6
-
 .. autofunction:: coords_by_addr
 
-.. autofunction:: coords_by_addr_v6
+.. autofunction:: isp_by_addr
+
+.. autofunction:: org_by_addr
 
 
 Examples

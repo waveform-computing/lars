@@ -50,6 +50,7 @@ If you do not have either of these tools available, please install the Python
 `setuptools`_ package first.
 
 
+.. _Waveform PPA: https://launchpad.net/~waveform/+archive/ppa
 .. _pygeoip: https://pypi.python.org/pypi/pygeoip/
 .. _ipaddress: https://pypi.python.org/pypi/ipaddress/
 .. _setuptools: https://pypi.python.org/pypi/setuptools/
