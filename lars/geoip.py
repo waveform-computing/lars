@@ -172,7 +172,7 @@ def country_code_by_addr(address):
     If the geographical database for the address type has not been initialized,
     the function raises a ValueError.
 
-    :param str address: The address to lookup the country for
+    :param address: The address to lookup the country for
     :returns str: The country code associated with the address
     """
     # pygeoip returns '' instead of None in case a match isn't found. For
@@ -203,7 +203,7 @@ def region_by_addr(address):
     If the geographical database for the address type has not been initialized,
     the function raises a ValueError.
 
-    :param str address: The address to lookup the region for
+    :param address: The address to lookup the region for
     :returns str: The region associated with the address, or None
     """
     # This is safe as pygeoip returns a dictionary with blank values in the
@@ -234,7 +234,7 @@ def city_by_addr(address):
     If the geographical database for the address type has not been initialized,
     the function raises a ValueError.
 
-    :param str address: The address to lookup the city for
+    :param address: The address to lookup the city for
     :returns str: The city associated with the address, or None
     """
     try:
@@ -265,7 +265,7 @@ def coords_by_addr(address):
     If the geographical database for the address type has not been initialized,
     the function raises a ValueError.
 
-    :param str address: The address to locate
+    :param address: The address to locate
     :returns str: The coordinates associated with the address, or None
     """
     try:
@@ -290,7 +290,7 @@ def isp_by_addr(address):
     If the ISP database for the address type has not been initialized, the
     function raises a ValueError.
 
-    :param str address: The address to lookup the ISP for
+    :param address: The address to lookup the ISP for
     :returns str: The ISP associated with the address, or None
     """
     try:
