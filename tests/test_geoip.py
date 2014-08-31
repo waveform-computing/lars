@@ -34,7 +34,10 @@ import gzip
 import urlparse
 import urllib2
 import socket
-from ipaddress import IPv4Address, IPv6Address
+try:
+    from ipaddress import IPv4Address, IPv6Address
+except ImportError:
+    from ipaddr import IPv4Address, IPv6Address
 
 import pygeoip
 import pytest

@@ -23,29 +23,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+"A framework for converting web-logs into various formats"
+
 from __future__ import (
-    #unicode_literals,
-    print_function,
+    unicode_literals,
     absolute_import,
+    print_function,
     division,
     )
+str = type('')
 
-import sys
 import os
+import sys
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
-from utils import description, get_version
 
-if not sys.version_info >= (2, 7):
-    raise ValueError('This package requires Python 2.7 or above')
+if sys.version_info[0] == 2:
+    if not sys.version_info >= (2, 7):
+        raise ValueError('This package requires Python 2.7 or above')
+elif sys.version_info[0] == 3:
+    if not sys.version_info >= (3, 2):
+        raise ValueError('This package requires Python 3.2 or above')
+else:
+    raise ValueError('Unrecognized major version of Python')
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-
-# Workaround <http://www.eby-sarna.com/pipermail/peak/2010-May/003357.html>
-try:
-    import multiprocessing
-except ImportError:
-    pass
 
 # Workaround <http://bugs.python.org/issue10945>
 import codecs
@@ -56,89 +57,92 @@ except LookupError:
     func = lambda name, enc=ascii: {True: enc}.get(name=='mbcs')
     codecs.register(func)
 
-# All meta-data is defined as global variables so that other modules can query
-# it easily without having to wade through distutils nonsense
-NAME         = 'lars'
-DESCRIPTION  = 'A framework for converting web-logs into various formats'
-KEYWORDS     = ['web', 'www', 'logs', 'database']
-AUTHOR       = 'Dave Hughes'
-AUTHOR_EMAIL = 'dave@waveform.org.uk'
-MANUFACTURER = 'waveform'
-URL          = 'http://github.com/waveform80/lars'
+# Workaround <http://www.eby-sarna.com/pipermail/peak/2010-May/003357.html>
+try:
+    import multiprocessing
+except ImportError:
+    pass
 
-REQUIRES = [
-    'ipaddress', # Google's IPv4/IPv6 parsing library (part of stdlib in py3k)
-    'pygeoip',   # Pure Python GeoIP library
-    ]
+__project__      = 'lars'
+__version__      = '0.3'
+__author__       = 'Dave Hughes'
+__author_email__ = 'dave@waveform.org.uk'
+__url__          = 'http://github.com/waveform80/lars'
+__platforms__    = 'ALL'
 
-EXTRA_REQUIRES = {
-    }
-
-CLASSIFIERS = [
+__classifiers__  = [
     'Development Status :: 4 - Beta',
-    'Environment :: Console',
     'Intended Audience :: System Administrators',
     'License :: OSI Approved :: MIT License',
     'Operating System :: Microsoft :: Windows',
     'Operating System :: POSIX',
     'Operating System :: Unix',
     'Programming Language :: Python :: 2.7',
-    'Programming Language :: Python :: 3.3',
+    'Programming Language :: Python :: 3',
     'Topic :: Internet :: WWW/HTTP :: Site Management',
     'Topic :: Text Processing',
     ]
 
-ENTRY_POINTS = {
-    }
-
-PACKAGES = [
-    'lars',
+__keywords__ = [
+    'web',
+    'www',
+    'logs',
+    'database',
     ]
 
-PACKAGE_DATA = {
+__requires__ = [
+    'pygeoip',   # Pure Python GeoIP library
+    ]
+
+if sys.version_info[:2] < (3, 3):
+    # Python 3.3+ has an equivalent ipaddress module built-in
+    __requires__.append('ipaddr')
+
+__extra_requires__ = {
+    'doc': ['sphinx'],
+    'test': ['pytest', 'coverage', 'mock'],
     }
 
+if sys.version_info[:2] == (3, 2):
+    __extra_requires__['doc'].extend([
+        # Particular versions are required for Python 3.2 compatibility. The
+        # ordering is reversed because that's what easy_install needs...
+        'Jinja2<2.7',
+        'MarkupSafe<0.16',
+        ])
 
-# Add a py.test based "test" command
-class PyTest(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = [
-            '--cov', NAME,
-            '--cov-report', 'term-missing',
-            '--cov-report', 'html',
-            '--cov-config', 'coverage.cfg',
-            'tests',
-            ]
-        self.test_suite = True
-
-    def run_tests(self):
-        import pytest
-        errno = pytest.main(self.test_args)
-        sys.exit(errno)
+__entry_points__ = {
+    }
 
 
 def main():
-    setup(
-        name                 = NAME,
-        version              = get_version(os.path.join(HERE, NAME, '__init__.py')),
-        description          = DESCRIPTION,
-        long_description     = description(os.path.join(HERE, 'README.rst')),
-        classifiers          = CLASSIFIERS,
-        author               = AUTHOR,
-        author_email         = AUTHOR_EMAIL,
-        url                  = URL,
-        keywords             = ' '.join(KEYWORDS),
-        packages             = PACKAGES,
-        package_data         = PACKAGE_DATA,
-        platforms            = 'ALL',
-        install_requires     = REQUIRES,
-        extras_require       = EXTRA_REQUIRES,
-        zip_safe             = True,
-        entry_points         = ENTRY_POINTS,
-        tests_require        = ['pytest-cov', 'pytest', 'mock'],
-        cmdclass             = {'test': PyTest},
-        )
+    import io
+    with io.open(os.path.join(HERE, 'README.rst'), 'r') as readme:
+        setup(
+            name                 = __project__,
+            version              = __version__,
+            description          = __doc__,
+            long_description     = readme.read(),
+            classifiers          = __classifiers__,
+            author               = __author__,
+            author_email         = __author_email__,
+            url                  = __url__,
+            license              = [
+                c.rsplit('::', 1)[1].strip()
+                for c in __classifiers__
+                if c.startswith('License ::')
+                ][0],
+            keywords             = __keywords__,
+            packages             = find_packages(),
+            package_data         = {},
+            include_package_data = True,
+            platforms            = __platforms__,
+            install_requires     = __requires__,
+            extras_require       = __extra_requires__,
+            entry_points         = __entry_points__,
+            )
 
 if __name__ == '__main__':
     main()
+
+

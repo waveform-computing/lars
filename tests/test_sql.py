@@ -30,7 +30,10 @@ from __future__ import (
     )
 
 import sqlite3
-import ipaddress
+try:
+    import ipaddress
+except ImportError:
+    import ipaddr as ipaddress
 from collections import namedtuple
 
 import pytest
@@ -165,11 +168,11 @@ def test_target_02(db, rows):
         target.write(rows[2])
     cursor = db.cursor()
     cursor.execute("SELECT client FROM foo WHERE method = ?", (rows[0].method,))
-    assert cursor.fetchall()[0][0] == int(ipaddress.ip_address(rows[0].client))
+    assert cursor.fetchall()[0][0] == int(ipaddress.IPv4Address(rows[0].client))
     cursor.execute("SELECT client FROM foo WHERE method = ?", (rows[1].method,))
-    assert cursor.fetchall()[0][0] == int(ipaddress.ip_address(rows[1].client))
+    assert cursor.fetchall()[0][0] == int(ipaddress.IPv4Address(rows[1].client))
     cursor.execute("SELECT client FROM foo WHERE method = ?", (rows[2].method,))
-    assert cursor.fetchall()[0][0] == int(ipaddress.ip_address(rows[2].client))
+    assert cursor.fetchall()[0][0] == int(ipaddress.IPv4Address(rows[2].client))
 
 def test_target_03(db, rows):
     # Test auto-DROP with a raise in the case the drop fails

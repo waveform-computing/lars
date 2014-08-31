@@ -1,17 +1,35 @@
-.. -*- rst -*-
-
 ====
 lars
 ====
 
-lars is a small Python framework for working with httpd logs (from a variety of
-common servers like Apache, nginx, and IIS). The primary purpose is to provide
-a set of conversions to ease loading such logs into relational databases, but
-numerous other possiblities can be realized with a little imagination.
 
-The project is written in `Python`_ and is open-sourced under the MIT license.
-The `source code`_ can be obtained from GitHub. The `documentation`_ can be
-read on ReadTheDocs.
+lars is a small `Python`_ framework for working with httpd logs (from a variety
+of common servers like `Apache`_, `nginx`_, and IIS). The primary purpose is to
+provide a set of conversions to ease loading such logs into relational
+databases, but numerous other possiblities can be realized with a little
+imagination.
+
+.. _Apache: http://httpd.apache.org/
+.. _nginx: http://wiki.nginx.org/
+.. _Python: http://python.org/
+
+
+Links
+=====
+
+* The code is licensed under the `MIT license`_
+* The `source code`_ can be obtained from GitHub, which also hosts the `bug
+  tracker`_
+* The `documentation`_ (which includes installation instructions and several
+  examples) can be read on ReadTheDocs
+* The `build status`_ can be observed on Travis CI
+
+.. _MIT license: http://opensource.org/licenses/MIT
+.. _Python: http://python.org/
+.. _source code: https://github.com/waveform80/lars
+.. _bug tracker: https://github.com/waveform80/lars/issues
+.. _documentation: http://lars.readthedocs.org/
+.. _build status: https://travis-ci.org/waveform80/lars
 
 
 License
@@ -40,9 +58,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-.. _Python: http://python.org/
-.. _source code: https://github.com/waveform80/lars.git
-.. _documentation: http://lars.readthedocs.org/
 .. _Dave Hughes: mailto:dave@waveform.org.uk
 .. _Mime Consulting Ltd.: mailto:info@mimeconsulting.co.uk
 

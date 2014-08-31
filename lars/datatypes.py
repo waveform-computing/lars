@@ -178,6 +178,7 @@ from __future__ import (
     print_function,
     division,
     )
+str = type('')
 
 import sys
 import os
@@ -186,19 +187,14 @@ import datetime as dt
 import urlparse
 try:
     import ipaddress
-except ImportError: # pragma: no cover
-    # XXX Support old versions of ipaddress package
-    import ipaddr as ipaddress # pragma: no cover
+except ImportError:
+    import ipaddr as ipaddress
 import sqlite3
 from collections import namedtuple
 from functools import total_ordering
 
 from lars import dns
 from lars import geoip
-
-
-# Make Py2 str same as Py3
-str = type('')
 
 
 def sanitize_name(name):

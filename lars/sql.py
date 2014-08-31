@@ -124,7 +124,10 @@ from __future__ import (
 
 import warnings
 import logging
-import ipaddress
+try:
+    import ipaddress
+except ImportError:
+    import ipaddr as ipaddress
 import sqlite3
 from datetime import date, time, datetime
 

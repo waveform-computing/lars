@@ -34,7 +34,10 @@ import os
 import shutil
 import sqlite3
 from datetime import datetime, date, time
-from ipaddress import ip_address, IPv4Address, IPv6Address
+try:
+    from ipaddress import IPv4Address, IPv6Address
+except ImportError:
+    from ipaddr import IPv4Address, IPv6Address
 
 import pytest
 import mock
