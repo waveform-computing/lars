@@ -295,6 +295,10 @@ def test_address_geoip_org():
 
 def test_resolving():
     assert dt.hostname('localhost').address == dt.IPv4Address('127.0.0.1')
+    # This is a bit of a hack; largely depends on the system that's running the
+    # tests whether these work or not (localhost can be called all sorts of
+    # things) but the values below work for vanilla Ubuntu hosts and Travis
+    # CI's VMs
     assert dt.hostname('localhost').address.hostname in (
             dt.hostname('localhost'),
             dt.hostname('localhost.localdomain'),
@@ -304,7 +308,10 @@ def test_resolving():
             dt.hostname('localhost'),
             dt.hostname('localhost.localdomain'),
             )
-    assert dt.address('::1').hostname == dt.hostname('ip6-localhost')
+    assert dt.address('::1').hostname in (
+            dt.hostname('ip6-localhost'),
+            dt.hostname('localhost'),
+            )
 
 def test_address():
     with mock.patch('tests.test_datatypes.dt.dns.from_address') as from_address:
