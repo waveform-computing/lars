@@ -118,6 +118,8 @@ from __future__ import (
     print_function,
     division,
     )
+str = type('')
+
 
 import re
 import warnings
@@ -127,22 +129,6 @@ import functools
 from lars import parsers, datatypes as dt
 from lars.strptime import TimeRE, _strptime_datetime
 from lars.timezone import timedelta, timezone
-
-
-# Make Py2 str same as Py3
-str = type('')
-
-
-__all__ = [
-    'ApacheSource',
-    'ApacheError',
-    'ApacheWarning',
-    'COMMON',
-    'COMMON_VHOST',
-    'COMBINED',
-    'REFERER',
-    'USER_AGENT',
-    ]
 
 
 # Common Apache LogFormat strings
@@ -187,7 +173,7 @@ class EnglishLocaleTime(object):
 
 
 _string_parse_re = re.compile(r'\\(x[0-9a-fA-F]{2}|[^x])')
-def string_parse(s):
+def _string_parse(s):
     """
     Parse a string in an Apache log file.
 
@@ -216,7 +202,7 @@ def string_parse(s):
     return _string_parse_re.sub(unescape, s)
 
 
-def time_parse_format(s, fmt):
+def _time_parse_format(s, fmt):
     """
     Parse a time value in an Apache log file.
 
@@ -232,7 +218,7 @@ def time_parse_format(s, fmt):
     return dt.DateTime(*(d.utctimetuple()[:6] + (d.microsecond,)))
 
 
-def time_parse_common(s):
+def _time_parse_common(s):
     """
     Parse a time in Apache's standard format in an Apache log file.
 
@@ -521,7 +507,7 @@ class ApacheSource(object):
         # sequences, except for newline, tab, and double-quote which are all
         # simply back-slash escaped. This is Apache specific and hence isn't
         # taken from the standard parsers module
-        'string':    (string_parse,           r'(?P<%(name)s>(?:[^\x00-\x1f\x7f\\"]|\\x[0-9a-fA-F]{2}|\\[^x])+|-)'),
+        'string':    (_string_parse,          r'(?P<%(name)s>(?:[^\x00-\x1f\x7f\\"]|\\x[0-9a-fA-F]{2}|\\[^x])+|-)'),
         # Apache field type which indicates the keep-alive state of the
         # connection when the request is done (X=connection aborted before
         # completion, +=keep connection alive, -=close connection)
@@ -643,7 +629,7 @@ class ApacheSource(object):
                 # placeholder
                 pattern = r'(?P<%%(name)s>%s)' % time_regex
                 # Derive a parser for parsing the particular time format
-                parser = functools.partial(time_parse_format, fmt=data)
+                parser = functools.partial(_time_parse_format, fmt=data)
             else:
                 # If it's just %t with no format, we use another special case:
                 # a hard-coded pattern and parser. This is primarily because in
@@ -669,7 +655,7 @@ class ApacheSource(object):
                     r'\]'                                                  # ]
                     r')'
                     )
-                parser = time_parse_common
+                parser = _time_parse_common
         elif field_type == 'string' and field_name.lower() in ('req_referer', 'req_referrer'):
             # Special case: treat referer header as a URL
             parser, pattern = parsers.url_parse, parsers.URL

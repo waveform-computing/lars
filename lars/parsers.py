@@ -34,34 +34,10 @@ from __future__ import (
     print_function,
     division,
     )
-
-from lars import datatypes as dt
-
-
-# Make Py2 str same as Py3
 str = type('')
 
 
-__all__ = [
-    'ADDRESS',
-    'ADDRESS_PORT',
-    'DATE_ISO',
-    'FIXED',
-    'HOSTNAME',
-    'INTEGER',
-    'METHOD',
-    'PROTOCOL',
-    'REQUEST',
-    'TIME_ISO',
-    'URL',
-    'url_parse',
-    'int_parse',
-    'fixed_parse',
-    'date_parse',
-    'time_parse',
-    'address_parse',
-    'hostname_parse',
-    ]
+from lars import datatypes as dt
 
 
 # Note - we do NOT try and validate URLs with this regex (as to do so is

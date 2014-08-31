@@ -180,11 +180,15 @@ from __future__ import (
     )
 str = type('')
 
+
 import sys
 import os
 import re
 import datetime as dt
-import urlparse
+try:
+    from urllib import parse
+except ImportError:
+    import urlparse as parse
 try:
     import ipaddress
 except ImportError:
@@ -285,7 +289,7 @@ def url(s):
     :param str s: The string containing the URL to parse
     :returns: A :class:`Url` tuple representing the URL
     """
-    return Url(*urlparse.urlparse(s))
+    return Url(*parse.urlparse(s))
 
 
 def request(s):
@@ -1086,7 +1090,7 @@ class Path(namedtuple('Path', 'dirname basename ext')):
             return result + '/' + self.basename
 
 
-class Url(namedtuple('Url', 'scheme netloc path_str params query_str fragment'), urlparse.ResultMixin):
+class Url(namedtuple('Url', 'scheme netloc path_str params query_str fragment'), parse.ResultMixin):
     """
     Represents a URL.
 
@@ -1176,7 +1180,7 @@ class Url(namedtuple('Url', 'scheme netloc path_str params query_str fragment'),
     __slots__ = ()
 
     def geturl(self):
-        return urlparse.urlunparse(self)
+        return parse.urlunparse(self)
 
     def __str__(self):
         return self.geturl()
@@ -1187,7 +1191,7 @@ class Url(namedtuple('Url', 'scheme netloc path_str params query_str fragment'),
 
     @property
     def query(self):
-        return urlparse.parse_qs(self.query_str, keep_blank_values=True)
+        return parse.parse_qs(self.query_str, keep_blank_values=True)
 
     @property
     def path(self):

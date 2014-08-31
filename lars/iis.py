@@ -133,30 +133,21 @@ from __future__ import (
     print_function,
     division,
     )
+str = type('')
+
 
 import re
 import warnings
 import logging
-from urllib import unquote_plus
+try:
+    from urllib.parse import unquote_plus
+except ImportError:
+    from urllib import unquote_plus
 
 from lars import parsers, datatypes as dt
 
 
-# Make Py2 str same as Py3
-str = type('')
-
-
-__all__ = [
-    'IISSource',
-    'IISError',
-    'IISDirectiveError',
-    'IISFieldsError',
-    'IISVersionError',
-    'IISWarning',
-    ]
-
-
-def string_parse(s):
+def _string_parse(s):
     """
     Parse a string in a IIS extended log format file.
 
@@ -422,7 +413,7 @@ class IISSource(object):
         # used, although the draft doesn't explicitly state this), but, again,
         # practice deviates from this. This is very specific to the W3C format
         # so this isn't one of the standard regexes
-        'string':       (string_parse,           r'(?P<%(name)s>"([^"]|"")*"|[^"\s]\S*|-)'),
+        'string':       (_string_parse,          r'(?P<%(name)s>"([^"]|"")*"|[^"\s]\S*|-)'),
         # The draft dictates <alpha> for names, but firstly doesn't define what
         # <alpha> actually means; furthermore if we assume if means alphabetic
         # chars only (as seems reasonable) that's not even slightly sufficient

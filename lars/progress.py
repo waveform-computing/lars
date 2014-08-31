@@ -98,20 +98,13 @@ from __future__ import (
     print_function,
     division,
     )
+str = type('')
+
 
 import io
 import sys
 import time
 import logging
-
-
-# Make Py2 str same as Py3
-str = type('')
-
-
-__all__ = [
-    'ProgressMeter',
-    ]
 
 
 class ProgressStyle(object):
@@ -297,5 +290,4 @@ class ProgressMeter(object):
             self._last_value = self.value
             self._render()
             self.stream.write('\n')
-
 

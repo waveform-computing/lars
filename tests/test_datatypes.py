@@ -295,9 +295,15 @@ def test_address_geoip_org():
 
 def test_resolving():
     assert dt.hostname('localhost').address == dt.IPv4Address('127.0.0.1')
-    assert dt.hostname('localhost') == dt.hostname('localhost').address.hostname
+    assert dt.hostname('localhost').address.hostname in (
+            dt.hostname('localhost'),
+            dt.hostname('localhost.localdomain'),
+            )
     assert dt.hostname('test.invalid').address is None
-    assert dt.address('127.0.0.1').hostname == dt.hostname('localhost')
+    assert dt.address('127.0.0.1').hostname in (
+            dt.hostname('localhost'),
+            dt.hostname('localhost.localdomain'),
+            )
     assert dt.address('::1').hostname == dt.hostname('ip6-localhost')
 
 def test_address():

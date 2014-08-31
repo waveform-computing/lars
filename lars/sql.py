@@ -121,6 +121,8 @@ from __future__ import (
     print_function,
     division,
     )
+str = type('')
+
 
 import warnings
 import logging
@@ -132,16 +134,6 @@ import sqlite3
 from datetime import date, time, datetime
 
 from lars import datatypes
-
-
-# Make Py2 str same as Py3
-str = type('')
-
-
-__all__ = [
-    'SQLTarget',
-    'SQLError',
-    ]
 
 
 class SQLError(StandardError):

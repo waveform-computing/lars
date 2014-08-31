@@ -128,27 +128,14 @@ from __future__ import (
     print_function,
     division,
     )
+str = type('')
+
 
 import io
 import logging
 import codecs
 import csv as csv_
 
-
-# Make Py2 str same as Py3
-str = type('')
-
-
-__all__ = [
-    'CSV_DIALECT',
-    'TSV_DIALECT',
-    'QUOTE_ALL',
-    'QUOTE_NONE',
-    'QUOTE_MINIMAL',
-    'QUOTE_NONNUMERIC',
-    'CSVSource',
-    'CSVTarget',
-    ]
 
 CSV_DIALECT = csv_.excel
 TSV_DIALECT = csv_.excel_tab

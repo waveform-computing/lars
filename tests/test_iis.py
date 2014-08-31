@@ -159,17 +159,17 @@ def test_directive_regexes():
     assert iis.IISSource.FIELD_RE.match('foo(bar)').group('identifier') == 'foo(bar)'
 
 def test_string_parse():
-    assert iis.string_parse('-') is None
-    assert iis.string_parse('foo') == 'foo'
-    assert iis.string_parse('foo+bar') == 'foo bar'
-    assert iis.string_parse('%28foo+bar%29') == '(foo bar)'
-    assert iis.string_parse('(foo;+bar;+baz)') == '(foo; bar; baz)'
-    assert iis.string_parse('"foo"') == 'foo'
-    assert iis.string_parse('"foo bar"') == 'foo bar'
-    assert iis.string_parse('"""foo"""') == '"foo"'
-    assert iis.string_parse('""') == ''
-    assert iis.string_parse('"""') == '"'
-    assert iis.string_parse('""""') == '"'
+    assert iis._string_parse('-') is None
+    assert iis._string_parse('foo') == 'foo'
+    assert iis._string_parse('foo+bar') == 'foo bar'
+    assert iis._string_parse('%28foo+bar%29') == '(foo bar)'
+    assert iis._string_parse('(foo;+bar;+baz)') == '(foo; bar; baz)'
+    assert iis._string_parse('"foo"') == 'foo'
+    assert iis._string_parse('"foo bar"') == 'foo bar'
+    assert iis._string_parse('"""foo"""') == '"foo"'
+    assert iis._string_parse('""') == ''
+    assert iis._string_parse('"""') == '"'
+    assert iis._string_parse('""""') == '"'
 
 def test_exceptions():
     exc = iis.IISError('Something went wrong!', 23)

@@ -81,81 +81,81 @@ def test_english_locale():
         assert hasattr(lt, attr)
 
 def test_string_parse():
-    assert apache.string_parse('-') is None
-    assert apache.string_parse('') == ''
-    assert apache.string_parse('abc') == 'abc'
-    assert apache.string_parse('ab\\nc') == 'ab\nc'
-    assert apache.string_parse('ab\\x0Ac') == 'ab\nc'
-    assert apache.string_parse('foo\\tbar') == 'foo\tbar'
-    assert apache.string_parse('foo\\x09bar') == 'foo\tbar'
-    assert apache.string_parse('\\"foo\\"') == '"foo"'
+    assert apache._string_parse('-') is None
+    assert apache._string_parse('') == ''
+    assert apache._string_parse('abc') == 'abc'
+    assert apache._string_parse('ab\\nc') == 'ab\nc'
+    assert apache._string_parse('ab\\x0Ac') == 'ab\nc'
+    assert apache._string_parse('foo\\tbar') == 'foo\tbar'
+    assert apache._string_parse('foo\\x09bar') == 'foo\tbar'
+    assert apache._string_parse('\\"foo\\"') == '"foo"'
     # Ensure the function simply leaves invalid escapes alone rather than
     # blowing up over them
-    assert apache.string_parse('foo\\x') == 'foo\\x'
-    assert apache.string_parse('foo\\xGG') == 'foo\\xGG'
-    assert apache.string_parse('foo\\') == 'foo\\'
+    assert apache._string_parse('foo\\x') == 'foo\\x'
+    assert apache._string_parse('foo\\xGG') == 'foo\\xGG'
+    assert apache._string_parse('foo\\') == 'foo\\'
 
 def test_time_parse_format():
     default = '[%d/%b/%Y:%H:%M:%S %z]'
-    assert apache.time_parse_format('[25/Dec/1998:17:45:35 +0000]', default) == dt.DateTime(1998, 12, 25, 17, 45, 35)
-    assert apache.time_parse_format('[25/Dec/1998:17:45:35 +0100]', default) == dt.DateTime(1998, 12, 25, 16, 45, 35)
-    assert apache.time_parse_format('[4/Dec/2001:23:59:59 -0500]', default) == dt.DateTime(2001, 12, 5, 4, 59, 59)
-    assert apache.time_parse_format('[4/Dec/2001:2:59:59 -0500]', default) == dt.DateTime(2001, 12, 4, 7, 59, 59)
-    assert apache.time_parse_format('[4/Dec/2001:2:9:59 -0500]', default) == dt.DateTime(2001, 12, 4, 7, 9, 59)
-    assert apache.time_parse_format('[4/Dec/2001:2:9:5 -0500]', default) == dt.DateTime(2001, 12, 4, 7, 9, 5)
-    assert apache.time_parse_format('2000-01-01T12:34:56+0700', '%Y-%m-%dT%H:%M:%S%z') == dt.DateTime(2000, 1, 1, 5, 34, 56)
+    assert apache._time_parse_format('[25/Dec/1998:17:45:35 +0000]', default) == dt.DateTime(1998, 12, 25, 17, 45, 35)
+    assert apache._time_parse_format('[25/Dec/1998:17:45:35 +0100]', default) == dt.DateTime(1998, 12, 25, 16, 45, 35)
+    assert apache._time_parse_format('[4/Dec/2001:23:59:59 -0500]', default) == dt.DateTime(2001, 12, 5, 4, 59, 59)
+    assert apache._time_parse_format('[4/Dec/2001:2:59:59 -0500]', default) == dt.DateTime(2001, 12, 4, 7, 59, 59)
+    assert apache._time_parse_format('[4/Dec/2001:2:9:59 -0500]', default) == dt.DateTime(2001, 12, 4, 7, 9, 59)
+    assert apache._time_parse_format('[4/Dec/2001:2:9:5 -0500]', default) == dt.DateTime(2001, 12, 4, 7, 9, 5)
+    assert apache._time_parse_format('2000-01-01T12:34:56+0700', '%Y-%m-%dT%H:%M:%S%z') == dt.DateTime(2000, 1, 1, 5, 34, 56)
     with pytest.raises(ValueError):
-        apache.time_parse_format('', default)
+        apache._time_parse_format('', default)
     with pytest.raises(ValueError):
-        apache.time_parse_format('012345678901234567890123456789', default)
+        apache._time_parse_format('012345678901234567890123456789', default)
     with pytest.raises(ValueError):
-        apache.time_parse_format('012345678901234567890123456', default)
+        apache._time_parse_format('012345678901234567890123456', default)
     with pytest.raises(ValueError):
-        apache.time_parse_format('[12345678901234567890123456', default)
+        apache._time_parse_format('[12345678901234567890123456', default)
     with pytest.raises(ValueError):
-        apache.time_parse_format('[1234567890123456789012345]', default)
+        apache._time_parse_format('[1234567890123456789012345]', default)
     with pytest.raises(ValueError):
-        apache.time_parse_format('[1/Feb67890123456789012345]', default)
+        apache._time_parse_format('[1/Feb67890123456789012345]', default)
     with pytest.raises(ValueError):
-        apache.time_parse_format('[1/Feb/2000123456789012345]', default)
+        apache._time_parse_format('[1/Feb/2000123456789012345]', default)
     with pytest.raises(ValueError):
-        apache.time_parse_format('[1/Feb/2000:12345678901235]', default)
+        apache._time_parse_format('[1/Feb/2000:12345678901235]', default)
     with pytest.raises(ValueError):
-        apache.time_parse_format('[1/Feb/2000:1:345678901235]', default)
+        apache._time_parse_format('[1/Feb/2000:1:345678901235]', default)
     with pytest.raises(ValueError):
-        apache.time_parse_format('[1/Feb/2000:1:3:4678901235]', default)
+        apache._time_parse_format('[1/Feb/2000:1:3:4678901235]', default)
     with pytest.raises(ValueError):
-        apache.time_parse_format('[1/Feb/2000:1:3:4 01235]', default)
+        apache._time_parse_format('[1/Feb/2000:1:3:4 01235]', default)
 
 def test_time_parse_common():
-    assert apache.time_parse_common('[25/Dec/1998:17:45:35 +0000]') == dt.DateTime(1998, 12, 25, 17, 45, 35)
-    assert apache.time_parse_common('[25/Dec/1998:17:45:35 +0100]') == dt.DateTime(1998, 12, 25, 16, 45, 35)
-    assert apache.time_parse_common('[4/Dec/2001:23:59:59 -0500]') == dt.DateTime(2001, 12, 5, 4, 59, 59)
-    assert apache.time_parse_common('[4/Dec/2001:2:59:59 -0500]') == dt.DateTime(2001, 12, 4, 7, 59, 59)
-    assert apache.time_parse_common('[4/Dec/2001:2:9:59 -0500]') == dt.DateTime(2001, 12, 4, 7, 9, 59)
-    assert apache.time_parse_common('[4/Dec/2001:2:9:5 -0500]') == dt.DateTime(2001, 12, 4, 7, 9, 5)
+    assert apache._time_parse_common('[25/Dec/1998:17:45:35 +0000]') == dt.DateTime(1998, 12, 25, 17, 45, 35)
+    assert apache._time_parse_common('[25/Dec/1998:17:45:35 +0100]') == dt.DateTime(1998, 12, 25, 16, 45, 35)
+    assert apache._time_parse_common('[4/Dec/2001:23:59:59 -0500]') == dt.DateTime(2001, 12, 5, 4, 59, 59)
+    assert apache._time_parse_common('[4/Dec/2001:2:59:59 -0500]') == dt.DateTime(2001, 12, 4, 7, 59, 59)
+    assert apache._time_parse_common('[4/Dec/2001:2:9:59 -0500]') == dt.DateTime(2001, 12, 4, 7, 9, 59)
+    assert apache._time_parse_common('[4/Dec/2001:2:9:5 -0500]') == dt.DateTime(2001, 12, 4, 7, 9, 5)
     with pytest.raises(ValueError):
-        apache.time_parse_common('')
+        apache._time_parse_common('')
     with pytest.raises(ValueError):
-        apache.time_parse_common('012345678901234567890123456789')
+        apache._time_parse_common('012345678901234567890123456789')
     with pytest.raises(ValueError):
-        apache.time_parse_common('012345678901234567890123456')
+        apache._time_parse_common('012345678901234567890123456')
     with pytest.raises(ValueError):
-        apache.time_parse_common('[12345678901234567890123456')
+        apache._time_parse_common('[12345678901234567890123456')
     with pytest.raises(ValueError):
-        apache.time_parse_common('[1234567890123456789012345]')
+        apache._time_parse_common('[1234567890123456789012345]')
     with pytest.raises(ValueError):
-        apache.time_parse_common('[1/Feb67890123456789012345]')
+        apache._time_parse_common('[1/Feb67890123456789012345]')
     with pytest.raises(ValueError):
-        apache.time_parse_common('[1/Feb/2000123456789012345]')
+        apache._time_parse_common('[1/Feb/2000123456789012345]')
     with pytest.raises(ValueError):
-        apache.time_parse_common('[1/Feb/2000:12345678901235]')
+        apache._time_parse_common('[1/Feb/2000:12345678901235]')
     with pytest.raises(ValueError):
-        apache.time_parse_common('[1/Feb/2000:1:345678901235]')
+        apache._time_parse_common('[1/Feb/2000:1:345678901235]')
     with pytest.raises(ValueError):
-        apache.time_parse_common('[1/Feb/2000:1:3:4678901235]')
+        apache._time_parse_common('[1/Feb/2000:1:3:4678901235]')
     with pytest.raises(ValueError):
-        apache.time_parse_common('[1/Feb/2000:1:3:4 01235]')
+        apache._time_parse_common('[1/Feb/2000:1:3:4 01235]')
 
 def test_exceptions():
     exc = apache.ApacheError('Something went wrong!', 23)

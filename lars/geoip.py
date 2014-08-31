@@ -64,12 +64,12 @@ from __future__ import (
     print_function,
     division,
     )
+str = type('')
 
 try:
     import ipaddress
-except ImportError: # pragma: no cover
-    # XXX Support old versions of ipaddress package
-    import ipaddr as ipaddress # pragma: no cover
+except ImportError:
+    import ipaddr as ipaddress
 from collections import namedtuple
 
 import pygeoip
