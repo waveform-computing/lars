@@ -298,7 +298,7 @@ def _time_parse_common(s):
     return dt.DateTime(*(d.utctimetuple()[:6]))
 
 
-class ApacheError(StandardError):
+class ApacheError(Exception):
     """
     Base class for ApacheSource errors.
 

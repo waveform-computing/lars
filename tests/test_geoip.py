@@ -31,8 +31,6 @@ from __future__ import (
 
 import os
 import gzip
-import urlparse
-import urllib2
 import socket
 try:
     from ipaddress import IPv4Address, IPv6Address

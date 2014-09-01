@@ -328,8 +328,8 @@ def test_sqlite_adapters():
     assert sqlite3.adapters[(dt.DateTime, pp)](dt.DateTime(2000, 1, 1, 12, 34, 56, 789)) == '2000-01-01 12:34:56.000789'
 
 def test_sqlite_converters():
-    assert sqlite3.converters['DATE']('2000-01-01') == dt.Date(2000, 1, 1)
-    assert sqlite3.converters['TIME']('12:34:56') == dt.Time(12, 34, 56)
-    assert sqlite3.converters['TIMESTAMP']('2000-01-01 12:34:56') == dt.DateTime(2000, 1, 1, 12, 34, 56)
-    assert sqlite3.converters['TIMESTAMP']('2000-01-01 12:34:56.000789') == dt.DateTime(2000, 1, 1, 12, 34, 56, 789)
+    assert sqlite3.converters['DATE'](b'2000-01-01') == dt.Date(2000, 1, 1)
+    assert sqlite3.converters['TIME'](b'12:34:56') == dt.Time(12, 34, 56)
+    assert sqlite3.converters['TIMESTAMP'](b'2000-01-01 12:34:56') == dt.DateTime(2000, 1, 1, 12, 34, 56)
+    assert sqlite3.converters['TIMESTAMP'](b'2000-01-01 12:34:56.000789') == dt.DateTime(2000, 1, 1, 12, 34, 56, 789)
 

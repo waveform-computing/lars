@@ -129,8 +129,14 @@ from __future__ import (
     division,
     )
 str = type('')
+try:
+    long
+except NameError:
+    long = int
 
 
+import sys
+PY2 = sys.version_info[0] == 2
 import io
 import logging
 import codecs
@@ -146,42 +152,43 @@ QUOTE_MINIMAL = csv_.QUOTE_MINIMAL
 QUOTE_NONNUMERIC = csv_.QUOTE_NONNUMERIC
 
 
-# Adapted from the official csv module's documentation:
-class UnicodeWriter(object):
-    """
-    A CSV writer which will write rows to CSV file "f", which is encoded in the
-    given encoding.
-    """
+if PY2:
+    # Adapted from the official csv module's documentation:
+    class UnicodeWriter(object):
+        """
+        A CSV writer which will write rows to CSV file "f", which is encoded in the
+        given encoding.
+        """
 
-    def __init__(self, f, dialect=CSV_DIALECT, encoding='utf-8', **kwds):
-        self.stream = f
-        self.encoder = codecs.getincrementalencoder(encoding)()
-        # If encoding is utf-8 there's no need to decode and recode it again
-        # so use a fast-path method which skips all the transcoding
-        if encoding.lower() == 'utf-8':
-            self.writerow = self._writerow_utf8
-            self.writer = csv_.writer(f, dialect=dialect, **kwds)
-        else:
-            self._queue = io.BytesIO()
-            self.writer = csv_.writer(self._queue, dialect=dialect, **kwds)
+        def __init__(self, f, dialect=CSV_DIALECT, encoding='utf-8', **kwds):
+            self.stream = f
+            self.encoder = codecs.getincrementalencoder(encoding)()
+            # If encoding is utf-8 there's no need to decode and recode it again
+            # so use a fast-path method which skips all the transcoding
+            if encoding.lower() == 'utf-8':
+                self.writerow = self._writerow_utf8
+                self.writer = csv_.writer(f, dialect=dialect, **kwds)
+            else:
+                self._queue = io.BytesIO()
+                self.writer = csv_.writer(self._queue, dialect=dialect, **kwds)
 
-    def _writerow_utf8(self, row):
-        self.writer.writerow([
-            None if s is None else
-            s if isinstance(s, (int, long, float)) else
-            s.encode('utf-8') if isinstance(s, str) else
-            str(s).encode('utf-8')
-            for s in row
-            ])
+        def _writerow_utf8(self, row):
+            self.writer.writerow([
+                None if s is None else
+                s if isinstance(s, (int, long, float)) else
+                s.encode('utf-8') if isinstance(s, str) else
+                str(s).encode('utf-8')
+                for s in row
+                ])
 
-    def writerow(self, row):
-        self._writerow_utf8(row)
-        data = self._queue.getvalue()
-        data = data.decode('utf-8')
-        data = self.encoder.encode(data)
-        self.stream.write(data)
-        self._queue.seek(0)
-        self._queue.truncate()
+        def writerow(self, row):
+            self._writerow_utf8(row)
+            data = self._queue.getvalue()
+            data = data.decode('utf-8')
+            data = self.encoder.encode(data)
+            self.stream.write(data)
+            self._queue.seek(0)
+            self._queue.truncate()
 
 
 class CSVSource(object):
@@ -236,9 +243,18 @@ class CSVTarget(object):
     def __enter__(self):
         logging.debug('Entering CSVTarget context')
         logging.debug('Constructing CSV writer')
-        self._writer = UnicodeWriter(
-            self.fileobj, encoding=self.encoding, dialect=self.dialect,
-            **self.keywords)
+        if PY2:
+            # In Python 2, the csv writer outputs bytes. We use a recipe from
+            # the docs to transcode the output into the requested encoding
+            self._writer = UnicodeWriter(
+                self.fileobj, encoding=self.encoding, dialect=self.dialect,
+                **self.keywords)
+        else:
+            # In Python 3, the csv writer outputs strings so we stick a
+            # transcoding shim between the writer and the output object
+            self._writer = csv_.writer(
+                codecs.getwriter(self.encoding)(self.fileobj),
+                dialect=self.dialect, **self.keywords)
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):

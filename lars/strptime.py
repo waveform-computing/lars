@@ -69,7 +69,7 @@ from __future__ import (
 import sys
 
 if sys.version_info >= (3, 2):
-    from _strptime import TimeRE, _strptime
+    from _strptime import TimeRE, _strptime_datetime
 
 else:
     # Make Py2 str same as Py3

@@ -88,9 +88,9 @@ def test_target(rows):
             target.write(('foo',))
     out = out.getvalue().splitlines()
     assert len(out) == target.count
-    assert out[0] == '2002-06-24 16:40:23,172.224.24.114,POST,/Default.htm,0.67,200,7930'
-    assert out[1] == '2002-05-02 20:18:01,172.22.255.255,GET,/images/picture.jpg,0.1,302,16328'
-    assert out[2] == '2002-05-29 12:34:56,9.180.235.203,HEAD,/images/picture.jpg,0.1,202,'
+    assert out[0] == b'2002-06-24 16:40:23,172.224.24.114,POST,/Default.htm,0.67,200,7930'
+    assert out[1] == b'2002-05-02 20:18:01,172.22.255.255,GET,/images/picture.jpg,0.1,302,16328'
+    assert out[2] == b'2002-05-29 12:34:56,9.180.235.203,HEAD,/images/picture.jpg,0.1,202,'
 
 def test_header(rows):
     # Do it again, this time with a header
@@ -100,10 +100,10 @@ def test_header(rows):
             target.write(row)
     out = out.getvalue().splitlines()
     assert len(out) - 1 == target.count
-    assert out[0] == 'timestamp,client,method,url,time_taken,status,size'
-    assert out[1] == '2002-06-24 16:40:23,172.224.24.114,POST,/Default.htm,0.67,200,7930'
-    assert out[2] == '2002-05-02 20:18:01,172.22.255.255,GET,/images/picture.jpg,0.1,302,16328'
-    assert out[3] == '2002-05-29 12:34:56,9.180.235.203,HEAD,/images/picture.jpg,0.1,202,'
+    assert out[0] == b'timestamp,client,method,url,time_taken,status,size'
+    assert out[1] == b'2002-06-24 16:40:23,172.224.24.114,POST,/Default.htm,0.67,200,7930'
+    assert out[2] == b'2002-05-02 20:18:01,172.22.255.255,GET,/images/picture.jpg,0.1,302,16328'
+    assert out[3] == b'2002-05-29 12:34:56,9.180.235.203,HEAD,/images/picture.jpg,0.1,202,'
 
 def test_non_unicode(rows):
     # Do it with a non-utf-8 encoding to cover the full transcoding path
@@ -115,7 +115,7 @@ def test_non_unicode(rows):
     print(repr(out))
     out = out.splitlines()
     assert len(out) == target.count
-    assert out[0] == '2002-06-24 16:40:23,172.224.24.114,POST,/Default.htm,0.67,200,7930'
-    assert out[1] == '2002-05-02 20:18:01,172.22.255.255,GET,/images/picture.jpg,0.1,302,16328'
-    assert out[2] == '2002-05-29 12:34:56,9.180.235.203,HEAD,/images/picture.jpg,0.1,202,'
+    assert out[0] == b'2002-06-24 16:40:23,172.224.24.114,POST,/Default.htm,0.67,200,7930'
+    assert out[1] == b'2002-05-02 20:18:01,172.22.255.255,GET,/images/picture.jpg,0.1,302,16328'
+    assert out[2] == b'2002-05-29 12:34:56,9.180.235.203,HEAD,/images/picture.jpg,0.1,202,'
 

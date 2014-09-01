@@ -178,6 +178,7 @@ from __future__ import (
     print_function,
     division,
     )
+native_str = str
 str = type('')
 
 
@@ -324,7 +325,7 @@ def hostname(s):
               :class:`IPv6Address` instance
     """
     if isinstance(s, bytes):
-        s = str(s)
+        s = s.decode('utf-8')
     try:
         return IPv4Address(s)
     except ValueError:
@@ -345,7 +346,7 @@ def network(s):
     :returns: An :class:`IPv4Network` or :class:`IPv6Network` instance
     """
     if isinstance(s, bytes):
-        s = str(s)
+        s = s.decode('utf-8')
     try:
         return IPv4Network(s)
     except ValueError:
@@ -368,7 +369,7 @@ def address(s):
               or :class:`IPv6Port` instance
     """
     if isinstance(s, bytes):
-        s = str(s)
+        s = s.decode('utf-8')
     try:
         return IPv4Address(s)
     except ValueError:
@@ -1090,7 +1091,16 @@ class Path(namedtuple('Path', 'dirname basename ext')):
             return result + '/' + self.basename
 
 
-class Url(namedtuple('Url', 'scheme netloc path_str params query_str fragment'), parse.ResultMixin):
+# This is rather hackish; in Python 2.x, urlparse.ResultMixin provides
+# functionality for extracting username, password, hostname and port from a
+# parsed URL. In Python 3 this changed to ResultBase, then to a whole bunch of
+# undocumented classes (split between strings and bytes) with ResultBase as an
+# alias
+try:
+    _ResultMixin = parse.ResultBase
+except AttributeError:
+    _ResultMixin = parse.ResultMixin
+class Url(namedtuple('Url', 'scheme netloc path_str params query_str fragment'), _ResultMixin):
     """
     Represents a URL.
 
@@ -1856,19 +1866,19 @@ def register_adapters_and_converters():
         return val.isoformat()
 
     def adapt_datetime(val):
-        return val.isoformat(b" ")
+        return val.isoformat(native_str(" "))
 
     def convert_date(val):
-        return Date(*map(int, val.split("-")))
+        return Date(*map(int, val.split(b"-")))
 
     def convert_time(val):
-        return Time(*map(int, val.split(":")))
+        return Time(*map(int, val.split(b":")))
 
     def convert_timestamp(val):
-        datepart, timepart = val.split(" ")
-        year, month, day = map(int, datepart.split("-"))
-        timepart_full = timepart.split(".")
-        hours, minutes, seconds = map(int, timepart_full[0].split(":"))
+        datepart, timepart = val.split(b" ")
+        year, month, day = map(int, datepart.split(b"-"))
+        timepart_full = timepart.split(b".")
+        hours, minutes, seconds = map(int, timepart_full[0].split(b":"))
         if len(timepart_full) == 2:
             microseconds = int(timepart_full[1])
         else:
@@ -1882,9 +1892,9 @@ def register_adapters_and_converters():
     sqlite3.register_adapter(Time, adapt_time)
     sqlite3.register_adapter(dt.datetime, adapt_datetime)
     sqlite3.register_adapter(DateTime, adapt_datetime)
-    sqlite3.register_converter(b"date", convert_date)
-    sqlite3.register_converter(b"time", convert_time)
-    sqlite3.register_converter(b"timestamp", convert_timestamp)
+    sqlite3.register_converter(native_str("date"), convert_date)
+    sqlite3.register_converter(native_str("time"), convert_time)
+    sqlite3.register_converter(native_str("timestamp"), convert_timestamp)
 
 register_adapters_and_converters()
 # Clean up namespace

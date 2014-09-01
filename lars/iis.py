@@ -165,7 +165,7 @@ def _string_parse(s):
     return unquote_plus(s)
 
 
-class IISError(StandardError):
+class IISError(Exception):
     """
     Base class for IISSource errors.
 

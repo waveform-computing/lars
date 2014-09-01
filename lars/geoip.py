@@ -179,13 +179,17 @@ def country_code_by_addr(address):
     # consistency with the GeoIP API, we convert this to None
     try:
         if isinstance(address, ipaddress.IPv4Address):
-            return _GEOIP_IPV4_GEO.country_code_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+            result = _GEOIP_IPV4_GEO.country_code_by_addr(address.compressed)
         else:
-            return _GEOIP_IPV6_GEO.country_code_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+            result = _GEOIP_IPV6_GEO.country_code_by_addr(address.compressed)
     except AttributeError:
         raise ValueError(
             'Uninitialized geo database while looking up country '
             'for address %s' % address)
+    else:
+        if isinstance(result, str):
+            return result
+        return result.decode(_MAXMIND_ENCODING)
 
 def region_by_addr(address):
     """
@@ -218,7 +222,10 @@ def region_by_addr(address):
             'Uninitialized geo database while looking up country '
             'for address %s' % address)
     if rec and 'region_name' in rec:
-        return rec['region_name'].decode(_MAXMIND_ENCODING)
+        result = rec['region_name']
+        if isinstance(result, str):
+            return result
+        return result.decode(_MAXMIND_ENCODING)
 
 def city_by_addr(address):
     """
@@ -247,7 +254,10 @@ def city_by_addr(address):
             'Uninitialized geo database while looking up country '
             'for address %s' % address)
     if rec and 'city' in rec:
-        return rec['city'].decode(_MAXMIND_ENCODING)
+        result = rec['city']
+        if isinstance(result, str):
+            return result
+        return result.decode(_MAXMIND_ENCODING)
 
 def coords_by_addr(address):
     """
@@ -295,13 +305,17 @@ def isp_by_addr(address):
     """
     try:
         if isinstance(address, ipaddress.IPv4Address):
-            return _GEOIP_IPV4_ISP.org_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+            result = _GEOIP_IPV4_ISP.org_by_addr(address.compressed)
         else:
-            return _GEOIP_IPV6_ISP.org_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+            result = _GEOIP_IPV6_ISP.org_by_addr(address.compressed)
     except AttributeError:
         raise ValueError(
             'Uninitialized ISP database while looking up ISP '
             'for address %s' % address)
+    else:
+        if isinstance(result, str):
+            return result
+        return result.decode(_MAXMIND_ENCODING)
 
 def org_by_addr(address):
     """
@@ -313,11 +327,15 @@ def org_by_addr(address):
     """
     try:
         if isinstance(address, ipaddress.IPv4Address):
-            return _GEOIP_IPV4_ORG.org_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+            result = _GEOIP_IPV4_ORG.org_by_addr(address.compressed)
         else:
-            return _GEOIP_IPV6_ORG.org_by_addr(address.compressed).decode(_MAXMIND_ENCODING)
+            result = _GEOIP_IPV6_ORG.org_by_addr(address.compressed)
     except AttributeError:
         raise ValueError(
             'Uninitialized organisation database while looking up org '
             'for address %s' % address)
+    else:
+        if isinstance(result, str):
+            return result
+        return result.decode(_MAXMIND_ENCODING)
 

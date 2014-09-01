@@ -89,7 +89,7 @@ def rows():
 class FakeDbModule(object):
     def __init__(self):
         self.paramstyle = 'qmark'
-        self.Error = StandardError
+        self.Error = Exception
 
 def test_exceptions():
     exc = sql.SQLError('Something went wrong!', 1)
