@@ -5,5 +5,5 @@ python:
     - "3.2"
     - "2.7"
     - "pypy"
-install: "pip install -e .[test]"
+install: "pip install -e .[test] --allow-all-external"
 script: make test
