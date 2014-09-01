@@ -95,9 +95,17 @@ __requires__ = [
     'pygeoip',   # Pure Python GeoIP library
     ]
 
+__dependency_links__ = []
+
 if sys.version_info[:2] < (3, 3):
     # Python 3.3+ has an equivalent ipaddress module built-in
-    __requires__.append('ipaddr')
+    if sys.version_info[:2] == (3, 2):
+        # The version of ipaddr on PyPI is incompatible with Python 3.2; use
+        # a private fork of it instead
+        __requires__.append('ipaddr==2.1.11-py3.2')
+        __dependency_links__.append('git+http://github.com/waveform80/ipaddr#egg=2.1.11-py3.2')
+    else:
+        __requires__.append('ipaddr')
 
 __extra_requires__ = {
     'doc': ['sphinx'],
@@ -141,6 +149,7 @@ def main():
             install_requires     = __requires__,
             extras_require       = __extra_requires__,
             entry_points         = __entry_points__,
+            dependency_links     = __dependency_links__,
             )
 
 if __name__ == '__main__':
