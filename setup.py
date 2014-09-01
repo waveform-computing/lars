@@ -103,7 +103,7 @@ if sys.version_info[:2] < (3, 3):
         # The version of ipaddr on PyPI is incompatible with Python 3.2; use
         # a private fork of it instead
         __requires__.append('ipaddr==2.1.11-py3.2')
-        __dependency_links__.append('git+http://github.com/waveform80/ipaddr#egg=2.1.11-py3.2')
+        __dependency_links__.append('git+https://github.com/waveform80/ipaddr#egg=ipaddr')
     else:
         __requires__.append('ipaddr')
 
