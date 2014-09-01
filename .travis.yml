@@ -5,5 +5,7 @@ python:
     - "3.2"
     - "2.7"
     - "pypy"
-install: "pip install -e .[test] --allow-all-external"
+install:
+    - if [[ $TRAVIS_PYTHON_VERSION == '3.2' ]]; then pip install -e .[test] --allow-all-external --allow-unverified ipaddr; fi
+    - if [[ $TRAVIS_PYTHON_VERSION != '3.2' ]]; then pip install -e .[test]; fi
 script: make test
