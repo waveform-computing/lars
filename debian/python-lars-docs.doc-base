@@ -1,0 +1,9 @@
+Document: python-lars
+Title: LARS Reference
+Author: Dave Hughes <dave@waveform.org.uk>
+Abstract: Documentation for the Python lars library
+Section: Programming/Python
+
+Format: HTML
+Index: /usr/share/doc/python-lars-docs/html/index.html
+Files: /usr/share/doc/python-lars-docs/html/*

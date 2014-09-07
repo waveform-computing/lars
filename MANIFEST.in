@@ -1,6 +1,4 @@
 prune debian
 prune docs
-exclude Makefile
-include utils.py
 include README.rst
 include LICENSE.txt

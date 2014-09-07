@@ -1,17 +1,43 @@
-Source: python-lars
+Source: lars
 Maintainer: Dave Hughes <dave@waveform.org.uk>
 Homepage: https://github.com/waveform80/lars
 Section: python
 Priority: extra
-Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.7), debhelper (>= 7.4.3)
-Standards-Version: 3.9.3
+Build-Depends: debhelper (>= 8), python-all (>= 2.7), python-setuptools, python3-all, python3-setuptools, python-docutils, python-sphinx (>= 1.0.7+dfsg-1~)
+Standards-Version: 3.9.4
 X-Python-Version: >= 2.7
+X-Python3-Version: >= 3.2
 
 Package: python-lars
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-ipaddr, python-pip
+Depends: ${misc:Depends}, ${python:Depends}, python-ipaddr
 Description: Python framework for working with common web log formats.
  lars is a small framework for working with httpd logs (from a variety of
  common servers like Apache, nginx, and IIS). The primary purpose is to provide
  a set of conversions to ease loading such logs into relational databases, but
  numerous other possiblities can be realized with a little imagination.
+ .
+ This is the Python 2 version of the package.
+
+Package: python3-lars
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, python3-ipaddr
+Description: Python framework for working with common web log formats.
+ lars is a small framework for working with httpd logs (from a variety of
+ common servers like Apache, nginx, and IIS). The primary purpose is to provide
+ a set of conversions to ease loading such logs into relational databases, but
+ numerous other possiblities can be realized with a little imagination.
+ .
+ This is the Python 3 version of the package.
+
+Package: python-lars-docs
+Architecture: all
+Section: doc
+Depends: ${misc:Depends}, ${python:Depends}
+Description: Python framework for working with common web log formats.
+ lars is a small framework for working with httpd logs (from a variety of
+ common servers like Apache, nginx, and IIS). The primary purpose is to provide
+ a set of conversions to ease loading such logs into relational databases, but
+ numerous other possiblities can be realized with a little imagination.
+ .
+ This is the version-independent documentation for the package.
