@@ -12,6 +12,7 @@ Table of Contents
 
    install
    api
+   changelog
    license
 
 

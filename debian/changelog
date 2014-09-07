@@ -1,4 +1,4 @@
-python-lars (0.2-1~ppa1) precise; urgency=low
+lars (0.2-1~ppa1) precise; urgency=low
 
   * Added ISP and organisation lookups to geoip module
   * Added multi-row insertion support to the sql module
@@ -9,7 +9,7 @@ python-lars (0.2-1~ppa1) precise; urgency=low
 
  -- Dave Hughes <dave@waveform.org.uk>  Sun, 28 Jul 2013 00:21:19 +0100
 
-python-lars (0.1-1~ppa1) precise; urgency=low
+lars (0.1-1~ppa1) precise; urgency=low
 
   * Initial release.
 
