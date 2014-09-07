@@ -1,3 +1,10 @@
+lars (0.3-1~ppa1) precise; urgency=medium
+
+  * Implemented Python 3 compatibility (specifically 3.2 or above) and added
+    debian packaging for Python 3 and docs
+
+ -- Dave Hughes <dave@waveform.org.uk>  Sun, 07 Sep 2014 14:41:35 +0100
+
 lars (0.2-1~ppa1) precise; urgency=low
 
   * Added ISP and organisation lookups to geoip module
