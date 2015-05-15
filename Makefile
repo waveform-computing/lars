@@ -176,10 +176,10 @@ release: $(PY_SOURCES) $(DOC_SOURCES) $(DEB_SOURCES)
 	# commit the changes and add a new tag
 	git commit debian/changelog -m "Updated changelog for release $(VER)"
 	git tag -s release-$(VER) -m "Release $(VER)"
-	# update the package's registration on PyPI (in case any metadata's changed)
-	$(PYTHON) $(PYFLAGS) setup.py register
 
 upload: $(PY_SOURCES) $(DOC_SOURCES) $(DIST_DEB) $(DIST_DSC)
+	# update the package's registration on PyPI (in case any metadata's changed)
+	$(PYTHON) $(PYFLAGS) setup.py register
 	# build a source archive and upload to PyPI
 	$(PYTHON) $(PYFLAGS) setup.py sdist upload
 	# build the deb source archive and upload to the PPA
