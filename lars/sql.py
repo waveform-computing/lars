@@ -422,8 +422,12 @@ class SQLTarget(object):
                 ['field%d' % (j + 1) for j in range(len(row))]
                 )
             ])
-        statement = 'INSERT INTO %s VALUES %s%s' % (
+        names_row = (
+            '(%s)' % ', '.join(row._fields)
+            ) if hasattr(row, '_fields') else ''
+        statement = 'INSERT INTO %s%s VALUES %s%s' % (
             self.table,
+            names_row,
             values_row,
             (', ' + values_row) * (count - 1)
             )
