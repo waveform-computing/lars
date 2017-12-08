@@ -3,12 +3,12 @@ Upstream-Name: lars
 Source: https://github.com/waveform80/lars
 
 Files: *
-Copyright: 2013 Dave Hughes <dave@waveform.org.uk>
+Copyright: 2013-2017 Dave Jones <dave@waveform.org.uk>
            2013 Mime Consulting <info@mimeconsulting.co.uk>
 License: Expat
 
 Files: debian/*
-Copyright: 2013 Dave Hughes <dave@waveform.org.uk>
+Copyright: 2013-2017 Dave Jones <dave@waveform.org.uk>
 License: Expat
 
 License: Expat

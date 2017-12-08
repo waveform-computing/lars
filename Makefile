@@ -1,6 +1,6 @@
 # vim: set noet sw=4 ts=4 fileencoding=utf-8:
 #
-# Copyright (c) 2013 Dave Hughes <dave@waveform.org.uk>
+# Copyright (c) 2013-2017 Dave Jones <dave@waveform.org.uk>
 # Copyright (c) 2013 Mime Consulting <info@mimeconsulting.co.uk>
 # All rights reserved.
 #

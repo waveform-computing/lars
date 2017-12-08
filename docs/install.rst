@@ -26,7 +26,9 @@ Ubuntu Linux
 ============
 
 For Ubuntu Linux, it is simplest to install from the `Waveform PPA`_ as follows
-(this also ensures you are kept up to date as new releases are made)::
+(this also ensures you are kept up to date as new releases are made):
+
+.. code-block:: console
 
     $ sudo add-apt-repository ppa://waveform/ppa
     $ sudo apt-get update
@@ -38,11 +40,15 @@ Other Platforms
 
 If your platform is *not* covered by one of the sections above, lars is
 available from PyPI and can therefore be installed with the Python setuptools
-``easy_install`` tool::
+``easy_install`` tool:
+
+.. code-block:: console
 
    $ easy_install lars
 
-Or the (now deprecated) distribute ``pip`` tool::
+Or the (now deprecated) distribute ``pip`` tool:
+
+.. code-block:: console
 
    $ pip install lars
 

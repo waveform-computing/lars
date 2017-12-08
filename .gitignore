@@ -16,6 +16,9 @@ sdist
 develop-eggs
 .installed.cfg
 
+# Doc builds
+docs/_build/
+
 # Installer logs
 pip-log.txt
 
@@ -23,6 +26,10 @@ pip-log.txt
 coverage
 .coverage
 .tox
+.cache
+
+# Ignore virtualenvwrapper bits
+.venv
 
 #Translations
 *.mo
