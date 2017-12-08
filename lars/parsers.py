@@ -55,9 +55,10 @@ _URL = r'([^:/?#\s]+:)?(//[^/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?'
 
 _PATH = r'([^\x00-\x1f\x7f]*)'
 
-# METHOD can never be unknown (there wouldn't be a request without it), so it's
-# one of the few regexes with no "-" option. Extension methods can potentially
-# be used, hence this regex just matches the "token" production in RFC2616 2.2.
+# Extension methods can potentially be used, hence this regex just matches the
+# "token" production in RFC2616 2.2. Note that this regex cannot match "-"
+# because a method *within a request* cannot be unknown (see REQUEST below for
+# more information).
 
 _METHOD = r'[^\x00-\x1f\x7f(){}<>[\]@,;:\\"/?= \t]+'
 
@@ -79,12 +80,17 @@ TIME_ISO = r'(?P<%(name)s>-|\d{2}:\d{2}:\d{2})'
 # The reason for the empty "-" production appearing on the right is due to an
 # issue with disjuncts in Perl-style regex implementations, see
 # <http://lingpipe-blog.com/2008/05/07/tokenization-vs-eager-regular-expressions/>
+#
+# Note that the empty production "-" is possible for METHOD, PROTOCOL and
+# REQUEST (e.g. due to request timeout), however the method cannot be empty
+# ("-") unless the *entire* request is empty hence why the empty match "-" is
+# only introduced here and not in the regexes above.
 
 URL      = r'(?P<%%(name)s>%s|-)' % _URL
 PATH     = r'(?P<%%(name)s>%s|-)' % _PATH
-METHOD   = r'(?P<%%(name)s>%s)' % _METHOD
-PROTOCOL = r'(?P<%%(name)s>%s)' % _PROTOCOL
-REQUEST  = r'(?P<%%(name)s>%s %s %s)' % (_METHOD, _URL, _PROTOCOL)
+METHOD   = r'(?P<%%(name)s>%s|-)' % _METHOD
+PROTOCOL = r'(?P<%%(name)s>%s|-)' % _PROTOCOL
+REQUEST  = r'(?P<%%(name)s>%s %s %s|-)' % (_METHOD, _URL, _PROTOCOL)
 
 # Doing DNS (or IP) validation is extremely hard to do properly with regexes so
 # here we use a trivial regex to pull out a string containing the right
@@ -104,17 +110,15 @@ def request_parse(s):
     Parse an HTTP request line in a log file.
 
     This is a basic function that simply returns the three components of a
-    request line (method, url, and protocol) as tuple. No check is made for "-"
-    or missing methods/protocols - without a request, there'd be nothing to log
-    and method and protocol are mandatory in a request line. If URL is "*"
-    (denoting a missing URL for methods which do not require one, like
-    OPTIONS), the middle element of the returned tuple will be None.
+    request line (method, url, and protocol) as tuple. If URL is "*" (denoting
+    a missing URL for methods which do not require one, like OPTIONS), the
+    middle element of the returned tuple will be None.
 
     :param str s: The string containing the request line to parse
     :returns: A :class:`~lars.datatypes.Request` tuple representing the
               request line
     """
-    return dt.request(s)
+    return dt.request(s) if s != '-' else None
 
 
 def url_parse(s):

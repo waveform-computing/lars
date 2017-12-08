@@ -55,8 +55,7 @@ def test_path_parse():
     assert parsers.path_parse('/foo/.baz') == datatypes.Path('/foo', '.baz', '')
 
 def test_request_parse():
-    with pytest.raises(ValueError):
-        assert parsers.request_parse('-')
+    assert parsers.request_parse('-') is None
     assert parsers.request_parse('OPTIONS * HTTP/1.0') == datatypes.Request('OPTIONS', None, 'HTTP/1.0')
     assert parsers.request_parse('GET /foo/bar HTTP/1.1') == datatypes.Request('GET', datatypes.url('/foo/bar'), 'HTTP/1.1')
 

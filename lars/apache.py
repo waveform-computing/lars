@@ -507,7 +507,7 @@ class ApacheSource(object):
         # sequences, except for newline, tab, and double-quote which are all
         # simply back-slash escaped. This is Apache specific and hence isn't
         # taken from the standard parsers module
-        'string':    (_string_parse,          r'(?P<%(name)s>(?:[^\x00-\x1f\x7f\\"]|\\x[0-9a-fA-F]{2}|\\[^x])+|-)'),
+        'string':    (_string_parse,          r'(?P<%(name)s>(?:[^\x00-\x1f\x7f\\"]|\\x[0-9a-fA-F]{2}|\\[^x])*|-)'),
         # Apache field type which indicates the keep-alive state of the
         # connection when the request is done (X=connection aborted before
         # completion, +=keep connection alive, -=close connection)
@@ -581,7 +581,7 @@ class ApacheSource(object):
         # the field extracted from the spec (if any) and the type suffix. The
         # result MUST be a valid Python identifier
         if suffix in 'Ceino':
-            # If a data is expected, sanitize it and substitute into template
+            # If data is expected, sanitize it and substitute into template
             if not data:
                 raise ValueError(
                     'Missing {str} for format suffix "%s"' % suffix)
