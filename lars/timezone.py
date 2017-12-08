@@ -1,7 +1,7 @@
 # vim: set et sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (c) 2013 Python Software Foundation
-# Portions (c) 2013 Dave Hughes
+# Portions (c) 2013-2017 Dave Jones
 #
 # PSF LICENSE AGREEMENT FOR PYTHON 3.2.3
 #
