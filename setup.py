@@ -64,15 +64,15 @@ except ImportError:
     pass
 
 __project__      = 'lars'
-__version__      = '0.3'
-__authors__      = ['Dave Hughes', 'Mime Consulting Ltd.']
+__version__      = '1.0'
+__authors__      = ['Dave Jones', 'Mime Consulting Ltd.']
 __author__       = __authors__[0]
 __author_email__ = 'dave@waveform.org.uk'
 __url__          = 'http://github.com/waveform80/lars'
 __platforms__    = 'ALL'
 
 __classifiers__  = [
-    'Development Status :: 4 - Beta',
+    'Development Status :: 5 - Production',
     'Intended Audience :: System Administrators',
     'License :: OSI Approved :: MIT License',
     'Operating System :: Microsoft :: Windows',
