@@ -308,10 +308,6 @@ def test_resolving():
             dt.hostname('localhost'),
             dt.hostname('localhost.localdomain'),
             )
-    assert dt.address('::1').hostname in (
-            dt.hostname('ip6-localhost'),
-            dt.hostname('localhost'),
-            )
 
 def test_address():
     with mock.patch('lars.dns.from_address') as from_address:
