@@ -93,36 +93,31 @@ __keywords__ = [
 
 __requires__ = [
     'pygeoip',   # Pure Python GeoIP library
+    'backports.csv;python_version<"3.0"',
+    'backport_ipaddress;python_version<"3.3"',
     ]
-
-__dependency_links__ = []
-
-if sys.version_info[:2] < (3, 3):
-    # Python 3.3+ has an equivalent ipaddress module built-in
-    if sys.version_info[:2] == (3, 2):
-        # The version of ipaddr on PyPI is incompatible with Python 3.2; use
-        # a private fork of it instead
-        __requires__.append('ipaddr==2.1.11-py3.2')
-        __dependency_links__.append('git+https://github.com/waveform80/ipaddr#egg=ipaddr')
-    else:
-        __requires__.append('ipaddr')
 
 __extra_requires__ = {
     'doc': ['sphinx'],
     'test': ['pytest', 'coverage', 'mock'],
     }
 
+__entry_points__ = {
+    }
+
+__dependency_links__ = []
+
 if sys.version_info[:2] == (3, 2):
+    # The version of ipaddr on PyPI is incompatible with Python 3.2; use
+    # a private fork of it instead
+    __requires__.append('ipaddr==2.1.11-py3.2')
+    __dependency_links__.append('git+https://github.com/waveform80/ipaddr#egg=ipaddr')
     __extra_requires__['doc'].extend([
         # Particular versions are required for Python 3.2 compatibility. The
         # ordering is reversed because that's what easy_install needs...
         'Jinja2<2.7',
         'MarkupSafe<0.16',
         ])
-
-__entry_points__ = {
-    }
-
 
 def main():
     import io
@@ -143,16 +138,15 @@ def main():
                 ][0],
             keywords             = __keywords__,
             packages             = find_packages(),
-            package_data         = {},
             include_package_data = True,
             platforms            = __platforms__,
             install_requires     = __requires__,
             extras_require       = __extra_requires__,
+            tests_require        = __extra_requires__.get('test', []),
             entry_points         = __entry_points__,
             dependency_links     = __dependency_links__,
             )
 
+
 if __name__ == '__main__':
     main()
-
-

@@ -27,4 +27,3 @@ modifying them to suit your purposes.
    lars.progress
    lars.dns
    lars.cache
-
