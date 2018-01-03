@@ -5,5 +5,5 @@ Abstract: Documentation for the Python lars library
 Section: Programming/Python
 
 Format: HTML
-Index: /usr/share/doc/python-lars-docs/html/index.html
-Files: /usr/share/doc/python-lars-docs/html/*
+Index: /usr/share/doc/python-lars-doc/html/index.html
+Files: /usr/share/doc/python-lars-doc/html/*

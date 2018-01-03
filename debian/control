@@ -10,7 +10,7 @@ X-Python3-Version: >= 3.2
 
 Package: python-lars
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, python-ipaddress
+Depends: ${misc:Depends}, ${python:Depends}
 Description: Python framework for working with common web log formats.
  lars is a small framework for working with httpd logs (from a variety of
  common servers like Apache, nginx, and IIS). The primary purpose is to provide
@@ -21,7 +21,7 @@ Description: Python framework for working with common web log formats.
 
 Package: python3-lars
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}
+Depends: ${misc:Depends}, ${python3:Depends}
 Description: Python framework for working with common web log formats.
  lars is a small framework for working with httpd logs (from a variety of
  common servers like Apache, nginx, and IIS). The primary purpose is to provide
@@ -30,14 +30,15 @@ Description: Python framework for working with common web log formats.
  .
  This is the Python 3 version of the package.
 
-Package: python-lars-docs
+Package: python-lars-doc
+Replaces: python-lars-docs
 Architecture: all
 Section: doc
-Depends: ${misc:Depends}, ${python:Depends}
+Depends: ${misc:Depends}, ${sphinxdoc:Depends}
 Description: Python framework for working with common web log formats.
  lars is a small framework for working with httpd logs (from a variety of
  common servers like Apache, nginx, and IIS). The primary purpose is to provide
  a set of conversions to ease loading such logs into relational databases, but
- numerous other possiblities can be realized with a little imagination.
+ numerous other possibilities can be realized with a little imagination.
  .
  This is the version-independent documentation for the package.

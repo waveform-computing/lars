@@ -201,4 +201,3 @@ release: $(PY_SOURCES) $(DOC_SOURCES) $(DIST_DEB) $(DIST_DSC)
 	dput waveform-ppa dist/$(NAME)_$(VER)$(DEB_SUFFIX)_source.changes
 
 .PHONY: all install develop test doc source egg zip tar deb dist clean tags release upload $(SUBDIRS)
-
