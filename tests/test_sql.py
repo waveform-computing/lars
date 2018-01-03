@@ -94,9 +94,9 @@ def rows_null_first():
             datatypes.address('172.224.24.114'),
             None,
             None,
-            0.67,
-            200,
-            7930,
+            0.01,
+            408,
+            0,
             ),
         Row(
             datatypes.datetime('2002-05-02 20:18:01'),
@@ -281,3 +281,9 @@ def test_target_multi_row_insert(db, rows):
             # include a specific row in exceptions that occur
             assert e.row is None
             assert isinstance(e, sql.SQLError)
+
+def test_target_null_on_create(db, rows_null_first, recwarn):
+    with sql.SQLTarget(sqlite3, db, table='foo', create_table=True) as target:
+        target.write(rows_null_first[0])
+        target.write(rows_null_first[1])
+    assert recwarn.pop(sql.SQLWarning)

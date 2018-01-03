@@ -1235,6 +1235,9 @@ class Request(namedtuple('Request', 'method url protocol')):
        and HTTP/1.1 are defined.
     """
 
+    def __str__(self):
+        return '%s %s %s' % (self.method, self.url, self.protocol)
+
 
 @total_ordering
 class Hostname(str):
