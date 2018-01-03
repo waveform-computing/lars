@@ -7,6 +7,7 @@ python:
     - "3.2"
     - "2.7"
     - "pypy"
+    - "pypy3"
 install:
     - if [[ $TRAVIS_PYTHON_VERSION == '3.2' ]]; then pip install --allow-external ipaddr --allow-unverified ipaddr "git+https://github.com/waveform80/ipaddr#egg=ipaddr"; fi
     - pip install -e .[test]
