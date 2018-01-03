@@ -1,8 +1,6 @@
-.. _www2csv:
-
-======================
-lars - Introduction
-======================
+============
+Introduction
+============
 
 
 .. automodule:: lars

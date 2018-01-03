@@ -1,5 +1,3 @@
-.. _api:
-
 =============
 API Reference
 =============
@@ -17,7 +15,6 @@ modifying them to suit your purposes.
 .. toctree::
    :maxdepth: 3
 
-   lars
    lars.apache
    lars.iis
    lars.csv
@@ -27,3 +24,4 @@ modifying them to suit your purposes.
    lars.progress
    lars.dns
    lars.cache
+   lars.exc

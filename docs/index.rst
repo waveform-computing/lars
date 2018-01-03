@@ -1,5 +1,3 @@
-.. _root:
-
 .. include:: ../README.rst
 
 
@@ -11,6 +9,7 @@ Table of Contents
    :numbered:
 
    install
+   lars
    api
    changelog
    license
