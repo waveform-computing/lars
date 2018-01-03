@@ -246,12 +246,13 @@ def test_target_auto_commit(db, rows):
     assert cursor.fetchall()[0][0] == 2
 
 def test_target_insert_error(db, rows):
-    # Generate an error while inserting a row and check we get a warning
-    with pytest.raises(sql.SQLError) as exc:
+    try:
         with sql.SQLTarget(sqlite3, db, 'foo', create_table=False) as target:
             target.write(rows[0])
+    except Exception as e:
         # Check that the exception includes the row that generated the error
-        assert exc.row == rows[0]
+        assert e.row == rows[0]
+        assert isinstance(e, sql.SQLError)
 
 def test_target_multi_row_insert(db, rows):
     if sqlite3.sqlite_version_info >= (3, 7, 11):
@@ -271,10 +272,12 @@ def test_target_multi_row_insert(db, rows):
         cursor.execute('SELECT COUNT(*) FROM foo')
         assert cursor.fetchall()[0][0] == 3
         cursor.execute('DROP TABLE foo')
-        with pytest.raises(sql.SQLError) as row:
+        try:
             with sql.SQLTarget(
                     sqlite3, db, 'foo', create_table=False, insert=2) as target:
                 target.write(rows[0])
+        except Exception as e:
             # Check that when inserting multiple rows we don't bother to
             # include a specific row in exceptions that occur
-            assert exc.row is None
+            assert e.row is None
+            assert isinstance(e, sql.SQLError)
