@@ -3,7 +3,7 @@ Maintainer: Dave Jones <dave@waveform.org.uk>
 Homepage: https://github.com/waveform80/lars
 Section: python
 Priority: extra
-Build-Depends: debhelper (>= 8), python-all (>= 2.7), python-setuptools, python3-all, python3-setuptools, python-docutils, python-sphinx (>= 1.0.7+dfsg-1~)
+Build-Depends: debhelper (>= 8), dh-python, python-all (>= 2.7), python-setuptools, python3-all, python3-setuptools, python-docutils, python-sphinx (>= 1.0.7+dfsg-1~)
 Standards-Version: 3.9.4
 X-Python-Version: >= 2.7
 X-Python3-Version: >= 3.2
@@ -15,7 +15,7 @@ Description: Python framework for working with common web log formats.
  lars is a small framework for working with httpd logs (from a variety of
  common servers like Apache, nginx, and IIS). The primary purpose is to provide
  a set of conversions to ease loading such logs into relational databases, but
- numerous other possiblities can be realized with a little imagination.
+ numerous other possibilities can be realized with a little imagination.
  .
  This is the Python 2 version of the package.
 
@@ -26,7 +26,7 @@ Description: Python framework for working with common web log formats.
  lars is a small framework for working with httpd logs (from a variety of
  common servers like Apache, nginx, and IIS). The primary purpose is to provide
  a set of conversions to ease loading such logs into relational databases, but
- numerous other possiblities can be realized with a little imagination.
+ numerous other possibilities can be realized with a little imagination.
  .
  This is the Python 3 version of the package.
 
