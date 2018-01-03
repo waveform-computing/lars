@@ -4,9 +4,10 @@
 License
 =======
 
-Copyright ©
-    2013-2017, `Dave Jones`_
-    2013, `Mime Consulting Ltd.`_
+Copyright © 2013-2017, `Dave Jones`_
+
+Copyright © 2013, `Mime Consulting Ltd.`_
+
 All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -31,7 +32,7 @@ SOFTWARE.
 DateTime, Date, and Time documentation license
 ==============================================
 
-The documentation for the :class:`~lars.dataypes.DateTime`,
+The documentation for the :class:`~lars.datatypes.DateTime`,
 :class:`~lars.datatypes.Date`, and :class:`~lars.datatypes.Time` classes
 in this module are derived from the documentation sources for the datetime,
 date, and time classes in Python 2.7.4 and thus are subject to the following
