@@ -163,8 +163,7 @@ def test_exceptions():
     exc = apache.ApacheError('Something else went wrong!')
     assert str(exc) == 'Something else went wrong!'
 
-def test_source_01():
-    # Some simple example log file lines
+def test_source_common():
     with apache.ApacheSource(EXAMPLE_01.splitlines(True)) as source:
         row = None
         for count, row in enumerate(source):
@@ -189,9 +188,7 @@ def test_source_01():
         assert row
         assert count == 1
 
-def test_source_02():
-    # Test combined format
-    # Some simple example log file lines
+def test_source_combined():
     with apache.ApacheSource(
             EXAMPLE_02.splitlines(True), log_format=apache.COMBINED) as source:
         row = None
@@ -221,8 +218,7 @@ def test_source_02():
         assert row
         assert count == 1
 
-def test_source_03():
-    # Test miscellaneous stuff like the port and pid field naming
+def test_source_field_names():
     with apache.ApacheSource(
             EXAMPLE_03.splitlines(True),
             log_format="%{local}p,%{remote}p %{pid}P") as source:
@@ -234,8 +230,7 @@ def test_source_03():
         assert row
         assert count == 3
 
-def test_source_04():
-    # Test custom date formats
+def test_source_date_formats():
     with apache.ApacheSource(
             EXAMPLE_04.splitlines(True),
             log_format="%{%Y-%m-%dT%H:%M:%S%z}t %H %m %U%q %>s %O") as source:
@@ -260,8 +255,7 @@ def test_source_04():
         assert row
         assert count == 1
 
-def test_source_05(recwarn):
-    # Test broken formats
+def test_source_bad_formats(recwarn):
     with pytest.raises(ValueError):
         with apache.ApacheSource('', log_format='%b %B'):
             pass
@@ -279,8 +273,7 @@ def test_source_05(recwarn):
             pass
     with pytest.raises(ValueError):
         with apache.ApacheSource('', log_format='%{%H%:%M:%S}t'):
-            pass                                  #  ^ Extraneous caret
-    # Log file with
+            pass                                  #  ^ Extraneous percent
     with apache.ApacheSource(
             MULTIPLE_REMOTE_HOSTS.splitlines(True), log_format=apache.COMBINED) as source:
         for row in source:

@@ -86,6 +86,38 @@ def rows():
             ),
         ]
 
+@pytest.fixture
+def rows_null_first():
+    return [
+        Row(
+            datatypes.datetime('2002-06-24 16:40:23'),
+            datatypes.address('172.224.24.114'),
+            None,
+            None,
+            0.67,
+            200,
+            7930,
+            ),
+        Row(
+            datatypes.datetime('2002-05-02 20:18:01'),
+            datatypes.address('172.22.255.255'),
+            'GET',
+            datatypes.url('/images/picture.jpg'),
+            0.1,
+            302,
+            16328,
+            ),
+        Row(
+            datatypes.datetime('2002-05-29 12:34:56'),
+            datatypes.address('9.180.235.203'),
+            'HEAD',
+            datatypes.url('/images/picture.jpg'),
+            0.1,
+            202,
+            None,
+            ),
+        ]
+
 class FakeDbModule(object):
     def __init__(self):
         self.paramstyle = 'qmark'
@@ -117,7 +149,7 @@ def test_target_init():
         db_module = FakeDbModule()
         sql.SQLTarget(db_module, None, 'foo', commit=100, insert=13)
 
-def test_target_01(db, rows):
+def test_target_write(db, rows):
     # Construct some test rows with appropriate namedtuples
     with sql.SQLTarget(sqlite3, db, table='foo', create_table=True) as target:
         target.write(rows[0])
@@ -158,7 +190,7 @@ def test_target_01(db, rows):
     assert data[5] == rows[2].status
     assert data[6] == rows[2].size
 
-def test_target_02(db, rows):
+def test_target_ip_integers(db, rows):
     # Test writing IP addresses as integers instead of strings
     with sql.SQLTarget(
             sqlite3, db, table='foo', create_table=True,
@@ -174,7 +206,7 @@ def test_target_02(db, rows):
     cursor.execute("SELECT client FROM foo WHERE method = ?", (rows[2].method,))
     assert cursor.fetchall()[0][0] == int(ipaddress.IPv4Address(rows[2].client))
 
-def test_target_03(db, rows):
+def test_target_auto_drop(db, rows):
     # Test auto-DROP with a raise in the case the drop fails
     with pytest.raises(sql.SQLError):
         with sql.SQLTarget(
@@ -203,8 +235,7 @@ def test_target_03(db, rows):
     cursor.execute('SELECT COUNT(*) FROM foo')
     assert cursor.fetchall()[0][0] == 3
 
-def test_target_04(db, rows):
-    # Test auto-COMMIT
+def test_target_auto_commit(db, rows):
     with sql.SQLTarget(
             sqlite3, db, 'foo', create_table=True, commit=2) as target:
         target.write(rows[0])
@@ -214,7 +245,7 @@ def test_target_04(db, rows):
     cursor.execute('SELECT COUNT(*) FROM foo')
     assert cursor.fetchall()[0][0] == 2
 
-def test_target_05(db, rows):
+def test_target_insert_error(db, rows):
     # Generate an error while inserting a row and check we get a warning
     with pytest.raises(sql.SQLError) as exc:
         with sql.SQLTarget(sqlite3, db, 'foo', create_table=False) as target:
@@ -222,7 +253,7 @@ def test_target_05(db, rows):
         # Check that the exception includes the row that generated the error
         assert exc.row == rows[0]
 
-def test_target_06(db, rows):
+def test_target_multi_row_insert(db, rows):
     if sqlite3.sqlite_version_info >= (3, 7, 11):
         # Test multi-row INSERT if sqlite3 version supports it
         cursor = db.cursor()

@@ -100,13 +100,13 @@ def test_hash():
     for i in range(1, 10):
         assert style.render(0, 0) == style.char * i
 
-def test_meter_01():
+def test_meter_bad_init():
     with pytest.raises(ValueError):
         progress.ProgressMeter()
     with pytest.raises(ValueError):
         progress.ProgressMeter(fileobj=mock.Mock(), total=100)
 
-def test_meter_02():
+def test_meter_time():
     with mock.patch('tests.test_progress.progress.time.time') as mock_time:
         mock_file = mock.Mock()
         mock_file.tell.return_value = 0
@@ -141,7 +141,7 @@ def test_meter_02():
         # exit
         assert stream.getvalue() == s
 
-def test_meter_03():
+def test_meter_wait():
     with mock.patch('tests.test_progress.progress.time.time') as mock_time:
         stream = io.StringIO()
         mock_time.return_value = 0

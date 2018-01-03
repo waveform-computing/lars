@@ -177,7 +177,7 @@ def test_exceptions():
     exc = iis.IISError('Something else went wrong!')
     assert str(exc) == 'Something else went wrong!'
 
-def test_source_01():
+def test_source_normal():
     # Test two normal runs with INTERNET_EXAMPLE and INTRANET_EXAMPLE
     with iis.IISSource(INTERNET_EXAMPLE.splitlines(True)) as source:
         row = None
@@ -230,8 +230,7 @@ def test_source_01():
         assert row
         assert count + 1 == source.count
 
-def test_source_02():
-    # Test invalid headers
+def test_source_invalid_headers():
     with pytest.raises(iis.IISVersionError):
         with iis.IISSource(BAD_VERSION.splitlines(True)) as source:
             for row in source:
@@ -261,7 +260,7 @@ def test_source_02():
             for row in source:
                 pass
 
-def test_source_03(recwarn):
+def test_source_warnings(recwarn):
     # Test data warnings - in this first case the line regex won't pick up that
     # the IP address is invalid, but the data conversion routine will
     with iis.IISSource(BAD_DATA_EXAMPLE_01.splitlines(True)) as source:
