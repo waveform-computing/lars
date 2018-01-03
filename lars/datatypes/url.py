@@ -41,7 +41,6 @@ except ImportError:
 
 from .ipaddress import hostname
 
-native_str = str  # pylint: disable=invalid-name
 str = type('')  # pylint: disable=redefined-builtin,invalid-name
 
 
@@ -54,7 +53,7 @@ def path(s):
     """
     i = s.rfind('/') + 1
     dirname, basename = s[:i], s[i:]
-    if dirname and dirname != '/'*len(dirname):
+    if dirname and dirname != '/' * len(dirname):
         dirname = dirname.rstrip('/')
     i = basename.rfind('.')
     if i > 0:

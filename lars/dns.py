@@ -40,12 +40,12 @@ from __future__ import (
     print_function,
     division,
     )
-str = type('')
-
 
 import socket
 
 from lars.cache import lru_cache
+
+str = type('')  # pylint: disable=redefined-builtin,invalid-name
 
 
 @lru_cache(maxsize=10000)
@@ -99,4 +99,3 @@ def to_address(hostname, family=socket.AF_UNSPEC, socktype=socket.SOCK_STREAM):
     except socket.error:
         pass
     return result
-

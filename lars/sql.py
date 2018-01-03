@@ -104,12 +104,14 @@ A typical example of working with the class is shown below::
     import sqlite3
     from lars import apache, sql
 
-    connection = sqlite3.connect('apache.db', detect_types=sqlite3.PARSE_DECLTYPES)
+    connection = sqlite3.connect('apache.db',
+                                 detect_types=sqlite3.PARSE_DECLTYPES)
 
     with io.open('/var/log/apache2/access.log', 'rb') as infile:
         with io.open('apache.csv', 'wb') as outfile:
             with apache.ApacheSource(infile) as source:
-                with sql.SQLTarget(sqlite3, connection, 'log_entries', create_table=True) as target:
+                with sql.SQLTarget(sqlite3, connection, 'log_entries',
+                                   create_table=True) as target:
                     for row in source:
                         target.write(row)
 
@@ -123,20 +125,19 @@ from __future__ import (
     print_function,
     division,
     )
-str = type('')
-
 
 import warnings
 import logging
+from datetime import date, time, datetime
 try:
     import ipaddress
 except ImportError:
     import ipaddr as ipaddress
-import sqlite3
-from datetime import date, time, datetime
 
 from . import datatypes
 from .exc import LarsError, LarsWarning
+
+str = type('')  # pylint: disable=redefined-builtin,invalid-name
 
 
 class SQLError(LarsError):
@@ -277,6 +278,7 @@ class SQLTarget(object):
     True (which it is by default) then any errors encountered during the drop
     operation (e.g. if the table does not exist) will be ignored.
     """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(
             self, db_module, connection, table, insert=1, commit=1000,
@@ -285,6 +287,7 @@ class SQLTarget(object):
             bool_type='SMALLINT', date_type='DATE', time_type='TIME',
             datetime_type='TIMESTAMP', ip_type='VARCHAR(53)',
             hostname_type='VARCHAR(255)', path_type='VARCHAR(260)'):
+        # pylint: disable=too-many-arguments,too-many-locals
         if not hasattr(db_module, 'paramstyle'):
             raise NameError('The database module has no "paramstyle" global')
         if not hasattr(db_module, 'Error'):
@@ -341,10 +344,10 @@ class SQLTarget(object):
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         logging.debug('Exiting SQL context')
-        self.flush()
+        self.close()
 
     def _create_table(self, row):
-        logging.debug('Creating table %s' % self.table)
+        logging.debug('Creating table %s', self.table)
         field_names = (
             row._fields if hasattr(row, '_fields') else
             ['field%d' % (i + 1) for i in range(len(row))]
@@ -362,14 +365,14 @@ class SQLTarget(object):
                     }
                 for name, value in zip(field_names, row)
                 ]),
-            }
+        }
         logging.debug(sql)
         self._cursor.execute(sql)
         logging.debug('COMMIT')
         self.connection.commit()
 
     def _drop_table(self):
-        logging.debug('Dropping table %s' % self.table)
+        logging.debug('Dropping table %s', self.table)
         sql = 'DROP TABLE %s' % self.table
         logging.debug(sql)
         self._cursor.execute(sql)
@@ -382,7 +385,7 @@ class SQLTarget(object):
                 value
                 for params in self._buffer
                 for value in params
-                ])
+            ])
             self.count += len(self._buffer)
         finally:
             # The buffer must be cleared, even in the event of an exception
@@ -408,18 +411,19 @@ class SQLTarget(object):
         # for that matter do I have to get the user to pass in paramstyle
         # to the constructor - why isn't it at least an attribute on the
         # connection object?! Eurgh - PEP-249 is garbage...
-        values_row = '(%s)' % ', '.join([{
-            'qmark':    '?',
-            'numeric':  ':%d' % i,
-            'named':    ':%s' % name,
-            'format':   '%s',
-            'pyformat': '%%(%s)s' % name,
+        values_row = '(%s)' % ', '.join([
+            {
+                'qmark':    '?',
+                'numeric':  ':%d' % i,
+                'named':    ':%s' % name,
+                'format':   '%s',
+                'pyformat': '%%(%s)s' % name,
             }[self.db_module.paramstyle]
             for (i, name) in enumerate(
                 row._fields if hasattr(row, '_fields') else
                 ['field%d' % (j + 1) for j in range(len(row))]
-                )
-            ])
+            )
+        ])
         names_row = (
             '(%s)' % ', '.join(row._fields)
             ) if hasattr(row, '_fields') else ''
@@ -428,7 +432,7 @@ class SQLTarget(object):
             names_row,
             values_row,
             (', ' + values_row) * (count - 1)
-            )
+        )
         return statement
 
     def _generate_row_casts(self, row):
@@ -436,7 +440,8 @@ class SQLTarget(object):
         # dealing with IP addresses depending on the type selected for the
         # target table
         ip_bases = (ipaddress.IPv4Address, ipaddress.IPv6Address)
-        if self.type_map[datatypes.IPv4Address].upper().startswith(('INT', 'NUM', 'DEC')):
+        if self.type_map[datatypes.IPv4Address].\
+                upper().startswith(('INT', 'NUM', 'DEC')):
             ip_cast = int
         else:
             ip_cast = str
@@ -449,9 +454,16 @@ class SQLTarget(object):
                                       datatypes.Hostname)) else
             None
             for value in row
-            ]
+        ]
 
     def write(self, row):
+        """
+        Write *row* (a tuple of values) to the table specified in the
+        constructor. If this is the first row written, and *create_table* was
+        set to ``True`` in the constructor, this operation will also attempt to
+        create the table (optionally dropping any existing table, again
+        depending on constructor values).
+        """
         if self._first_row:
             if len(row) != len(self._first_row):
                 raise TypeError('Rows must have the same number of elements')
@@ -464,8 +476,9 @@ class SQLTarget(object):
             logging.debug('Constructing INSERT statement')
             self._statement = self._generate_statement(row, self.insert)
             logging.debug(
-                self._statement[:120] + ('...' if len(self._statement) > 120 else '')
-                )
+                self._statement[:120] +
+                ('...' if len(self._statement) > 120 else '')
+            )
             logging.debug('Constructing row casts')
             self._row_casts = self._generate_row_casts(row)
             if self.drop_table:
@@ -483,7 +496,7 @@ class SQLTarget(object):
             cast(value) if cast is not None else
             value
             for (cast, value) in zip(self._row_casts, row)
-            ])
+        ])
         if len(self._buffer) >= self.insert:
             try:
                 self._insert_buffer()
@@ -497,12 +510,18 @@ class SQLTarget(object):
                 logging.debug('COMMIT')
                 self.connection.commit()
 
-    def flush(self):
+    def close(self):
+        """
+        Close the SQL target. This flushes any remaining rows from the internal
+        buffer and the cursor against the provided connection. Note that it
+        does *not* close the connection (as this instance didn't open the
+        connection).
+        """
         if self._buffer:
             logging.debug('Clearing %d rows in buffer', len(self._buffer))
             self._statement = self._generate_statement(
                 self._first_row, len(self._buffer)
-                )
+            )
             try:
                 self._insert_buffer()
             except self.db_module.Error as exc:
@@ -536,33 +555,34 @@ class OracleTarget(SQLTarget):
             fixed_type='NUMBER', bool_type='NUMBER(1)', date_type='DATE',
             time_type='DATE', datetime_type='DATE', ip_type='VARCHAR2(53)',
             hostname_type='VARCHAR2(255)', path_type='VARCHAR2(260)'):
+        # pylint: disable=too-many-arguments,too-many-locals
         super(OracleTarget, self).__init__(
-                db_module, connection, table, insert, commit, create_table,
-                drop_table, ignore_drop_errors, str_type, bool_type, date_type,
-                time_type, datetime_type, ip_type, hostname_type, path_type)
+            db_module, connection, table, insert, commit, create_table,
+            drop_table, ignore_drop_errors, str_type, bool_type, date_type,
+            time_type, datetime_type, ip_type, hostname_type, path_type
+        )
 
     def _generate_statement(self, row, count=1):
         if count == 1:
             return super(OracleTarget, self)._generate_statement(row, count)
         values_row = 'INTO %s VALUES (%s)' % (
             self.table,
-            ', '.join([{
-                'qmark':    '?',
-                'numeric':  ':%d' % i,
-                'named':    ':%s' % name,
-                'format':   '%s',
-                'pyformat': '%%(%s)s' % name,
+            ', '.join([
+                {
+                    'qmark':    '?',
+                    'numeric':  ':%d' % i,
+                    'named':    ':%s' % name,
+                    'format':   '%s',
+                    'pyformat': '%%(%s)s' % name,
                 }[self.db_module.paramstyle]
                 for (i, name) in enumerate(
                     row._fields if hasattr(row, '_fields') else
                     ['field%d' % (j + 1) for j in range(len(row))]
-                    )
-                ])
-            )
+                )
+            ])
+        )
         statement = 'INSERT ALL %s%s SELECT * FROM DUAL' % (
-            self.table,
             values_row,
             (' ' + values_row) * (count - 1)
-            )
+        )
         return statement
-

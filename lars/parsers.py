@@ -34,10 +34,10 @@ from __future__ import (
     print_function,
     division,
     )
-str = type('')
-
 
 from lars import datatypes as dt
+
+str = type('')  # pylint: disable=redefined-builtin,invalid-name
 
 
 # Note - we do NOT try and validate URLs with this regex (as to do so is
@@ -72,8 +72,8 @@ _PROTOCOL = r'HTTP/\d+\.\d+'
 # for row matching. Note that most regexes also match "-" which is used almost
 # universally in web-logging systems to indicate a NULL value.
 
-INTEGER  = r'(?P<%(name)s>-|\d+)'
-FIXED    = r'(?P<%(name)s>-|\d+(\.\d*)?)'
+INTEGER = r'(?P<%(name)s>-|\d+)'
+FIXED = r'(?P<%(name)s>-|\d+(\.\d*)?)'
 DATE_ISO = r'(?P<%(name)s>-|\d{4}-\d{2}-\d{2})'
 TIME_ISO = r'(?P<%(name)s>-|\d{2}:\d{2}:\d{2})'
 
@@ -86,11 +86,11 @@ TIME_ISO = r'(?P<%(name)s>-|\d{2}:\d{2}:\d{2})'
 # ("-") unless the *entire* request is empty hence why the empty match "-" is
 # only introduced here and not in the regexes above.
 
-URL      = r'(?P<%%(name)s>%s|-)' % _URL
-PATH     = r'(?P<%%(name)s>%s|-)' % _PATH
-METHOD   = r'(?P<%%(name)s>%s|-)' % _METHOD
+URL = r'(?P<%%(name)s>%s|-)' % _URL
+PATH = r'(?P<%%(name)s>%s|-)' % _PATH
+METHOD = r'(?P<%%(name)s>%s|-)' % _METHOD
 PROTOCOL = r'(?P<%%(name)s>%s|-)' % _PROTOCOL
-REQUEST  = r'(?P<%%(name)s>%s %s %s|-)' % (_METHOD, _URL, _PROTOCOL)
+REQUEST = r'(?P<%%(name)s>%s %s %s|-)' % (_METHOD, _URL, _PROTOCOL)
 
 # Doing DNS (or IP) validation is extremely hard to do properly with regexes so
 # here we use a trivial regex to pull out a string containing the right
@@ -101,8 +101,11 @@ HOSTNAME = r'(?P<%(name)s>-|[a-zA-Z0-9:.-]+)'
 # Again, regex validation of IP addresses is extremely hard to do properly so
 # we perform validation later in a function
 
-ADDRESS      = r'(?P<%(name)s>-|[0-9]+(\.[0-9]+){3}|[0-9a-fA-F:]+)'
-ADDRESS_PORT = r'(?P<%(name)s>-|([0-9]+(\.[0-9]+){3}|\[[0-9a-fA-F:]+\])(:[0-9]{1,5})?)'
+ADDRESS = r'(?P<%(name)s>-|[0-9]+(\.[0-9]+){3}|[0-9a-fA-F:]+)'
+ADDRESS_PORT = (
+    r'(?P<%(name)s>'
+    r'-|([0-9]+(\.[0-9]+){3}|\[[0-9a-fA-F:]+\])(:[0-9]{1,5})?)'
+)
 
 
 def request_parse(s):
@@ -181,6 +184,7 @@ def date_parse(s, format='%Y-%m-%d'):
     :param str format: The optional strftime(3) format string
     :returns: A :class:`~lars.datatypes.Date` object representing the date
     """
+    # pylint: disable=redefined-builtin
     return dt.date(s, format) if s != '-' else None
 
 
@@ -192,7 +196,8 @@ def time_parse(s, format='%H:%M:%S'):
     :param str format: The optional strftime(3) format string
     :returns: A :class:`~lars.datatypes.Time` object representing the time
     """
-    return dt.time(s) if s != '-' else None
+    # pylint: disable=redefined-builtin
+    return dt.time(s, format) if s != '-' else None
 
 
 def hostname_parse(s):
@@ -213,5 +218,3 @@ def address_parse(s):
     :returns: A :class:`~lars.datatypes.IPv4Address` value
     """
     return dt.address(s) if s != '-' else None
-
-

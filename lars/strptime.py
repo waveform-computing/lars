@@ -58,6 +58,9 @@ implementation. End users should never need to refer to this module directly.
 # the default datetime format in Apache log files. In Python 3.2+ we simply
 # import the native _strptime module (in order to benefit from future bug
 # fixes) so this module is only used under Python 2.7
+#
+# pylint: skip-file
+# flake8: noqa
 
 from __future__ import (
     unicode_literals,
@@ -66,14 +69,11 @@ from __future__ import (
     division,
     )
 
-import sys
-
-if sys.version_info >= (3, 2):
+try:
     from _strptime import TimeRE, _strptime_datetime
-
-else:
+except ImportError:
     # Make Py2 str same as Py3
-    str = type('')
+    str = type('')  # pylint: disable=redefined-builtin,invalid-name
     import time
     import locale
     import calendar
@@ -82,7 +82,7 @@ else:
     from re import escape as re_escape
     from datetime import (date as datetime_date,
                           timedelta as datetime_timedelta)
-    from lars.timezone import timezone as datetime_timezone
+    from .timezone import timezone as datetime_timezone
     try:
         from thread import allocate_lock as _thread_allocate_lock
     except:

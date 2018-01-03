@@ -32,7 +32,8 @@ shown below::
     import io
     from lars import iis, csv
 
-    with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'wb') as outfile:
+    with io.open('webserver.log', 'r') as infile, \\
+             io.open('output.csv', 'wb') as outfile:
         with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
             for row in source:
                 target.write(row)
@@ -71,7 +72,8 @@ then terminate the loop::
     import io
     from lars import iis, csv
 
-    with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'wb') as outfile:
+    with io.open('webserver.log', 'r') as infile, \\
+            io.open('output.csv', 'wb') as outfile:
         with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
             for row in source:
                 print(row)
@@ -92,7 +94,7 @@ Given the following input file (long lines indented for readability)::
 
 This will produce this output on the command line::
 
-    Row(date=Date(2002, 5, 24), time=Time(20, 18, 1), 
+    Row(date=Date(2002, 5, 24), time=Time(20, 18, 1),
         c_ip=IPv4Address(u'172.224.24.114'), cs_username=None,
         s_ip=IPv4Address(u'206.73.118.24'), s_port=80, cs_method=u'GET',
         cs_uri_stem=Url(scheme='', netloc='', path=u'/Default.htm', params='',
@@ -146,7 +148,8 @@ structure in the loop (using the result of the function)::
 
     NewRow = datatypes.row('date', 'time', 'client', 'url')
 
-    with io.open('webserver.log', 'r') as infile, io.open('output.csv', 'wb') as outfile:
+    with io.open('webserver.log', 'r') as infile, \\
+            io.open('output.csv', 'wb') as outfile:
         with iis.IISSource(infile) as source, csv.CSVTarget(outfile) as target:
             for row in source:
                 new_row = NewRow(row.date, row.time, row.c_ip, row.cs_uri_stem)
@@ -157,5 +160,6 @@ datatypes produced by lars source adapters have built-in string conversions
 which all target adapters know to use.
 
 .. _io: http://docs.python.org/2/library/io.html
-.. _string methods: http://docs.python.org/2/library/stdtypes.html#string-methods
+.. _string methods:
+   http://docs.python.org/2/library/stdtypes.html#string-methods
 """

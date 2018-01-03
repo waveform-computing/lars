@@ -76,15 +76,17 @@ filename)::
     import os
     import io
     from lars import iis, csv, progress
+    from pathlib import Path
 
-    files = os.listdir('.')
-    with progress.ProgressMeter(total=len(files), style=progress.BarStyle) as meter:
+    files = list(Path('.').iterdir())
+    with progress.ProgressMeter(total=len(files),
+                                style=progress.BarStyle) as meter:
         for file_num, file_name in enumerate(files):
             meter.hide()
             print "Processing %s" % file_name
             meter.show()
-            with io.open(file_name, 'rb') as infile, \\
-                    io.open(os.path.splitext(file_name)[0] + '.csv', 'wb') as outfile, \\
+            with file_name.open('rb') as infile, \\
+                    file_name.with_suffix('.csv').open('wb') as outfile, \\
                     iis.IISSource(infile) as source, \\
                     csv.CSVTarget(outfile) as target:
                 for row in source:
@@ -98,16 +100,21 @@ from __future__ import (
     print_function,
     division,
     )
-str = type('')
 
 
 import io
 import sys
 import time
-import logging
+
+str = type('')  # pylint: disable=redefined-builtin,invalid-name
 
 
 class ProgressStyle(object):
+    """
+    Abstract base class for :class:`ProgressMeter` styles.
+    """
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, meter):
         """
         Perform initialization for the style, and set hide_on_finish
@@ -125,6 +132,8 @@ class SpinnerStyle(ProgressStyle):
     """
     A :class:`ProgressMeter` style that renders a simple spinning line.
     """
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, meter):
         super(SpinnerStyle, self).__init__(meter)
         self.index = 0
@@ -138,6 +147,8 @@ class EllipsisStyle(ProgressStyle):
     """
     A :class:`ProgressMeter` style that renders an looping series of dots.
     """
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, meter):
         super(EllipsisStyle, self).__init__(meter)
         self.count = 0
@@ -153,6 +164,8 @@ class PercentageStyle(ProgressStyle):
     """
     A :class:`ProgressMeter` style that renders a simple percentage counter.
     """
+    # pylint: disable=too-few-public-methods
+
     def render(self, value, total):
         return '%3d%%' % (100 * value // total)
 
@@ -162,6 +175,8 @@ class BarStyle(ProgressStyle):
     A :class:`ProgressMeter` style that renders a full progress bar and
     percentage.
     """
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, meter):
         super(BarStyle, self).__init__(meter)
         self.width = 60
@@ -182,6 +197,8 @@ class HashStyle(ProgressStyle):
     A :class:`ProgressMeter` style for those that remember FTP's ``hash``
     command!
     """
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, meter):
         super(HashStyle, self).__init__(meter)
         self.count = 0
@@ -205,29 +222,44 @@ class ProgressMeter(object):
     render an initial progress meter, and will update it at reasonable
     intervals (dictated by the max_wait parameter) in response to calls to the
     :meth:`update` method. When you leave the context, the progress meter will
-    be automatically erased if *hide_on_finish* is True (which it is by default).
+    be automatically erased if *hide_on_finish* is True (which it is by
+    default).
 
     Within the context, the :meth:`hide` and :meth:`show` methods can be used
     to temporarily hide and show the progress meter (in order to display some
     status text, for example).
 
-    :param file fileobj: A file-like object from which to determine progress
-    :param int value: An arbitrary value from which to determine progress
-    :param int total: In the case that *value* is set, this must be set to
-                      the maximum value that *value* will take
-    :param float max_wait: The minimum length of time that must elapse before
-                      a screen update is permitted
-    :param file stream: The stream object that output should be written to,
-                      defaults to stderr
-    :param style: A reference to a class which will be used to render the
-                      progress meter, defaults to :class:`BarStyle`
-    :param bool hide_on_finish: If True (the default), the progress meter will
-                      be erased when the context exits
+    :param file fileobj:
+        A file-like object from which to determine progress
+
+    :param int value:
+        An arbitrary value from which to determine progress
+
+    :param int total:
+        In the case that *value* is set, this must be set to the maximum value
+        that *value* will take
+
+    :param float max_wait:
+        The minimum length of time that must elapse before a screen update is
+        permitted
+
+    :param file stream:
+        The stream object that output should be written to, defaults to stderr
+
+    :param style:
+        A reference to a class which will be used to render the progress meter,
+        defaults to :class:`BarStyle`
+
+    :param bool hide_on_finish:
+        If True (the default), the progress meter will be erased when the
+        context exits
     """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(
             self, fileobj=None, value=0, total=None, max_wait=0.1,
             stream=sys.stderr, style=BarStyle, hide_on_finish=True):
+        # pylint: disable=too-many-arguments
         if fileobj is None and total is None:
             raise ValueError('One of fileobj or total must be specified')
         if fileobj is not None and total is not None:
@@ -251,6 +283,10 @@ class ProgressMeter(object):
         self._last_update = None
 
     def hide(self):
+        """
+        Hide the progress bar from the console (or whatever the output stream
+        is connected to).
+        """
         if self._last_output:
             self.stream.write('\b' * len(self._last_output))
             self.stream.write(' ' * len(self._last_output))
@@ -260,16 +296,25 @@ class ProgressMeter(object):
         self._last_update = None
 
     def show(self):
+        """
+        Show the progress bar on the console (or whatever the output stream
+        is connected to).
+        """
         self._render()
         self._last_update = time.time()
 
     def update(self, value=None):
+        """
+        Update the progress bar to position *value* (which must be less than
+        the *total* value passed to the constructor).
+        """
         if value is None:
             value = self.fileobj.tell()
         self.value = value
         if value != self._last_value:
             now = time.time()
-            if self._last_update is None or now > (self._last_update + self.max_wait):
+            if self._last_update is None or now > (self._last_update +
+                                                   self.max_wait):
                 self.hide()
                 self._last_value = value
                 self._render()
@@ -290,4 +335,3 @@ class ProgressMeter(object):
             self._last_value = self.value
             self._render()
             self.stream.write('\n')
-

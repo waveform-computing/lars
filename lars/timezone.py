@@ -53,6 +53,9 @@ This module is a backport of the Python 3.2 datetime.timezone class
 implementation. End users should never need to refer to this module directly.
 """
 
+# pylint: skip-file
+# flake8: noqa
+
 from datetime import tzinfo, timedelta, datetime
 
 class timezone(tzinfo):
@@ -165,4 +168,3 @@ class timezone(tzinfo):
 timezone.utc = timezone._create(timedelta(0))
 timezone.min = timezone._create(timezone._minoffset)
 timezone.max = timezone._create(timezone._maxoffset)
-

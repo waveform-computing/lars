@@ -64,15 +64,16 @@ from __future__ import (
     print_function,
     division,
     )
-str = type('')
 
+from collections import namedtuple
 try:
     import ipaddress
 except ImportError:
     import ipaddr as ipaddress
-from collections import namedtuple
 
 import pygeoip
+
+str = type('')  # pylint: disable=redefined-builtin,invalid-name
 
 
 _MAXMIND_ENCODING = 'latin1'
@@ -91,6 +92,7 @@ def init_databases(
         v4_geo_filename=None, v4_isp_filename=None, v4_org_filename=None,
         v6_geo_filename=None, v6_isp_filename=None, v6_org_filename=None,
         memcache=True):
+    # pylint: disable=too-many-arguments,global-statement
     """
     Initializes the global GeoIP database instances in a thread-safe manner.
 
@@ -122,13 +124,26 @@ def init_databases(
         pygeoip API does not yet know). This does not affect the IPv4
         city-level database.
 
-    :param str v4_geo_filename: The filename of the IPv4 geographic database (optional)
-    :param str v4_isp_filename: The filename of the IPv4 ISP database (optional)
-    :param str v4_org_filename: The filename of the IPv4 organisation database (optional)
-    :param str v6_geo_filename: The filename of the IPv6 geographic database (optional)
-    :param str v6_isp_filename: The filename of the IPv6 ISP database (optional)
-    :param str v6_org_filename: The filename of the IPv6 organisation database (optional)
-    :param bool memcache: Set to False if you don't wish to cache the db in RAM (optional)
+    :param str v4_geo_filename:
+        The filename of the IPv4 geographic database (optional)
+
+    :param str v4_isp_filename:
+        The filename of the IPv4 ISP database (optional)
+
+    :param str v4_org_filename:
+        The filename of the IPv4 organisation database (optional)
+
+    :param str v6_geo_filename:
+        The filename of the IPv6 geographic database (optional)
+
+    :param str v6_isp_filename:
+        The filename of the IPv6 ISP database (optional)
+
+    :param str v6_org_filename:
+        The filename of the IPv6 organisation database (optional)
+
+    :param bool memcache:
+        Set to False if you don't wish to cache the db in RAM (optional)
     """
     global \
         _GEOIP_IPV4_GEO, _GEOIP_IPV4_ISP, _GEOIP_IPV4_ORG, \
@@ -139,8 +154,7 @@ def init_databases(
             v4_org_filename or
             v6_geo_filename or
             v6_isp_filename or
-            v6_org_filename
-            ):
+            v6_org_filename):
         raise ValueError('You must call init_database with a database to load')
     if v4_geo_filename:
         _GEOIP_IPV4_GEO = pygeoip.GeoIP(
@@ -160,6 +174,7 @@ def init_databases(
     if v6_org_filename:
         _GEOIP_IPV6_ORG = pygeoip.GeoIP(
             v6_org_filename, pygeoip.MEMORY_CACHE if memcache else 0)
+
 
 def country_code_by_addr(address):
     """
@@ -190,6 +205,7 @@ def country_code_by_addr(address):
         if isinstance(result, str):
             return result
         return result.decode(_MAXMIND_ENCODING)
+
 
 def region_by_addr(address):
     """
@@ -227,6 +243,7 @@ def region_by_addr(address):
             return result
         return result.decode(_MAXMIND_ENCODING)
 
+
 def city_by_addr(address):
     """
     Returns the city associated with the address. You should use the
@@ -259,6 +276,7 @@ def city_by_addr(address):
             return result
         return result.decode(_MAXMIND_ENCODING)
 
+
 def coords_by_addr(address):
     """
     Returns the coordinates (long, lat) associated with the address. You should
@@ -290,6 +308,7 @@ def coords_by_addr(address):
     if rec:
         return GeoCoord(rec['longitude'], rec['latitude'])
 
+
 def isp_by_addr(address):
     """
     Returns the ISP that services the address. You should use the
@@ -317,13 +336,13 @@ def isp_by_addr(address):
             return result
         return result.decode(_MAXMIND_ENCODING)
 
+
 def org_by_addr(address):
     """
     Returns the organisation that owns the address, or the ISP that services
-    the address (in the case that the organisation
-    If the organisational database for the address type has not been initialized,
-    the function raises a ValueError.
-
+    the address (in the case that the organisation has opted not to reveal its
+    address). If the organisational database for the address type has not been
+    initialized, the function raises a ValueError.
     """
     try:
         if isinstance(address, ipaddress.IPv4Address):
@@ -338,4 +357,3 @@ def org_by_addr(address):
         if isinstance(result, str):
             return result
         return result.decode(_MAXMIND_ENCODING)
-

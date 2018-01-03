@@ -123,7 +123,7 @@ even when it outright violates the draft), and bear in mind `Postel's Law`_.
 
 
 .. _W3C Extended Log File Format: http://www.w3.org/TR/WD-logfile.html
-.. _MSDN: http://www.microsoft.com/technet/prodtechnol/WindowsServer2003/Library/IIS/ffdd7079-47be-4277-921f-7a3a6e610dcb.mspx
+.. _MSDN: http://bit.ly/2lPjHfz
 .. _Postel's Law: http://en.wikipedia.org/wiki/Robustness_principle
 """
 
@@ -133,8 +133,6 @@ from __future__ import (
     print_function,
     division,
     )
-str = type('')
-
 
 import re
 import warnings
@@ -142,10 +140,12 @@ import logging
 try:
     from urllib.parse import unquote_plus
 except ImportError:
-    from urllib import unquote_plus
+    from urllib import unquote_plus  # pylint: disable=wrong-import-order
 
 from . import parsers, datatypes as dt
-from .exc import LarsError
+from .exc import LarsError, LarsWarning
+
+str = type('')  # pylint: disable=redefined-builtin,invalid-name
 
 
 def _string_parse(s):
@@ -209,7 +209,7 @@ class IISVersionError(IISDirectiveError):
     """
 
 
-class IISWarning(Warning):
+class IISWarning(LarsWarning):
     """
     Raised when an error is encountered in parsing a log row.
     """
@@ -231,6 +231,7 @@ class IISSource(object):
 
     :param source: A file-like object containing the source stream
     """
+    # pylint: disable=too-many-instance-attributes,too-few-public-methods
 
     def __init__(self, source):
         self.source = source
@@ -295,48 +296,51 @@ class IISSource(object):
         :param str line: The directive line to process
         """
         logging.debug('Parsing directive: %s', line)
-        match = self.VERSION_RE.match(line)
-        if match:
+        directive = None
+        for directive, regex in (
+                ('Version', self.VERSION_RE),
+                ('Software', self.SOFTWARE_RE),
+                ('Remar', self.REMARK_RE),
+                ('Fields', self.FIELDS_RE),
+                ('Start-Date', self.START_DATE_RE),
+                ('End-Date', self.END_DATE_RE),
+                ('Date', self.DATE_RE),
+        ):
+            match = regex.match(line)
+            if match:
+                break
+        else:
+            raise IISDirectiveError('Unrecognized directive %s' %
+                                    line.rstrip())
+
+        if directive == 'Version':
             if self.version is not None:
                 raise IISVersionError('Found a second #Version directive')
             self.version = match.group('text')
             if self.version != '1.0':
-                raise IISVersionError('Unknown IIS log version %s' % self.version)
-            return
-        match = self.SOFTWARE_RE.match(line)
-        if match:
+                raise IISVersionError('Unknown IIS log version %s' %
+                                      self.version)
+        elif directive == 'Software':
             self.software = match.group('text')
-            return
-        match = self.REMARK_RE.match(line)
-        if match:
+        elif directive == 'Remark':
             self.remark = match.group('text')
-            return
-        match = self.FIELDS_RE.match(line)
-        if match:
+        elif directive == 'Fields':
             self._process_fields(match.group('text'))
-            return
-        match = self.START_DATE_RE.match(line)
-        if match:
+        elif directive == 'Start-Date':
             self.start = dt.datetime(
                 '%s %s' % (match.group('date'), match.group('time')),
                 self.DATETIME_FORMAT
                 )
-            return
-        match = self.END_DATE_RE.match(line)
-        if match:
+        elif directive == 'End-Date':
             self.finish = dt.datetime(
                 '%s %s' % (match.group('date'), match.group('time')),
                 self.DATETIME_FORMAT
                 )
-            return
-        match = self.DATE_RE.match(line)
-        if match:
+        elif directive == 'Date':
             self.date = dt.datetime(
                 '%s %s' % (match.group('date'), match.group('time')),
                 self.DATETIME_FORMAT
                 )
-            return
-        raise IISDirectiveError('Unrecognized directive %s' % line.rstrip())
 
     # The FIELD_RE regex is intended to match a single header name within the
     # #Fields specification of a IIS log file. Basically headers come in one of
@@ -377,7 +381,7 @@ class IISSource(object):
         'dns':           'hostname',
         'interval':      'integer',
         'ip':            'address_port',
-        'method':        'hostname', # No really, that's what the draft says!
+        'method':        'hostname',  # No really, that's what the draft says!
         'status':        'integer',
         'time-from':     'time_iso',
         'time-taken':    'fixed',
@@ -401,11 +405,11 @@ class IISSource(object):
     # used in the W3C draft
 
     TYPES = {
-        'integer':      (parsers.int_parse,      parsers.INTEGER),
-        'fixed':        (parsers.fixed_parse,    parsers.FIXED),
-        'date_iso':     (parsers.date_parse,     parsers.DATE_ISO),
-        'time_iso':     (parsers.time_parse,     parsers.TIME_ISO),
-        'url':          (parsers.url_parse,      parsers.URL),
+        'integer':      (parsers.int_parse, parsers.INTEGER),
+        'fixed':        (parsers.fixed_parse, parsers.FIXED),
+        'date_iso':     (parsers.date_parse, parsers.DATE_ISO),
+        'time_iso':     (parsers.time_parse, parsers.TIME_ISO),
+        'url':          (parsers.url_parse, parsers.URL),
         # This regex deviates from the draft's specifications; in practice IIS
         # always URI encodes the content of prefix(header) fields but the draft
         # demands a "quoted string" format instead. The draft also demands that
@@ -414,7 +418,8 @@ class IISSource(object):
         # used, although the draft doesn't explicitly state this), but, again,
         # practice deviates from this. This is very specific to the W3C format
         # so this isn't one of the standard regexes
-        'string':       (_string_parse,          r'(?P<%(name)s>"([^"]|"")*"|[^"\s]\S*|-)'),
+        'string':       (_string_parse,
+                         r'(?P<%(name)s>"([^"]|"")*"|[^"\s]\S*|-)'),
         # The draft dictates <alpha> for names, but firstly doesn't define what
         # <alpha> actually means; furthermore if we assume if means alphabetic
         # chars only (as seems reasonable) that's not even slightly sufficient
@@ -427,7 +432,7 @@ class IISSource(object):
         # specify a limit on octets, and isn't compatible with IPv6 which will
         # presumably start appearing in logs at some point), so we use our
         # generic address+port regex
-        'address_port': (parsers.address_parse,  parsers.ADDRESS_PORT),
+        'address_port': (parsers.address_parse, parsers.ADDRESS_PORT),
         }
 
     def _process_fields(self, line):
@@ -480,7 +485,8 @@ class IISSource(object):
             tuple_fields.append(python_name)
         logging.debug('Constructing row regex: %s', pattern)
         self._row_pattern = re.compile('^' + pattern + '$')
-        logging.debug('Constructing row tuple with fields: %s', ','.join(tuple_fields))
+        logging.debug('Constructing row tuple with fields: %s',
+                      ','.join(tuple_fields))
         self._row_type = dt.row(*tuple_fields)
         logging.debug('Constructing row parser functions')
         self._row_funcs = tuple_funcs
@@ -519,7 +525,8 @@ class IISSource(object):
                     if match:
                         values = match.group(*self._row_type._fields)
                         try:
-                            values = [f(v) for (f, v) in zip(self._row_funcs, values)]
+                            values = [f(v) for (f, v) in zip(self._row_funcs,
+                                                             values)]
                         except ValueError as exc:
                             raise IISWarning(str(exc))
                         self.count += 1
@@ -532,6 +539,6 @@ class IISSource(object):
             except IISError as exc:
                 # Add line content and number to the exception and re-raise
                 if not exc.line_number:
-                    raise type(exc)(exc.args[0], line_number=num + 1, line=line)
-                raise # pragma: no cover
-
+                    raise type(exc)(exc.args[0], line_number=num + 1,
+                                    line=line)
+                raise  # pragma: no cover

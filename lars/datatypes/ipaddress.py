@@ -190,7 +190,7 @@ class IPv4Address(ipaddress.IPv4Address):
     the query (including negative lookups) is cached so subsequent queries of
     the same address should be extermely rapid.
 
-    If the :mod:`geoip` module has been initialized with a database, the
+    If the :mod:`lars.geoip` module has been initialized with a database, the
     GeoIP-related attributes :attr:`country`, :attr:`region`, :attr:`city`, and
     :attr:`coords` will return the country, region, city and a (longitude,
     latitude) tuple respectively.
@@ -242,7 +242,7 @@ class IPv4Address(ipaddress.IPv4Address):
     @property
     def country(self):
         """
-        If :func:`~lars.geoip.init_database` has been called to initialize
+        If :func:`~lars.geoip.init_databases` has been called to initialize
         a GeoIP database, returns the country of the address.
         """
         return geoip.country_code_by_addr(self)
@@ -250,7 +250,7 @@ class IPv4Address(ipaddress.IPv4Address):
     @property
     def region(self):
         """
-        If :func:`~lars.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_databases` has been called with a
         region-level (or lower) GeoIP database, returns the region of the
         address.
         """
@@ -259,7 +259,7 @@ class IPv4Address(ipaddress.IPv4Address):
     @property
     def city(self):
         """
-        If :func:`~lars.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_databases` has been called with a
         city-level GeoIP database, returns the city of the address.
         """
         return geoip.city_by_addr(self)
@@ -267,7 +267,7 @@ class IPv4Address(ipaddress.IPv4Address):
     @property
     def coords(self):
         """
-        If :func:`~lars.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_databases` has been called with a
         city-level GeoIP database, returns a (longitude, latitude) tuple
         describing the approximate location of the address.
         """
@@ -276,7 +276,7 @@ class IPv4Address(ipaddress.IPv4Address):
     @property
     def isp(self):
         """
-        If :func:`~lars.geoip.init_database` has been called with an ISP level
+        If :func:`~lars.geoip.init_databases` has been called with an ISP level
         database, returns the ISP that provides connectivity for the address.
         """
         return geoip.isp_by_addr(self)
@@ -284,7 +284,7 @@ class IPv4Address(ipaddress.IPv4Address):
     @property
     def org(self):
         """
-        If :func:`~lars.geoip.init_database` has been called with an
+        If :func:`~lars.geoip.init_databases` has been called with an
         organisation level database, returns the name of the organisation the
         address belongs to.
         """
@@ -325,7 +325,7 @@ class IPv6Address(ipaddress.IPv6Address):
     the query (including negative lookups) is cached so subsequent queries of
     the same address should be extermely rapid.
 
-    If the :mod:`geoip` module has been initialized with a database, the
+    If the :mod:`lars.geoip` module has been initialized with a database, the
     GeoIP-related attributes :attr:`country`, :attr:`region`, :attr:`city`, and
     :attr:`coords` will return the country, region, city and a (longitude,
     latitude) tuple respectively.
@@ -401,7 +401,7 @@ class IPv6Address(ipaddress.IPv6Address):
     @property
     def country(self):
         """
-        If :func:`~lars.geoip.init_database` has been called to initialize
+        If :func:`~lars.geoip.init_databases` has been called to initialize
         a GeoIP IPv6 database, returns the country of the address.
         """
         return geoip.country_code_by_addr(self)
@@ -409,7 +409,7 @@ class IPv6Address(ipaddress.IPv6Address):
     @property
     def region(self):
         """
-        If :func:`~lars.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_databases` has been called with a
         region-level (or lower) GeoIP IPv6 database, returns the region of the
         address.
         """
@@ -418,7 +418,7 @@ class IPv6Address(ipaddress.IPv6Address):
     @property
     def city(self):
         """
-        If :func:`~lars.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_databases` has been called with a
         city-level GeoIP IPv6 database, returns the city of the address.
         """
         return geoip.city_by_addr(self)
@@ -426,7 +426,7 @@ class IPv6Address(ipaddress.IPv6Address):
     @property
     def coords(self):
         """
-        If :func:`~lars.geoip.init_database` has been called with a
+        If :func:`~lars.geoip.init_databases` has been called with a
         city-level GeoIP IPv6 database, returns a (longitude, latitude) tuple
         describing the approximate location of the address.
         """
@@ -435,7 +435,7 @@ class IPv6Address(ipaddress.IPv6Address):
     @property
     def isp(self):
         """
-        If :func:`~lars.geoip.init_database` has been called with an ISP level
+        If :func:`~lars.geoip.init_databases` has been called with an ISP level
         IPv6 database, returns the ISP that provides connectivity for the
         address.
         """
@@ -444,7 +444,7 @@ class IPv6Address(ipaddress.IPv6Address):
     @property
     def org(self):
         """
-        If :func:`~lars.geoip.init_database` has been called with an IPv6
+        If :func:`~lars.geoip.init_databases` has been called with an IPv6
         organisation level database, returns the name of the organisation the
         address belongs to.
         """

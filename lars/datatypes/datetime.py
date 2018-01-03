@@ -131,7 +131,7 @@ def time(s, format='%H:%M:%S'):
 
 
 class DateTime(dt.datetime):
-    """
+    r"""
     Represents a timestamp.
 
     This type is returned by the :func:`datetime` function and represents a
@@ -272,18 +272,18 @@ class DateTime(dt.datetime):
 
     Supported operations:
 
-    +---------------------------------------+--------------------------------+
-    | Operation                             | Result                         |
-    +=======================================+================================+
-    | ``datetime2 = datetime1 + timedelta`` | \\(1)                          |
-    +---------------------------------------+--------------------------------+
-    | ``datetime2 = datetime1 - timedelta`` | \\(2)                          |
-    +---------------------------------------+--------------------------------+
-    | ``timedelta = datetime1 - datetime2`` | \\(3)                          |
-    +---------------------------------------+--------------------------------+
-    | ``datetime1 < datetime2``             | Compares :class:`DateTime` to  |
-    |                                       | :class:`DateTime`. \\(4)       |
-    +---------------------------------------+--------------------------------+
+    +---------------------------------------+-------------------------------+
+    | Operation                             | Result                        |
+    +=======================================+===============================+
+    | ``datetime2 = datetime1 + timedelta`` | \(1)                          |
+    +---------------------------------------+-------------------------------+
+    | ``datetime2 = datetime1 - timedelta`` | \(2)                          |
+    +---------------------------------------+-------------------------------+
+    | ``timedelta = datetime1 - datetime2`` | \(3)                          |
+    +---------------------------------------+-------------------------------+
+    | ``datetime1 < datetime2``             | Compares :class:`DateTime` to |
+    |                                       | :class:`DateTime`. \(4)       |
+    +---------------------------------------+-------------------------------+
 
     #. datetime2 is a duration of timedelta removed from datetime1, moving
        forward in time if ``timedelta.days`` > 0, or backward if
@@ -467,7 +467,7 @@ class DateTime(dt.datetime):
 
 
 class Date(dt.date):
-    """
+    r"""
     Represents a date.
 
     This type is returned by the :func:`date` function and represents a date.
@@ -531,20 +531,21 @@ class Date(dt.date):
 
     Supported operations:
 
-    +-------------------------------+----------------------------------------------+
-    | Operation                     | Result                                       |
-    +===============================+==============================================+
-    | ``date2 = date1 + timedelta`` | *date2* is ``timedelta.days`` days removed   |
-    |                               | from *date1*.  \\(1)                         |
-    +-------------------------------+----------------------------------------------+
-    | ``date2 = date1 - timedelta`` | Computes *date2* such that ``date2 +         |
-    |                               | timedelta == date1``. \\(2)                  |
-    +-------------------------------+----------------------------------------------+
-    | ``timedelta = date1 - date2`` | \\(3)                                        |
-    +-------------------------------+----------------------------------------------+
-    | ``date1 < date2``             | *date1* is considered less than *date2* when |
-    |                               | *date1* precedes *date2* in time. \\(4)      |
-    +-------------------------------+----------------------------------------------+
+    +-------------------------------+---------------------------------------+
+    | Operation                     | Result                                |
+    +===============================+=======================================+
+    | ``date2 = date1 + timedelta`` | *date2* is ``timedelta.days`` days    |
+    |                               | removed from *date1*.  \(1)           |
+    +-------------------------------+---------------------------------------+
+    | ``date2 = date1 - timedelta`` | Computes *date2* such that ``date2 +  |
+    |                               | timedelta == date1``. \(2)            |
+    +-------------------------------+---------------------------------------+
+    | ``timedelta = date1 - date2`` | \(3)                                  |
+    +-------------------------------+---------------------------------------+
+    | ``date1 < date2``             | *date1* is considered less than       |
+    |                               | *date2* when *date1* precedes *date2* |
+    |                               | in time. \(4)                         |
+    +-------------------------------+---------------------------------------+
 
     Notes:
 
@@ -573,28 +574,29 @@ class Date(dt.date):
        comparison is ``==`` or ``!=``. The latter cases return :const:`False`
        or :const:`True`, respectively.
 
-    Dates can be used as dictionary keys. In Boolean contexts, all :class:`date`
-    objects are considered to be true.
+    Dates can be used as dictionary keys. In Boolean contexts, all
+    :class:`date` objects are considered to be true.
 
     Instance methods:
 
     .. method:: replace(year, month, day)
 
        Return a date with the same value, except for those parameters given new
-       values by whichever keyword arguments are specified.  For example, if ``d ==
-       Date(2002, 12, 31)``, then ``d.replace(day=26) == Date(2002, 12, 26)``.
+       values by whichever keyword arguments are specified.  For example, if
+       ``d == Date(2002, 12, 31)``, then ``d.replace(day=26) == Date(2002, 12,
+       26)``.
 
     .. method:: weekday()
 
-       Return the day of the week as an integer, where Monday is 0 and Sunday is 6.
-       For example, ``Date(2002, 12, 4).weekday() == 2``, a Wednesday. See also
-       :meth:`isoweekday`.
+       Return the day of the week as an integer, where Monday is 0 and Sunday
+       is 6.  For example, ``Date(2002, 12, 4).weekday() == 2``, a Wednesday.
+       See also :meth:`isoweekday`.
 
     .. method:: isoweekday()
 
-       Return the day of the week as an integer, where Monday is 1 and Sunday is 7.
-       For example, ``Date(2002, 12, 4).isoweekday() == 3``, a Wednesday. See also
-       :meth:`weekday`, :meth:`isocalendar`.
+       Return the day of the week as an integer, where Monday is 1 and Sunday
+       is 7.  For example, ``Date(2002, 12, 4).isoweekday() == 3``, a
+       Wednesday. See also :meth:`weekday`, :meth:`isocalendar`.
 
     .. method:: isocalendar()
 
