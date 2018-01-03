@@ -1,3 +1,17 @@
+lars (1.0ubuntu1) xenial; urgency=medium
+
+  * Permit NULL values in first row when creating SQL tables (but warn as this
+    is not encouraged)
+  * Permit sources and targets to be used outside of context handlers (makes
+    experimentation in the REPL a bit nicer)
+  * Don't warn when request is NULL in Apache log sources (in certain
+    configurations this is common when stringent timeouts are set)
+  * Fixed incorrect generation of Oracle multi-row INSERT statements
+  * Fixed operation of SQL target when row doesn't cover complete set of
+    target table rows
+
+ -- Dave Jones <dave@waveform.org.uk>  Wed, 03 Jan 2018 23:35:26 +0000
+
 lars (0.3-1~ppa1) precise; urgency=medium
 
   * Implemented Python 3 compatibility (specifically 3.2 or above) and added
