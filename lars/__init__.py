@@ -40,11 +40,11 @@ shown below::
 Going through this section by section we can see the following:
 
 #. The first couple of lines import the necessary modules that we'll need; the
-   standard Python `io`_ module for opening files, and the :mod:`iis` and
+   standard Python :mod:`io` module for opening files, and the :mod:`iis` and
    :mod:`csv` modules from lars for converting the data.
 
-#. Using ``io.open`` we open the input file (with mode ``'r'`` for reading) and
-   the output file (with mode ``'wb'`` for creating a new file and writing 
+#. Using :func:`io.open` we open the input file (with mode ``'r'`` for reading)
+   and the output file (with mode ``'wb'`` for creating a new file and writing
    (binary mode) to it)
 
 #. We wrap ``infile`` (the input file) with :class:`~lars.iis.IISSource` to

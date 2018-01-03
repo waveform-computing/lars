@@ -109,7 +109,8 @@ A typical usage of this class is as follows::
                     for row in source:
                         target.write(row)
 
-.. _Custom Log Formats: http://httpd.apache.org/docs/2.2/mod/mod_log_config.html#formats
+.. _Custom Log Formats:
+   http://httpd.apache.org/docs/2.2/mod/mod_log_config.html#formats
 """
 
 from __future__ import (
@@ -118,8 +119,6 @@ from __future__ import (
     print_function,
     division,
     )
-str = type('')
-
 
 import re
 import warnings
@@ -131,6 +130,8 @@ from .strptime import TimeRE, _strptime_datetime
 from .timezone import timedelta, timezone
 from .exc import LarsError
 
+str = type('')  # pylint: disable=redefined-builtin,invalid-name
+
 
 # Common Apache LogFormat strings
 COMMON = '%h %l %u %t "%r" %>s %b'
@@ -140,13 +141,18 @@ REFERER = '%{Referer} -> %U'
 USER_AGENT = '%{User-agent}i'
 
 
-# We need a reference to the "standard English" locale for parsing the
-# unadorned %t time format in Apache log files. The only truly safe way of
-# doing this (given that an English locale may not even be installed on the
-# machine) is to hard-code a fake one. The following is derived from a machine
-# with the locale explicitly set to en_US (presumably what Apache means they
-# refer to "standard English"...):
 class EnglishLocaleTime(object):
+    """
+    We need a reference to the "standard English" locale for parsing the
+    unadorned %t time format in Apache log files. The only truly safe way of
+    doing this (given that an English locale may not even be installed on the
+    machine) is to hard-code a fake one. The following is derived from a
+    machine with the locale explicitly set to en_US (presumably what Apache
+    means they refer to "standard English"...):
+    """
+    # pylint: disable=too-many-instance-attributes,too-few-public-methods
+    # pylint: disable=invalid-name
+
     def __init__(self):
         self.a_month = [
             '',
@@ -157,10 +163,8 @@ class EnglishLocaleTime(object):
         self.am_pm = ['am', 'pm']
         self.f_month = [
             '',
-            'january', 'february', 'march',
-            'april',   'may',      'june',
-            'july',    'august',   'september',
-            'october', 'november', 'december',
+            'january', 'february', 'march', 'april', 'may', 'june',
+            'july', 'august', 'september', 'october', 'november', 'december',
             ]
         self.f_weekday = [
             'monday', 'tuesday', 'wednesday',
@@ -173,7 +177,9 @@ class EnglishLocaleTime(object):
         self.timezone = (frozenset(('utc', 'gmt')), frozenset('bst'))
 
 
-_string_parse_re = re.compile(r'\\(x[0-9a-fA-F]{2}|[^x])')
+_STRING_PARSE_RE = re.compile(r'\\(x[0-9a-fA-F]{2}|[^x])')
+
+
 def _string_parse(s):
     """
     Parse a string in an Apache log file.
@@ -194,13 +200,16 @@ def _string_parse(s):
         '\\t': '\t',
         '\\f': '\f',
         }
+
     def unescape(match):
+        # pylint: disable=missing-docstring
         match = match.group(0)
         if match.startswith('\\x'):
             return chr(int(match[2:4], base=16))
         else:
             return whitespace.get(match, match[-1])
-    return _string_parse_re.sub(unescape, s)
+
+    return _STRING_PARSE_RE.sub(unescape, s)
 
 
 def _time_parse_format(s, fmt):
@@ -215,8 +224,8 @@ def _time_parse_format(s, fmt):
     :param str fmt: The strptime format the string must conform to
     :returns: A naive :class:`~lars.datatypes.DateTime` object
     """
-    d = _strptime_datetime(dt.DateTime, s, fmt)
-    return dt.DateTime(*(d.utctimetuple()[:6] + (d.microsecond,)))
+    tstamp = _strptime_datetime(dt.DateTime, s, fmt)
+    return dt.DateTime(*(tstamp.utctimetuple()[:6] + (tstamp.microsecond,)))
 
 
 def _time_parse_common(s):
@@ -229,7 +238,8 @@ def _time_parse_common(s):
     :param str s: The string containing the time to parse
     :returns: A naive :class:`~lars.datatypes.DateTime` object
     """
-    if not (24 <= len(s) <= 28):
+    # pylint: disable=too-many-branches,too-many-statements
+    if not 24 <= len(s) <= 28:
         raise ValueError('Invalid length')
     if s[0] != '[':
         raise ValueError('Expected "[" at 0')
@@ -294,9 +304,45 @@ def _time_parse_common(s):
     tz_offset = timedelta(seconds=tz_offset * 60)
     if tz_sign == '-':
         tz_offset = -tz_offset
-    tz = timezone(tz_offset)
-    d = dt.DateTime(year, month, day, hour, minute, second, tzinfo=tz)
-    return dt.DateTime(*(d.utctimetuple()[:6]))
+    tstamp = dt.DateTime(year, month, day, hour, minute, second,
+                         tzinfo=timezone(tz_offset))
+    return dt.DateTime(*(tstamp.utctimetuple()[:6]))
+
+
+def _generate_name(template, data, suffix):
+    # This function constructs the field name from the FIELD_DEFS template, the
+    # field extracted from the spec (if any) and the type suffix. The result
+    # MUST be a valid Python identifier
+    if suffix in 'Ceino':
+        # If data is expected, sanitize it and substitute into template
+        if not data:
+            raise ValueError(
+                'Missing {str} for format suffix "%s"' % suffix)
+        return template % dt.sanitize_name(data)
+    elif suffix == 'p':
+        # Special case: port
+        if data:
+            try:
+                return {
+                    'canonical': 'port',
+                    'local':     'local_port',
+                    'remote':    'remote_port',
+                    }[data]
+            except KeyError:
+                raise ValueError('Invalid format in "%%{%s}p"' % data)
+    elif suffix == 'P':
+        # Special case: PID
+        if data:
+            try:
+                return {
+                    'pid': 'pid',
+                    'tid': 'tid',
+                    'hextid': 'hextid',
+                    }[data]
+            except KeyError:
+                raise ValueError('Invalid format in "%%{%s}P"' % data)
+    else:
+        return template
 
 
 class ApacheError(LarsError):
@@ -409,6 +455,7 @@ class ApacheSource(object):
     :param str format: Defaults to :data:`COMMON` but can be set to any valid
                    Apache LogFormat string
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, source, log_format=COMMON):
         self.source = source
@@ -431,16 +478,16 @@ class ApacheSource(object):
     FIELD_RE1 = re.compile(
         # Main capturing group to ensure re.split() returns everything
         r'(%'
-            # Optional status code filter with optional negation
-            r'(?:!?\d{3}(?:,\d{3})*)?'
-            # Optional request original/final modifier
-            r'[<>]?'
-            # Format specification data
-            r'(?:\{[^}]*\})?'
-            # Format specification
-            r'[a-zA-Z]'
+        # Optional status code filter with optional negation
+        r'(?:!?\d{3}(?:,\d{3})*)?'
+        # Optional request original/final modifier
+        r'[<>]?'
+        # Format specification data
+        r'(?:\{[^}]*\})?'
+        # Format specification
+        r'[a-zA-Z]'
         r')'
-        )
+    )
 
     # This regular expression is used to parse a format specification after
     # extraction from a LogFormat string. It is effectively a simplified form
@@ -458,74 +505,77 @@ class ApacheSource(object):
         # Specification suffix letter
         r'(?P<suffix>[a-zA-Z])'
         r'$'
-        )
+    )
 
     # This mapping relates format specifications to field names and types, for
     # use in the generated row tuple. Note that some mappings include a string
     # substitution portion to accept sanitized versions of, for example, cookie
     # names, or HTTP header fields.
     FIELD_DEFS = {
-        'a': ('remote_ip',         'address'),
-        'A': ('local_ip',          'address'),
-        'B': ('size',              'integer'),
-        'b': ('size',              'integer'),
-        'C': ('cookie_%s',         'string'),
-        'D': ('time_taken_ms',     'integer'),
-        'e': ('env_%s',            'string'),
-        'f': ('filename',          'path'),
-        'h': ('remote_host',       'hostname'),
-        'H': ('protocol',          'protocol'),
-        'i': ('req_%s',            'string'),
-        'k': ('keepalive',         'integer'),
-        'l': ('ident',             'string'),
-        'm': ('method',            'method'),
-        'n': ('note_%s',           'string'),
-        'o': ('resp_%s',           'string'),
-        'p': ('port',              'integer'),
-        'P': ('pid',               'integer'),
-        'q': ('url_query',         'url-query'),
-        'r': ('request',           'request'),
-        'R': ('handler',           'string'),
-        's': ('status',            'integer'),
-        't': ('time',              'time'),
-        'T': ('time_taken',        'integer'),
-        'u': ('remote_user',       'string'),
-        'U': ('url_stem',          'url-stem'),
-        'v': ('server_name',       'hostname'),
-        'V': ('canonical_name',    'hostname'),
+        'a': ('remote_ip', 'address'),
+        'A': ('local_ip', 'address'),
+        'B': ('size', 'integer'),
+        'b': ('size', 'integer'),
+        'C': ('cookie_%s', 'string'),
+        'D': ('time_taken_ms', 'integer'),
+        'e': ('env_%s', 'string'),
+        'f': ('filename', 'path'),
+        'h': ('remote_host', 'hostname'),
+        'H': ('protocol', 'protocol'),
+        'i': ('req_%s', 'string'),
+        'k': ('keepalive', 'integer'),
+        'l': ('ident', 'string'),
+        'm': ('method', 'method'),
+        'n': ('note_%s', 'string'),
+        'o': ('resp_%s', 'string'),
+        'p': ('port', 'integer'),
+        'P': ('pid', 'integer'),
+        'q': ('url_query', 'url-query'),
+        'r': ('request', 'request'),
+        'R': ('handler', 'string'),
+        's': ('status', 'integer'),
+        't': ('time', 'time'),
+        'T': ('time_taken', 'integer'),
+        'u': ('remote_user', 'string'),
+        'U': ('url_stem', 'url-stem'),
+        'v': ('server_name', 'hostname'),
+        'V': ('canonical_name', 'hostname'),
         'X': ('connection_status', 'keepalive'),
-        'I': ('bytes_received',    'integer'),
-        'O': ('bytes_sent',        'integer'),
-        }
+        'I': ('bytes_received', 'integer'),
+        'O': ('bytes_sent', 'integer'),
+    }
 
     TYPES = {
-        'address':   (parsers.address_parse,  parsers.ADDRESS),
-        'path':      (parsers.path_parse,     parsers.PATH),
+        'address':   (parsers.address_parse, parsers.ADDRESS),
+        'path':      (parsers.path_parse, parsers.PATH),
         'hostname':  (parsers.hostname_parse, parsers.HOSTNAME),
-        'integer':   (parsers.int_parse,      parsers.INTEGER),
-        'method':    (None,                   parsers.METHOD),
-        'protocol':  (None,                   parsers.PROTOCOL),
-        'request':   (parsers.request_parse,  parsers.REQUEST),
-        'url':       (parsers.url_parse,      parsers.URL),
-        'url-stem':  (parsers.url_parse,      r'(?P<%(name)s>([^:/?#\s]+:)?(//[^/?#\s]*)?[^?#\s]*)'),
-        'url-query': (parsers.url_parse,      r'(?P<%(name)s>(\?[^#\s]*)?(#\S*)?)'),
+        'integer':   (parsers.int_parse, parsers.INTEGER),
+        'method':    (None, parsers.METHOD),
+        'protocol':  (None, parsers.PROTOCOL),
+        'request':   (parsers.request_parse, parsers.REQUEST),
+        'url':       (parsers.url_parse, parsers.URL),
+        'url-stem':  (parsers.url_parse,
+                      r'(?P<%(name)s>([^:/?#\s]+:)?(//[^/?#\s]*)?[^?#\s]*)'),
+        'url-query': (parsers.url_parse,
+                      r'(?P<%(name)s>(\?[^#\s]*)?(#\S*)?)'),
         # Apache escapes non-printable and "special" chars with hex (\xhh)
         # sequences, except for newline, tab, and double-quote which are all
         # simply back-slash escaped. This is Apache specific and hence isn't
         # taken from the standard parsers module
-        'string':    (_string_parse,          r'(?P<%(name)s>(?:[^\x00-\x1f\x7f\\"]|\\x[0-9a-fA-F]{2}|\\[^x])*|-)'),
+        'string':    (_string_parse,
+                      r'(?P<%(name)s>'
+                      r'(?:[^\x00-\x1f\x7f\\"]|\\x[0-9a-fA-F]{2}|\\[^x])*|-)'),
         # Apache field type which indicates the keep-alive state of the
         # connection when the request is done (X=connection aborted before
         # completion, +=keep connection alive, -=close connection)
-        'keepalive': (None,                   r'(?P<%(name)s>[X+-])'),
+        'keepalive': (None, r'(?P<%(name)s>[X+-])'),
         # Apache can include just about anything at all in a time format string
         # so we special-case this type and construct a custom regex and parsing
         # function for it later from the format given
-        'time':      (None,                   None),
-        }
+        'time':      (None, None),
+    }
 
     def _parse_log_format(self):
-        self._row_pattern = ''
         self._row_funcs = []
         self._row_type = None
         tuple_fields = []
@@ -536,10 +586,11 @@ class ApacheSource(object):
         # [sep, str, sep, str, sep, ...]. This is why separator is initially
         # True below
         separator = True
+        row_pattern = ''
         for s in self.FIELD_RE1.split(self.log_format):
             if s:
                 if separator:
-                    self._row_pattern += re.escape(s)
+                    row_pattern += re.escape(s)
                 else:
                     name, pattern, parser = self._parse_log_field(s)
                     if name in tuple_fields:
@@ -549,27 +600,28 @@ class ApacheSource(object):
                         # this keeps things more user-friendly for the time
                         raise ValueError('Duplicate row field name %s' % name)
                     tuple_fields.append(name)
-                    self._row_pattern += pattern
+                    row_pattern += pattern
                     self._row_funcs.append(parser)
             separator = not separator
         # IGNORECASE is required for the time format which needs
         # case-insensitive matching on abbreviated or full weekday or month
         # names
-        logging.debug('Constructing row regex: %s', self._row_pattern)
-        self._row_pattern = re.compile(self._row_pattern, re.IGNORECASE)
-        logging.debug('Constructing row tuple with fields: %s', ','.join(tuple_fields))
+        logging.debug('Constructing row regex: %s', row_pattern)
+        self._row_pattern = re.compile(row_pattern, re.IGNORECASE)
+        logging.debug('Constructing row tuple with fields: %s',
+                      ','.join(tuple_fields))
         self._row_type = dt.row(*tuple_fields)
 
     def _parse_log_field(self, s):
         # This function parses a single %{field}s in an Apache LogFormat
         # string; it is called by _parse_log_format which handles splitting up
         # the LogFormat into individual segments
-        m = self.FIELD_RE2.match(s)
-        if m:
-            data, suffix = m.group('field'), m.group('suffix')
+        match = self.FIELD_RE2.match(s)
+        if match:
+            data, suffix = match.group('field'), match.group('suffix')
         else:
             # This should never happen
-            raise RuntimeError('Internal error in FIELD_RE2') # pragma: no cover
+            raise RuntimeError('Internal error: FIELD_RE2')  # pragma: no cover
         if data:
             # Strip {} from data
             data = data[1:-1]
@@ -579,43 +631,8 @@ class ApacheSource(object):
         except KeyError:
             raise ValueError('Invalid format suffix "%s"' % suffix)
         name, pattern, parser = self._generate_parser(
-            data, field_type, self._generate_name(template, data, suffix))
+            data, field_type, _generate_name(template, data, suffix))
         return name, pattern, parser
-
-    def _generate_name(self, template, data, suffix):
-        # This function constructs the field name from the FIELD_DEFS template,
-        # the field extracted from the spec (if any) and the type suffix. The
-        # result MUST be a valid Python identifier
-        if suffix in 'Ceino':
-            # If data is expected, sanitize it and substitute into template
-            if not data:
-                raise ValueError(
-                    'Missing {str} for format suffix "%s"' % suffix)
-            return template % dt.sanitize_name(data)
-        elif suffix == 'p':
-            # Special case: port
-            if data:
-                try:
-                    return {
-                        'canonical': 'port',
-                        'local':     'local_port',
-                        'remote':    'remote_port',
-                        }[data]
-                except KeyError:
-                    raise ValueError('Invalid format in "%%{%s}p"' % data)
-        elif suffix == 'P':
-            # Special case: PID
-            if data:
-                try:
-                    return {
-                        'pid': 'pid',
-                        'tid': 'tid',
-                        'hextid': 'hextid',
-                        }[data]
-                except KeyError:
-                    raise ValueError('Invalid format in "%%{%s}P"' % data)
-        else:
-            return template
 
     def _generate_parser(self, data, field_type, field_name):
         if field_type == 'time':
@@ -629,8 +646,8 @@ class ApacheSource(object):
                 try:
                     time_regex = TimeRE().pattern(data)
                 except KeyError as exc:
-                    raise ValueError(
-                        'Invalid time format spec %%%s in %s' % (str(exc), data))
+                    raise ValueError('Invalid time format spec %%%s in %s' %
+                                     (str(exc), data))
                 # Wrap the generated regex in a capturing pattern with a name
                 # placeholder
                 pattern = r'(?P<%%(name)s>%s)' % time_regex
@@ -644,25 +661,27 @@ class ApacheSource(object):
                 # common case
                 pattern = (
                     r'(?P<%(name)s>'
-                    r'\['                                                  # [
-                    r'(?:3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])'              # %d
-                    r'/'                                                   # /
-                    r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)' # %b
-                    r'/'                                                   # /
-                    r'(?:\d\d\d\d)'                                        # %Y
-                    r':'                                                   # :
-                    r'(?:2[0-3]|[0-1]\d|\d)'                               # %H
-                    r':'                                                   # :
-                    r'(?:[0-5]\d|\d)'                                      # %M
-                    r':'                                                   # :
-                    r'(?:6[0-1]|[0-5]\d|\d)'                               # %S
-                    r'\s+'                                                 #
-                    r'(?:[+-]\d\d[0-5]\d)'                                 # %z
-                    r'\]'                                                  # ]
+                    r'\['                                                 # [
+                    r'(?:3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])'             # %d
+                    r'/'                                                  # /
+                    r'(?:jan|feb|ma[ry]|apr|ju[nl]|aug|sep|oct|nov|dec)'  # %b
+                    r'/'                                                  # /
+                    r'(?:\d\d\d\d)'                                       # %Y
+                    r':'                                                  # :
+                    r'(?:2[0-3]|[0-1]\d|\d)'                              # %H
+                    r':'                                                  # :
+                    r'(?:[0-5]\d|\d)'                                     # %M
+                    r':'                                                  # :
+                    r'(?:6[0-1]|[0-5]\d|\d)'                              # %S
+                    r'\s+'                                                #
+                    r'(?:[+-]\d\d[0-5]\d)'                                # %z
+                    r'\]'                                                 # ]
                     r')'
-                    )
+                )
                 parser = _time_parse_common
-        elif field_type == 'string' and field_name.lower() in ('req_referer', 'req_referrer'):
+        elif (
+                field_type == 'string' and
+                field_name.lower() in ('req_referer', 'req_referrer')):
             # Special case: treat referer header as a URL
             parser, pattern = parsers.url_parse, parsers.URL
         else:
@@ -671,16 +690,26 @@ class ApacheSource(object):
             # no parser
             parser, pattern = self.TYPES[field_type]
             if parser is None:
-                parser = lambda s: s
+                def parser(s):
+                    # pylint: disable=missing-docstring
+                    return s
         return field_name, pattern % {'name': field_name}, parser
 
     def __enter__(self):
         logging.debug('Entering Apache context')
-        self.count = 0
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         logging.debug('Exiting Apache context')
+        self.close()
+
+    def close(self):
+        """
+        Close the source; attempting to read further rows is not permitted
+        after this method is called.
+        """
+        logging.debug('Closing Apache source')
+        self.source = None
 
     def __iter__(self):
         """
@@ -698,7 +727,9 @@ class ApacheSource(object):
                 if match:
                     values = match.group(*self._row_type._fields)
                     try:
-                        values = [f(v) for (f, v) in zip(self._row_funcs, values)]
+                        values = [
+                            f(v) for (f, v) in zip(self._row_funcs, values)
+                        ]
                     except ValueError as exc:
                         raise ApacheWarning(str(exc))
                     self.count += 1
@@ -707,10 +738,11 @@ class ApacheSource(object):
                     raise ApacheWarning('Line contains invalid data')
             except ApacheWarning as exc:
                 # Add line number to the warning and report with warn()
-                warnings.warn('Line %d: %s' % (num + 1, str(exc)), ApacheWarning)
+                warnings.warn(
+                    ApacheWarning('Line %d: %s' % (num + 1, str(exc))))
             except ApacheError as exc:
                 # Add line content and number to the exception and re-raise
                 if not exc.line_number:
-                    raise type(exc)(exc.args[0], line_number=num + 1, line=line)
-                raise # pragma: no cover
-
+                    raise type(exc)(exc.args[0], line_number=num + 1,
+                                    line=line)
+                raise  # pragma: no cover

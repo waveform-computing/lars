@@ -128,15 +128,7 @@ from __future__ import (
     print_function,
     division,
     )
-str = type('')
-try:
-    long
-except NameError:
-    long = int
 
-
-import sys
-import io
 import logging
 import codecs
 try:
@@ -144,6 +136,11 @@ try:
 except ImportError:
     import csv as csv_
 
+str = type('')  # pylint: disable=redefined-builtin,invalid-name
+try:
+    long
+except NameError:
+    long = int  # pylint: disable=redefined-builtin,invalid-name
 
 CSV_DIALECT = csv_.excel
 TSV_DIALECT = csv_.excel_tab
@@ -156,6 +153,7 @@ QUOTE_NONNUMERIC = csv_.QUOTE_NONNUMERIC
 
 class CSVSource(object):
     # TODO Code CSVSource
+    # pylint: disable=missing-docstring,too-few-public-methods
     pass
 
 
@@ -191,6 +189,8 @@ class CSVTarget(object):
 
     .. _Python standard encodings: http://docs.python.org/2/library/codecs.html#standard-encodings
     """
+    # pylint: disable=too-few-public-methods,too-many-instance-attributes
+
     def __init__(
             self, fileobj, header=False, dialect=CSV_DIALECT, encoding='utf-8',
             **kwargs):
@@ -201,24 +201,36 @@ class CSVTarget(object):
         self.keywords = kwargs
         self.count = 0
         self._first_row = None
-        self._writer = None
-
-    def __enter__(self):
-        logging.debug('Entering CSVTarget context')
-        logging.debug('Constructing CSV writer')
         # The csv writer outputs strings so we stick a transcoding shim between
         # the writer and the output object
         self._writer = csv_.writer(
             codecs.getwriter(self.encoding)(self.fileobj),
             dialect=self.dialect, **self.keywords)
+
+    def __enter__(self):
+        logging.debug('Entering CSVTarget context')
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         logging.debug('Exiting CSVTarget context')
+        self.close()
+
+    def close(self):
+        """
+        Closes the CSV output. Further calls to :meth:`write` are not permitted
+        after calling this method.
+        """
+        logging.debug('Closing CSV target')
         self._writer = None
         self._first_row = None
 
     def write(self, row):
+        """
+        Write the specified *row* (a tuple of values) to the wrapped output.
+        All provided rows must have the same number of elements. There is no
+        need to convert elements of the tuple to :class:`str`; this will be
+        handled implicitly.
+        """
         if self._first_row:
             if len(row) != len(self._first_row):
                 raise TypeError('Rows must have the same number of elements')

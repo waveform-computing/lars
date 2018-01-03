@@ -32,7 +32,8 @@ license`_.
 Functions
 =========
 
-.. _Raymond Hettinger's recipe: http://code.activestate.com/recipes/578078-py26-and-py30-backport-of-python-33s-lru-cache/
+.. _Raymond Hettinger's recipe:
+   http://code.activestate.com/recipes/578078-py26-and-py30-backport-of-python-33s-lru-cache/
 .. _MIT license: http://opensource.org/licenses/MIT
 .. _LRU: http://en.wikipedia.org/wiki/Cache_algorithms#Least_Recently_Used
 """
@@ -43,13 +44,13 @@ from __future__ import (
     print_function,
     division,
     )
-str = type('')
 
 
 from collections import namedtuple
 from functools import update_wrapper
 from threading import RLock
 
+str = type('')  # pylint: disable=redefined-builtin,invalid-name
 
 _CacheInfo = namedtuple("CacheInfo", ["hits", "misses", "maxsize", "currsize"])
 
@@ -58,6 +59,7 @@ class _HashedSeq(list):
     __slots__ = 'hashvalue'
 
     def __init__(self, tup, hash=hash):
+        # pylint: disable=super-init-not-called,redefined-builtin
         self[:] = tup
         self.hashvalue = hash(tup)
 
@@ -66,12 +68,14 @@ class _HashedSeq(list):
 
 
 def _make_key(
-        args, kwds, typed, kwd_mark = (object(),),
-         fasttypes = {int, str, frozenset, type(None)},
-         sorted=sorted, tuple=tuple, type=type, len=len):
+        args, kwds, typed, kwd_mark=(object(),),
+        fasttypes={int, str, frozenset, type(None)},
+        sorted=sorted, tuple=tuple, type=type, len=len):
     """
     Make a cache key from optionally typed positional and keyword arguments
     """
+    # pylint: disable=dangerous-default-value,too-many-arguments
+    # pylint: disable=redefined-builtin
     key = args
     if kwds:
         sorted_items = sorted(kwds.items())
@@ -100,8 +104,8 @@ def lru_cache(maxsize=100, typed=False):
 
     Arguments to the cached function must be hashable.
 
-    View the cache statistics named tuple (hits, misses, maxsize, currsize) with
-    f.cache_info().  Clear the cache and statistics with f.cache_clear().
+    View the cache statistics named tuple (hits, misses, maxsize, currsize)
+    with f.cache_info().  Clear the cache and statistics with f.cache_clear().
     Access the underlying function with f.__wrapped__.
     """
 
@@ -111,6 +115,7 @@ def lru_cache(maxsize=100, typed=False):
     # to allow the implementation to change (including a possible C version).
 
     def decorating_function(user_function):
+        # pylint: disable=missing-docstring,too-many-locals,invalid-name
         cache = dict()
         stats = [0, 0]           # make statistics updateable non-locally
         HITS, MISSES = 0, 1      # names for the stats fields
@@ -184,7 +189,6 @@ def lru_cache(maxsize=100, typed=False):
                         # empty the oldest link and make it the new root
                         root = nonlocal_root[0] = oldroot[NEXT]
                         oldkey = root[KEY]
-                        oldvalue = root[RESULT]
                         root[KEY] = root[RESULT] = None
                         # now update the cache dictionary for the new links
                         del cache[oldkey]
@@ -202,7 +206,8 @@ def lru_cache(maxsize=100, typed=False):
             Report cache statistics
             """
             with lock:
-                return _CacheInfo(stats[HITS], stats[MISSES], maxsize, len(cache))
+                return _CacheInfo(stats[HITS], stats[MISSES], maxsize,
+                                  len(cache))
 
         def cache_clear():
             """
@@ -220,4 +225,3 @@ def lru_cache(maxsize=100, typed=False):
         return update_wrapper(wrapper, user_function)
 
     return decorating_function
-
