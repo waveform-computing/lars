@@ -119,6 +119,7 @@ if sys.version_info[:2] < (3, 3):
             'Jinja2<2.7',
             'MarkupSafe<0.16',
             ])
+        __extra_requires__['test'][1] = 'coverage<4.0dev'
     else:
         __requires__.append('ipaddr')
         __requires__.append('backports.csv')
