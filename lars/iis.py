@@ -144,7 +144,8 @@ try:
 except ImportError:
     from urllib import unquote_plus
 
-from lars import parsers, datatypes as dt
+from . import parsers, datatypes as dt
+from .exc import LarsError
 
 
 def _string_parse(s):
@@ -165,7 +166,7 @@ def _string_parse(s):
     return unquote_plus(s)
 
 
-class IISError(Exception):
+class IISError(LarsError):
     """
     Base class for IISSource errors.
 

@@ -126,9 +126,10 @@ import warnings
 import logging
 import functools
 
-from lars import parsers, datatypes as dt
-from lars.strptime import TimeRE, _strptime_datetime
-from lars.timezone import timedelta, timezone
+from . import parsers, datatypes as dt
+from .strptime import TimeRE, _strptime_datetime
+from .timezone import timedelta, timezone
+from .exc import LarsError
 
 
 # Common Apache LogFormat strings
@@ -298,18 +299,23 @@ def _time_parse_common(s):
     return dt.DateTime(*(d.utctimetuple()[:6]))
 
 
-class ApacheError(Exception):
+class ApacheError(LarsError):
     """
-    Base class for ApacheSource errors.
+    Base class for :class:`ApacheSource` errors.
 
     Exceptions of this class take the optional arguments line_number and line
     for specifying the index and content of the line that caused the error
     respectively. If specified, the :meth:`__str__` method is overridden to
     include the line number in the error message.
 
-    :param str message: The error message
-    :param int line_number: The 1-based index of the line that caused the error
-    :param str line: The content of the line that caused the error
+    :param str message:
+        The error message
+
+    :param int line_number:
+        The 1-based index of the line that caused the error
+
+    :param str line:
+        The content of the line that caused the error
     """
     def __init__(self, message, line_number=None, line=None):
         self.line_number = line_number
