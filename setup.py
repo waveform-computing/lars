@@ -72,7 +72,7 @@ __url__          = 'http://github.com/waveform80/lars'
 __platforms__    = 'ALL'
 
 __classifiers__  = [
-    'Development Status :: 5 - Production',
+    'Development Status :: 5 - Production/Stable',
     'Intended Audience :: System Administrators',
     'License :: OSI Approved :: MIT License',
     'Operating System :: Microsoft :: Windows',

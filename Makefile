@@ -79,7 +79,7 @@ DIST_DEB=dist/python-$(NAME)_$(VER)$(DEB_SUFFIX)_all.deb \
 	dist/python3-$(NAME)_$(VER)$(DEB_SUFFIX)_all.deb \
 	dist/python-$(NAME)-doc_$(VER)$(DEB_SUFFIX)_all.deb \
 	dist/$(NAME)_$(VER)$(DEB_SUFFIX)_$(DEB_ARCH).changes
-DIST_DSC=dist/$(NAME)_$(VER)$(DEB_SUFFIX).tar.gz \
+DIST_DSC=dist/$(NAME)_$(VER)$(DEB_SUFFIX).tar.xz \
 	dist/$(NAME)_$(VER)$(DEB_SUFFIX).dsc \
 	dist/$(NAME)_$(VER)$(DEB_SUFFIX)_source.changes
 MAN_PAGES=
@@ -193,10 +193,8 @@ release: $(PY_SOURCES) $(DOC_SOURCES) $(DIST_DEB) $(DIST_DSC)
 	git tag -s release-$(VER) -m "Release $(VER)"
 	git push --tags
 	git push
-	# update the package's registration on PyPI (in case any metadata's changed)
-	$(PYTHON) $(PYFLAGS) setup.py register -r https://pypi.python.org/pypi
 	# build a source archive and upload to PyPI
-	$(PYTHON) $(PYFLAGS) setup.py sdist upload -r https://pypi.python.org/pypi
+	$(PYTHON) $(PYFLAGS) setup.py sdist upload
 	# build the deb source archive and upload to the PPA
 	dput waveform-ppa dist/$(NAME)_$(VER)$(DEB_SUFFIX)_source.changes
 
