@@ -136,9 +136,9 @@ str = type('')  # pylint: disable=redefined-builtin,invalid-name
 # Common Apache LogFormat strings
 COMMON = '%h %l %u %t "%r" %>s %b'
 COMMON_VHOST = '%v %h %l %u %t "%r" %>s %b'
-COMBINED = '%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i"'
+COMBINED = '%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-Agent}i"'
 REFERER = '%{Referer} -> %U'
-USER_AGENT = '%{User-agent}i'
+USER_AGENT = '%{User-Agent}i'
 
 
 class EnglishLocaleTime(object):
