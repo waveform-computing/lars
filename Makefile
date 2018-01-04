@@ -67,6 +67,9 @@ DEB_SOURCES:=debian/changelog \
 DOC_SOURCES:=docs/conf.py \
 	$(wildcard docs/*.png) \
 	$(wildcard docs/*.svg) \
+	$(wildcard docs/*.dot) \
+	$(wildcard docs/*.mscgen) \
+	$(wildcard docs/*.gpi) \
 	$(wildcard docs/*.rst) \
 	$(wildcard docs/*.pdf)
 SUBDIRS:=
@@ -198,4 +201,4 @@ release: $(PY_SOURCES) $(DOC_SOURCES) $(DIST_DEB) $(DIST_DSC)
 	# build the deb source archive and upload to the PPA
 	dput waveform-ppa dist/$(NAME)_$(VER)$(DEB_SUFFIX)_source.changes
 
-.PHONY: all install develop test doc source egg zip tar deb dist clean tags release upload $(SUBDIRS)
+.PHONY: all install develop test doc source egg zip tar deb dist clean tags changelog release $(SUBDIRS)
