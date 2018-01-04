@@ -202,7 +202,7 @@ def test_source_combined():
                 assert row.status == 200
                 assert row.size == 14745
                 assert row.req_Referer is None
-                assert row.req_User_agent == 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; Trident/4.0; byond_4.0; SLCC1; .NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.5.30729; .NET CLR 3.0.30729; InfoPath.2; OfficeLiveConnector.1.5; OfficeLivePatch.1.3; .NET4.0E; .NET4.0C)'
+                assert row.req_User_Agent == 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; Trident/4.0; byond_4.0; SLCC1; .NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.5.30729; .NET CLR 3.0.30729; InfoPath.2; OfficeLiveConnector.1.5; OfficeLivePatch.1.3; .NET4.0E; .NET4.0C)'
             elif count == 1:
                 assert row.remote_host == dt.hostname('217.129.225.117')
                 assert row.ident is None
@@ -212,7 +212,7 @@ def test_source_combined():
                 assert row.status == 200
                 assert row.size == 43
                 assert row.req_Referer == dt.url('http://eprints.lse.ac.uk/33718/')
-                assert row.req_User_agent == 'Mozilla/5.0 (Windows; U; Windows NT 5.1; pt-BR; rv:1.9.2.23) Gecko/20110920 Firefox/3.6.23'
+                assert row.req_User_Agent == 'Mozilla/5.0 (Windows; U; Windows NT 5.1; pt-BR; rv:1.9.2.23) Gecko/20110920 Firefox/3.6.23'
             else:
                 assert False
         assert row
