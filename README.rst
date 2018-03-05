@@ -27,8 +27,8 @@ Links
 
 .. _MIT license: http://opensource.org/licenses/MIT
 .. _Python: http://python.org/
-.. _source code: https://github.com/waveform80/lars
-.. _bug tracker: https://github.com/waveform80/lars/issues
+.. _source code: https://github.com/waveform-computing/lars
+.. _bug tracker: https://github.com/waveform-computing/lars/issues
 .. _documentation: http://lars.readthedocs.org/
-.. _build status: https://travis-ci.org/waveform80/lars
+.. _build status: https://travis-ci.org/waveform-computing/lars
 

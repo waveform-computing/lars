@@ -68,7 +68,7 @@ __version__      = '1.0'
 __authors__      = ['Dave Jones', 'Mime Consulting Ltd.']
 __author__       = __authors__[0]
 __author_email__ = 'dave@waveform.org.uk'
-__url__          = 'http://github.com/waveform80/lars'
+__url__          = 'http://github.com/waveform-computing/lars'
 __platforms__    = 'ALL'
 
 __classifiers__  = [
