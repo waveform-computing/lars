@@ -105,24 +105,29 @@ __entry_points__ = {
 
 __dependency_links__ = []
 
-if sys.version_info[:2] < (3, 3):
-    # Python 3.3+ has an equivalent ipaddress module built-in
-    if sys.version_info[:2] == (3, 2):
-        # The version of ipaddr on PyPI is incompatible with Python 3.2; use
-        # a private fork of it instead
-        __requires__.append('ipaddr==2.1.11-py3.2')
-        __dependency_links__.append('git+https://github.com/waveform-computing/ipaddr#egg=ipaddr')
-        __extra_requires__['doc'].extend([
-            # Particular versions are required for Python 3.2 compatibility.
-            # The ordering is reversed because that's what easy_install
-            # needs...
-            'Jinja2<2.7',
-            'MarkupSafe<0.16',
-            ])
-        __extra_requires__['test'][1] = 'coverage<4.0dev'
-    else:
-        __requires__.append('ipaddr')
-        __requires__.append('backports.csv')
+if sys.version_info[:2] < (3, 0):
+    # Add particular down-level versions for compatibility with legacy versions
+    # of Python; hilariously 2.7 is now better supported than 3.2 or 3.3...
+    __requires__.append('ipaddr')
+    __requires__.append('backports.csv')
+if sys.version_info[:2] == (3, 3):
+    __requires__.append('setuptools==30.1')
+elif sys.version_info[:2] == (3, 2):
+    # The version of ipaddr on PyPI is incompatible with Python 3.2; use a
+    # private fork of it instead
+    __requires__.append('setuptools==18.4')
+    __requires__.append('pip==7.0.0')
+    __requires__.append('ipaddr==2.1.11py3.2')
+    __dependency_links__.append('git+https://github.com/waveform-computing/ipaddr#egg=ipaddr-2.1.11py3.2')
+    __extra_requires__['doc'].extend([
+        'Jinja2<2.7',
+        'MarkupSafe<0.16',
+        ])
+    __extra_requires__['test'].remove('pytest')
+    __extra_requires__['test'].append('pytest==2.9.2')
+    __extra_requires__['test'].remove('coverage')
+    __extra_requires__['test'].append('coverage<4.0dev')
+    __extra_requires__['test'].append('attrs==16.2.0')
 
 
 def main():
