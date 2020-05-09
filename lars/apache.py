@@ -24,8 +24,8 @@
 
 """
 This module provides a wrapper for Apache log files, typically in common or
-combined format (but technically any Apache format which is can be
-unambiguously parsed with regexes).
+combined format (but technically any Apache format which can be unambiguously
+parsed with regexes).
 
 The :class:`ApacheSource` class is the major element that this module exports;
 this is the class which wraps a file-like object containing a common, combined,

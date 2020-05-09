@@ -135,6 +135,7 @@ develop: tags
 	$(PIP) install -U setuptools
 	$(PIP) install -U pip
 	$(PIP) install -U tox
+	$(PIP) install virtualenv==13
 	$(PIP) install -e .[doc,test]
 
 test:

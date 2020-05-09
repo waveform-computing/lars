@@ -110,8 +110,6 @@ if sys.version_info[:2] < (3, 0):
     # of Python; hilariously 2.7 is now better supported than 3.2 or 3.3...
     __requires__.append('ipaddr')
     __requires__.append('backports.csv')
-if sys.version_info[:2] == (3, 3):
-    __requires__.append('setuptools==30.1')
 elif sys.version_info[:2] == (3, 2):
     # The version of ipaddr on PyPI is incompatible with Python 3.2; use a
     # private fork of it instead
@@ -128,6 +126,8 @@ elif sys.version_info[:2] == (3, 2):
     __extra_requires__['test'].remove('coverage')
     __extra_requires__['test'].append('coverage<4.0dev')
     __extra_requires__['test'].append('attrs==16.2.0')
+elif sys.version_info[:2] == (3, 3):
+    __requires__.append('setuptools==30.1')
 
 
 def main():
