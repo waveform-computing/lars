@@ -341,8 +341,7 @@ def _generate_name(template, data, suffix):
                     }[data]
             except KeyError:
                 raise ValueError('Invalid format in "%%{%s}P"' % data)
-    else:
-        return template
+    return template
 
 
 class ApacheError(LarsError):
